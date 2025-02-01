@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS shares_lists;
+DROP TABLE IF EXISTS shares_things;
+DROP TABLE IF EXISTS shares;

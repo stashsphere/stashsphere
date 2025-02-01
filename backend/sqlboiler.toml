@@ -1,0 +1,14 @@
+output   = "models"
+pkgname  = "models"
+wipe     = true
+no-tests = true
+add-enum-types = true
+
+[psql]
+  dbname = "stashsphere"
+  host   = "localhost"
+  port   = 5432
+  user   = "stashsphere"
+  pass   = "secret"
+  blacklist = ["schema_migrations"]
+  sslmode = "disable"

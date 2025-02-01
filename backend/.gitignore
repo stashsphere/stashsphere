@@ -1,0 +1,6 @@
+.vscode
+.direnv
+backend
+image_store
+image_cache/*
+result

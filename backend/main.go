@@ -1,0 +1,281 @@
+package main
+
+import (
+	"crypto/ed25519"
+	"database/sql"
+	"errors"
+	"fmt"
+	"os"
+	"reflect"
+	"strings"
+	"time"
+
+	"github.com/go-playground/locales/en"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	en_translations "github.com/go-playground/validator/v10/translations/en"
+	"github.com/golang-jwt/jwt/v5"
+	echojwt "github.com/labstack/echo-jwt/v4"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/stashsphere/backend/crypto"
+	"github.com/stashsphere/backend/handlers"
+	inv_middleware "github.com/stashsphere/backend/middleware"
+	"github.com/stashsphere/backend/operations"
+	"github.com/stashsphere/backend/services"
+	"github.com/stashsphere/backend/utils"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/confmap"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
+	_ "github.com/lib/pq"
+	flag "github.com/spf13/pflag"
+)
+
+var (
+	onlyGeneratePrivateKey bool
+)
+
+type CustomValidator struct {
+	validator *validator.Validate
+	trans     *ut.Translator
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	if err := cv.validator.Struct(i); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		errors := utils.InventoryValidationError{
+			Errors: make(map[string]string),
+		}
+		for _, fieldErr := range validationErrors {
+			errors.Errors[fieldErr.Field()] = fieldErr.Translate(*cv.trans)
+		}
+		return errors
+	}
+	return nil
+}
+
+var k = koanf.New(".")
+
+type StashsphereConfig struct {
+	User          string `koanf:"database.user"`
+	Password      string `koanf:"database.password"`
+	Name          string `koanf:"database.name"`
+	Host          string `koanf:"database.host"`
+	listenAddress string `koanf:"listenAddress"`
+
+	PrivateKey string `koanf:"auth.privateKey"`
+	ImagePath  string `koanf:"imagePath"`
+
+	InviteEnabled bool   `koanf:"invites.enabled"`
+	InviteCode    string `koanf:"invites.code"`
+}
+
+func main() {
+	consoleOutput := zerolog.ConsoleWriter{Out: os.Stderr}
+	loggerOutput := consoleOutput
+	logger := zerolog.New(loggerOutput)
+	log.Logger = logger
+	// Use the POSIX compliant pflag lib instead of Go's flag lib.
+	f := flag.NewFlagSet("config", flag.ContinueOnError)
+	f.Usage = func() {
+		fmt.Println(f.FlagUsages())
+		os.Exit(0)
+	}
+	// Path to one or more config files to load into koanf along with some config params.
+	f.String("conf", "stashsphere.yaml", "path to one or more .yaml config files")
+	f.BoolVar(&onlyGeneratePrivateKey, "key", false, "only generate a private key and exit")
+	f.Parse(os.Args[1:])
+
+	configPath, _ := f.GetString("conf")
+	boil.DebugMode = true
+
+	_, defaultRawPrivateKey, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		log.Fatal().Msgf("Could not generate default signing key: %v", err)
+	}
+	defaultPrivateKey := crypto.StoreEd25519PrivateAsString(defaultRawPrivateKey)
+	if err != nil {
+		log.Fatal().Msgf("Could not encode default signing key: %v", err)
+	}
+	if onlyGeneratePrivateKey {
+		fmt.Println(defaultPrivateKey)
+		os.Exit(0)
+	}
+
+	k.Load(confmap.Provider(map[string]interface{}{
+		"database.user":     "stashsphere",
+		"database.password": "secret",
+		"database.name":     "stashsphere",
+		"database.host":     "127.0.0.1",
+		"listenAddress":     ":8081",
+		"auth.privateKey":   defaultPrivateKey,
+		"imagePath":         "./image_store/",
+		"invites.enabled":   false,
+		"invites.code":      "",
+	}, "."), nil)
+
+	if err := k.Load(file.Provider(configPath), yaml.Parser()); err != nil {
+		log.Fatal().Msgf("error loading config: %v", err)
+	}
+
+	var config StashsphereConfig
+	k.UnmarshalWithConf("", &config, koanf.UnmarshalConf{Tag: "koanf", FlatPaths: true})
+
+	cFiles, _ := f.GetStringSlice("conf")
+	for _, c := range cFiles {
+		if err := k.Load(file.Provider(c), yaml.Parser()); err != nil {
+			log.Fatal().Msgf("error loading file: %v", err)
+		}
+	}
+
+	if config.InviteEnabled {
+		log.Info().Msgf("Invite enabled and code required")
+	} else {
+		log.Info().Msgf("Invite disabled and no code required")
+	}
+
+	privateKey, err := crypto.LoadEd22519PrivateKeyFromString(config.PrivateKey)
+	if err != nil {
+		log.Fatal().Msgf("error loading private key from config: %v", err)
+	}
+	publicKey := privateKey.Public().(ed25519.PublicKey)
+
+	// FIXME move sslmode to config
+	dbOptions := fmt.Sprintf("dbname=%s user=%s password=%s host=%s port=%d sslmode=disable", config.Name, config.User, config.Password, config.Host, 5432)
+
+	db, err := sql.Open("postgres", dbOptions)
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err := db.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	e := echo.New()
+
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogURI:    true,
+		LogStatus: true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			logger.Info().
+				Str("URI", v.URI).
+				Int("status", v.Status).
+				Msg("request")
+
+			return nil
+		},
+	}))
+
+	en := en.New()
+	uni := ut.New(en, en)
+	trans, _ := uni.GetTranslator("en")
+	validate := validator.New()
+	en_translations.RegisterDefaultTranslations(validate, trans)
+
+	// https://github.com/go-playground/validator/issues/861#issuecomment-976696946
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("form"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
+	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, "localhost")
+	userService := services.NewUserService(db, config.InviteEnabled, config.InviteCode)
+	imageService, err := services.NewImageService(db, config.ImagePath)
+	if err != nil {
+		panic(err)
+	}
+	thingService := services.NewThingService(db, imageService)
+	listService := services.NewListService(db)
+	propertyService := services.NewPropertyService(db)
+	searchService := services.NewSearchService(db, thingService, listService)
+	shareService := services.NewShareService(db)
+
+	e.Validator = &CustomValidator{validator: validate, trans: &trans}
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Output: loggerOutput,
+	}))
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowCredentials: true,
+	}))
+	e.Use(echojwt.WithConfig(echojwt.Config{
+		SigningKey:    publicKey,
+		TokenLookup:   "cookie:stashsphere-access",
+		SigningMethod: "EdDSA",
+		ErrorHandler: func(c echo.Context, err error) error {
+			var extratorErr *echojwt.TokenExtractionError
+			var parsingErr *echojwt.TokenParsingError
+			if err == echojwt.ErrJWTMissing || errors.As(err, &extratorErr) || errors.As(err, &parsingErr) {
+				return nil
+			}
+			return err
+		},
+		ContinueOnIgnoredError: true,
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return &operations.ApplicationClaims{}
+		},
+		ContextKey: "token",
+	}))
+	e.Use(inv_middleware.ExtractClaims("token"))
+	// TODO add refresh token middleware: check whether accessToken is less than 15min of lifetime, try to access refreshtoken, if validate
+	// set new access and refresh token
+
+	loginHandler := handlers.NewLoginHandler(authService)
+	registerHandler := handlers.NewRegisterHandler(userService)
+	thingHandler := handlers.NewThingHandler(thingService, listService, propertyService)
+	listHandler := handlers.NewListHandler(listService)
+	imageHandler := handlers.NewImageHandler(imageService)
+	searchHandler := handlers.NewSearchHandler(searchService, listService)
+	profileHandler := handlers.NewProfileHandler(userService)
+	shareHandler := handlers.NewShareHandler(shareService)
+
+	a := e.Group("/api")
+
+	userGroup := a.Group("/user")
+	userGroup.POST("/login", loginHandler.LoginHandlerPost)
+	userGroup.DELETE("/logout", loginHandler.LogoutHandlerDelete)
+	userGroup.POST("/register", registerHandler.RegisterHandlerPost)
+	userGroup.GET("/profile", profileHandler.ProfileHandlerGet)
+	userGroup.PATCH("/profile", profileHandler.ProfileHandlerPatch)
+
+	usersGroup := a.Group("/users")
+	usersGroup.GET("", profileHandler.ProfileHandlerIndex)
+
+	thingsGroup := a.Group("/things")
+	thingsGroup.GET("", thingHandler.ThingHandlerIndex)
+	thingsGroup.POST("", thingHandler.ThingHandlerPost)
+	thingsGroup.PATCH("/:thingId", thingHandler.ThingHandlerPatch)
+	thingsGroup.GET("/:thingId", thingHandler.ThingHandlerShow)
+	// TODO
+	// thingsGroup.DELETE("/:thingId", thingHandler.ThingHandlerDelete)
+
+	listsGroup := a.Group("/lists")
+	listsGroup.GET("", listHandler.ListHandlerIndex)
+	listsGroup.POST("", listHandler.ListHandlerPost)
+	listsGroup.GET("/:listId", listHandler.ListHandlerShow)
+	listsGroup.PATCH("/:listId", listHandler.ListHandlerPatch)
+
+	imageGroup := a.Group("/images")
+	imageGroup.GET("", imageHandler.ImageHandlerIndex)
+	imageGroup.POST("", imageHandler.ImageHandlerPost)
+	imageGroup.GET("/:imageId", imageHandler.ImageHandlerGet)
+	imageGroup.DELETE("/:imageId", imageHandler.ImageHandlerDelete)
+
+	shareGroup := a.Group("/shares")
+	shareGroup.POST("", shareHandler.ShareHandlerPost)
+	shareGroup.GET("/:shareId", shareHandler.ShareHandlerGet)
+
+	a.GET("/search", searchHandler.SearchHandlerGet)
+	e.Logger.Fatal(e.Start(config.listenAddress))
+}
