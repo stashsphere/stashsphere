@@ -1,0 +1,28 @@
+{ nixosTest, pkgs }:
+
+nixosTest {
+  name = "stashsphere";
+
+  nodes.server = { ... }: {
+    imports = [ ./module.nix ];
+    services.stashsphere = {
+      enable = true;
+    };
+    services.postgresql = {
+      enable = true;
+      ensureDatabases = [ "stashsphere" ];
+      ensureUsers = [
+        {
+          name = "stashsphere";
+          ensureDBOwnership = true;
+        }
+      ];
+    };
+  };
+
+  testScript = ''
+    start_all()
+    server.wait_for_unit("stashsphere.service")
+    server.wait_until_succeeds("${pkgs.curl}/bin/curl http://127.0.0.1:8081")
+  '';
+}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -128,6 +129,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 		}
 		return name
 	})
+	// TODO fix cookie domain
 	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, "localhost")
 	userService := services.NewUserService(db, config.InviteEnabled, config.InviteCode)
 	imageService, err := services.NewImageService(db, config.ImagePath)
@@ -229,6 +231,12 @@ var serveCommand = &cobra.Command{
 
 		var config config.StashsphereServeConfig
 
+		stateDir := os.Getenv("STATE_DIRECTORY")
+		if stateDir == "" {
+			stateDir = "."
+		}
+		imagePath := path.Join(stateDir, "image_store")
+
 		k := koanf.New(".")
 		k.Load(confmap.Provider(map[string]interface{}{
 			"database.user":     "stashsphere",
@@ -237,7 +245,7 @@ var serveCommand = &cobra.Command{
 			"database.host":     "127.0.0.1",
 			"listenAddress":     ":8081",
 			"auth.privateKey":   "",
-			"imagePath":         "./image_store/",
+			"imagePath":         imagePath,
 			"invites.enabled":   false,
 			"invites.code":      "",
 		}, "."), nil)

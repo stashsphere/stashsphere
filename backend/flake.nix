@@ -50,5 +50,9 @@
             };
           };
         });
+
+      checks = forAllSystems (system: {
+        nixos-test = nixpkgsFor.${system}.callPackage ./nix/nixos-test.nix {};
+      });
     };
 }

@@ -19,12 +19,12 @@ in
       default = { };
       description = "Settings for StashSphere";
     };
-    configFiles = {
+    configFiles = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
       description = "List of files to include, use for secrets";
     };
-    usesLocalPostgresql = {
+    usesLocalPostgresql = lib.mkOption {
       type = lib.types.bool;
       default = true;
       description = "Whether stashsphere will connect to a local postgresql server.";
@@ -51,10 +51,10 @@ in
             RestrictNamespaces = true;
             RestrictSUIDSGID = true;
             ExecPreStart = ''
-              ${pkgs.stashsphere} migrate --conf ${settingsFile} ${configFilesArgs}
+              ${pkgs.stashsphere}/bin/backend migrate --conf ${settingsFile} ${configFilesArgs}
             '';
             ExecStart = ''
-              ${pkgs.stashsphere} serve --conf ${settingsFile} ${configFilesArgs}
+              ${pkgs.stashsphere}/bin/backend serve --conf ${settingsFile} ${configFilesArgs}
             '';
             StateDirectory="stashsphere";
             RuntimeDirectory="stashsphere";

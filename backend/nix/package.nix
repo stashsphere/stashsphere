@@ -8,7 +8,8 @@ buildGoModule {
 
   src = ../.;
 
-  vendorHash = "sha256-ij+xvCsVY94RPcjuW6hpVWWFWVfxKWBHa+diaesCLtg=";
+  vendorHash = "sha256-9+cXpqDZsxHPKR9TYi6h7JkgARlLVQ9n7rRQhllLzsg=";
+
   buildInputs = [
     # libmagic
     file
