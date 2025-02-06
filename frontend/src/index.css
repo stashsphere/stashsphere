@@ -1,0 +1,36 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color: rgb(161, 173, 206);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.filter-light-green {
+  filter: invert(79%) sepia(73%) saturate(348%) hue-rotate(57deg) brightness(95%) contrast(88%);
+}
+
+.filter-yellow {
+  filter: invert(100%) sepia(65%) saturate(7500%) hue-rotate(3deg) brightness(103%) contrast(100%);
+}
+
+.filter-orange {
+  filter: invert(72%) sepia(56%) saturate(3573%) hue-rotate(354deg) brightness(94%) contrast(94%);
+}
+
+.filter-aquamarine {
+  filter: invert(95%) sepia(79%) saturate(482%) hue-rotate(70deg) brightness(104%) contrast(109%);
+}
+
+.filter-engineering-red {
+  filter: invert(11%) sepia(80%) saturate(5636%) hue-rotate(355deg) brightness(91%) contrast(106%);
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
