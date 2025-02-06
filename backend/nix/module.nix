@@ -56,6 +56,8 @@ in
             ExecStart = ''
               ${pkgs.stashsphere} serve --conf ${settingsFile} ${configFilesArgs}
             '';
+            StateDirectory="stashsphere";
+            RuntimeDirectory="stashsphere";
           };
         };
     };
