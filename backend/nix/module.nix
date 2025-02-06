@@ -50,8 +50,11 @@ in
             RestrictAddressFamilies = [ "AF_INET" "AF_INET6" ];
             RestrictNamespaces = true;
             RestrictSUIDSGID = true;
+            ExecPreStart = ''
+              ${pkgs.stashsphere} migrate --conf ${settingsFile} ${configFilesArgs}
+            '';
             ExecStart = ''
-              ${pkgs.stashsphere} --conf ${settingsFile} ${configFilesArgs}
+              ${pkgs.stashsphere} serve --conf ${settingsFile} ${configFilesArgs}
             '';
           };
         };
