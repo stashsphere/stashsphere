@@ -64,6 +64,7 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Internal Server Error")
 	}
 	defer file.Close()
+	c.Response().Header().Set("ETag", image.Hash)
 	return c.Stream(http.StatusOK, image.Mime, file)
 }
 

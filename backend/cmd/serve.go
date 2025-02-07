@@ -178,6 +178,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 		ContextKey: "token",
 	}))
 	e.Use(inv_middleware.ExtractClaims("token"))
+	e.Use(inv_middleware.HeadToGetMiddleware)
 	// TODO add refresh token middleware: check whether accessToken is less than 15min of lifetime, try to access refreshtoken, if validate
 	// set new access and refresh token
 
@@ -220,6 +221,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	imageGroup.GET("", imageHandler.ImageHandlerIndex)
 	imageGroup.POST("", imageHandler.ImageHandlerPost)
 	imageGroup.GET("/:imageId", imageHandler.ImageHandlerGet)
+	imageGroup.HEAD("/:imageId", imageHandler.ImageHandlerGet)
 	imageGroup.DELETE("/:imageId", imageHandler.ImageHandlerDelete)
 
 	shareGroup := a.Group("/shares")
