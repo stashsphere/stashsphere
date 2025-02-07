@@ -7,6 +7,13 @@ nixosTest {
     imports = [ ./module.nix ];
     services.stashsphere = {
       enable = true;
+      settings = {
+        database = {
+          host = "/run/postgresql";
+          password = "foo";
+        };
+      };
+      usesLocalPostgresql = true;
     };
     services.postgresql = {
       enable = true;

@@ -29,10 +29,9 @@ var migrateCommand = &cobra.Command{
 
 		k := koanf.New(".")
 		k.Load(confmap.Provider(map[string]interface{}{
-			"database.user":     "stashsphere",
-			"database.password": "secret",
-			"database.name":     "stashsphere",
-			"database.host":     "127.0.0.1",
+			"database.user": "stashsphere",
+			"database.name": "stashsphere",
+			"database.host": "127.0.0.1",
 		}, "."), nil)
 
 		for _, configPath := range configPaths {
@@ -41,8 +40,16 @@ var migrateCommand = &cobra.Command{
 			}
 			k.UnmarshalWithConf("", &config, koanf.UnmarshalConf{Tag: "koanf", FlatPaths: true})
 		}
-
-		dbOptions := fmt.Sprintf("dbname=%s user=%s password=%s host=%s port=%d sslmode=disable", config.Name, config.User, config.Password, config.Host, 5432)
+		dbOptions := fmt.Sprintf("user=%s dbname=%s host=%s", config.User, config.Name, config.Host)
+		if config.Password != nil {
+			dbOptions = fmt.Sprintf("%s password=%s", dbOptions, *config.Password)
+		}
+		if config.Port != nil {
+			dbOptions = fmt.Sprintf("%s port=%d", dbOptions, *config.Port)
+		}
+		if config.SslMode != nil {
+			dbOptions = fmt.Sprintf("%s sslmode=%s", dbOptions, *config.SslMode)
+		}
 
 		db, err := sql.Open("postgres", dbOptions)
 		if err != nil {
@@ -54,7 +61,13 @@ var migrateCommand = &cobra.Command{
 		}
 
 		driver, err := postgres.WithInstance(db, &postgres.Config{})
+		if err != nil {
+			return err
+		}
 		m, err := migrate.NewWithInstance("iofs", migrationDir, config.Name, driver)
+		if err != nil {
+			return err
+		}
 		err = m.Up()
 		if err := m.Up(); errors.Is(err, migrate.ErrNoChange) {
 			log.Warn().Msg("no changes to apply, schema left unchanged")

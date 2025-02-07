@@ -47,15 +47,16 @@ in
             MemoryDenyWriteExecute = true;
             PrivateDevices = true;
             ProtectSystem = "strict";
-            RestrictAddressFamilies = [ "AF_INET" "AF_INET6" ];
+            RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX"];
             RestrictNamespaces = true;
             RestrictSUIDSGID = true;
-            ExecPreStart = ''
+            ExecStartPre = ''
               ${pkgs.stashsphere}/bin/backend migrate --conf ${settingsFile} ${configFilesArgs}
             '';
             ExecStart = ''
               ${pkgs.stashsphere}/bin/backend serve --conf ${settingsFile} ${configFilesArgs}
             '';
+            User="stashsphere";
             StateDirectory="stashsphere";
             RuntimeDirectory="stashsphere";
           };

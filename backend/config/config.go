@@ -1,10 +1,12 @@
 package config
 
 type StashsphereServeConfig struct {
-	User     string `koanf:"database.user"`
-	Password string `koanf:"database.password"`
-	Name     string `koanf:"database.name"`
-	Host     string `koanf:"database.host"`
+	User     string  `koanf:"database.user"`
+	Name     string  `koanf:"database.name"`
+	Host     string  `koanf:"database.host"`
+	Password *string `koanf:"database.password"`
+	Port     *uint16 `koanf:"database.port"`
+	SslMode  *string `koanf:"database.sslmode"`
 
 	ListenAddress string `koanf:"listenAddress"`
 
@@ -16,8 +18,10 @@ type StashsphereServeConfig struct {
 }
 
 type StashSphereMigrateConfig struct {
-	User     string `koanf:"database.user"`
-	Password string `koanf:"database.password"`
-	Name     string `koanf:"database.name"`
-	Host     string `koanf:"database.host"`
+	User     string  `koanf:"database.user"`
+	Name     string  `koanf:"database.name"`
+	Host     string  `koanf:"database.host"`
+	Password *string `koanf:"database.password"`
+	Port     *uint16 `koanf:"database.port"`
+	SslMode  *string `koanf:"database.sslmode"`
 }
