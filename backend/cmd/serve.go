@@ -138,7 +138,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 		return name
 	})
 	// TODO fix cookie domain
-	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, "localhost")
+	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, config.ApiDomain)
 	userService := services.NewUserService(db, config.InviteEnabled, config.InviteCode)
 	imageService, err := services.NewImageService(db, config.ImagePath)
 	if err != nil {
@@ -156,7 +156,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     config.AllowedDomains,
 		AllowCredentials: true,
 	}))
 	e.Use(echojwt.WithConfig(echojwt.Config{
@@ -255,6 +255,8 @@ var serveCommand = &cobra.Command{
 			"imagePath":       imagePath,
 			"invites.enabled": false,
 			"invites.code":    "",
+			"domains.allowed": []string{"http://localhost"},
+			"domains.own":     []string{"localhost"},
 		}, "."), nil)
 
 		for _, configPath := range configPaths {

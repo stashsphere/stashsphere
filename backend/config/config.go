@@ -15,6 +15,9 @@ type StashsphereServeConfig struct {
 
 	InviteEnabled bool   `koanf:"invites.enabled"`
 	InviteCode    string `koanf:"invites.code"`
+
+	AllowedDomains []string `koanf:"domains.allowed"`
+	ApiDomain      string   `koanf:"domains.api"`
 }
 
 type StashSphereMigrateConfig struct {
