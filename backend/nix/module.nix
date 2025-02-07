@@ -36,7 +36,7 @@ in
       systemd.services.stashsphere =
         let
           settingsFile = pkgs.writeText "settings.json" (builtins.toJSON cfg.settings);
-          configFilesArgs = builtins.concatStringsSep "--conf " cfg.configFiles;
+          configFilesArgs = builtins.concatStringsSep " --conf " (cfg.configFiles ++ [ settingsFile ]);
         in
         {
           wantedBy = [ "multi-user.target" ];
@@ -54,7 +54,7 @@ in
               ${pkgs.stashsphere}/bin/backend migrate --conf ${settingsFile} ${configFilesArgs}
             '';
             ExecStart = ''
-              ${pkgs.stashsphere}/bin/backend serve --conf ${settingsFile} ${configFilesArgs}
+              ${pkgs.stashsphere}/bin/backend serve --conf ${configFilesArgs}
             '';
             User="stashsphere";
             StateDirectory="stashsphere";

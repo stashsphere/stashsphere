@@ -5,16 +5,26 @@ nixosTest {
 
   nodes.server = { ... }: {
     imports = [ ./module.nix ];
-    services.stashsphere = {
-      enable = true;
-      settings = {
-        database = {
-          host = "/run/postgresql";
-          password = "foo";
+    services.stashsphere =
+      let
+        secretConfig = pkgs.writeText "secret.json" (builtins.toJSON {
+          invites = {
+            enabled = true;
+            code = "1234";
+          };
+        });
+      in
+      {
+        enable = true;
+        settings = {
+          database = {
+            host = "/run/postgresql";
+            password = "foo";
+          };
         };
+        configFiles = [ "${secretConfig}" ];
+        usesLocalPostgresql = true;
       };
-      usesLocalPostgresql = true;
-    };
     services.postgresql = {
       enable = true;
       ensureDatabases = [ "stashsphere" ];
