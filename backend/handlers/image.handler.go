@@ -64,6 +64,10 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Internal Server Error")
 	}
 	defer file.Close()
+	oldETag := c.Request().Header.Get("If-None-Match")
+	if oldETag == image.Hash {
+		return c.String(http.StatusNotModified, "Image Not Modified")
+	}
 	c.Response().Header().Set("ETag", image.Hash)
 	return c.Stream(http.StatusOK, image.Mime, file)
 }
