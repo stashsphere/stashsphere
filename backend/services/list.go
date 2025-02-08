@@ -197,8 +197,23 @@ func (ls *ListService) GetList(ctx context.Context, listId string, userId string
 	if err != nil {
 		return nil, err
 	}
-	if list.OwnerID != userId {
-		return nil, utils.ErrEntityDoesNotBelongToUser
+	sharedListsForUsers, err := operations.GetSharedListIdsForUser(ctx, ls.db, userId)
+	if err != nil {
+		return nil, err
+	}
+	authorized := func() bool {
+		for _, id := range sharedListsForUsers {
+			if id == listId {
+				return true
+			}
+		}
+		if userId == list.OwnerID {
+			return true
+		}
+		return false
+	}()
+	if !authorized {
+		return nil, utils.ErrUserHasNoAccessRights
 	}
 	return list, nil
 }

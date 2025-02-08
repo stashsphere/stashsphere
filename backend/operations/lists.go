@@ -31,7 +31,9 @@ func GetSharedListIdsForUser(ctx context.Context, exec boil.ContextExecutor, use
 	}
 	listIds := make(map[string]bool)
 	for _, share := range shares {
-		listIds[share.ID] = true
+		for _, list := range share.R.Lists {
+			listIds[list.ID] = true
+		}
 	}
 	res := make([]string, len(listIds))
 	i := 0
