@@ -27,7 +27,7 @@ const ThingPropertyList = ({ properties }: { properties: Property[] }) => {
     <>
       <ul className="list-inside text-onneutral text-sm">
         {filteredProperties.map((property) => (
-          <li key={property.name} className="bg-neutral-primary rounded-lg p-1">
+          <li key={property.name} className="bg-neutral-primary rounded-lg p-1" title={property.value as string}>
             <b>{property.name}</b>: {formatValue(property.value)}
           </li>
         ))}
@@ -54,7 +54,7 @@ const ThingInfo = ({ thing }: ThingInfoProps) => {
 
   const firstImageId = thing.images[0]?.id;
   const firstImageContent = firstImageId ? (
-    <img src={`${config.apiHost}/api/images/${firstImageId}`} alt="Image" className="object-contain h-full w-full"/>
+    <img src={`${config.apiHost}/api/images/${firstImageId}`} alt="Image" className="object-contain h-full w-full" />
   ) : (
     <span>
       <Icon height="100%" icon="mdi--image-off-outline" />
@@ -67,13 +67,15 @@ const ThingInfo = ({ thing }: ThingInfoProps) => {
       <div className="flex w-80 h-80 items-center justify-center bg-brand-900 p-2 rounded-md">
         {firstImageContent}
       </div>
-      <a href={`/things/${thing.id}`}>
-        <div className="flex flex-col">
-          <h2 className="text-display">{thing.name}</h2>
-          <h3 className="text-display text-sm"><Icon icon="mdi--user"/> {thing.owner.name}</h3>
-        </div>
-        <ThingPropertyList properties={thing.properties} />
-      </a>
+      <div className="w-80">
+        <a href={`/things/${thing.id}`}>
+          <div className="flex flex-col">
+            <h2 className="text-display">{thing.name}</h2>
+            <h3 className="text-display text-sm"><Icon icon="mdi--user" /> {thing.owner.name}</h3>
+          </div>
+          <ThingPropertyList properties={thing.properties} />
+        </a>
+      </div>
     </div>
   )
 };
