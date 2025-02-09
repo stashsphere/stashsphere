@@ -34,7 +34,7 @@ export const Things = () => {
           <PrimaryButton>Add Thing</PrimaryButton>
         </a>
       </div>
-      <div className="flex flex-row gap-4 mt-4 flex-wrap">
+      <div className="flex flex-row gap-4 mt-4 flex-wrap justify-center">
         {things.things.map((thing) => (
           <ThingInfo thing={thing} key={thing.id} />
         ))}
