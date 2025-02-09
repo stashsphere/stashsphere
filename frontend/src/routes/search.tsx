@@ -1,39 +1,42 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { AxiosContext } from "../context/axios";
 import { SearchResult } from "../api/resources";
 import { getSearchResult } from "../api/search";
 import { SearchResultComponent } from "../components/search_result";
+import { SearchContext } from "../context/search";
 
 export const Search = () => {
     const axiosInstance = useContext(AxiosContext);
-    // get query parameter
-    const queryFromParameter = new URLSearchParams(window.location.search).get("query") || null;
+    const { searchTerm } = useContext(SearchContext);
     const [result, setResult] = useState<SearchResult | undefined>(undefined);
-    const [query, setQuery] = useState("");
-
-    useEffect(() => {
-        if (queryFromParameter) {
-            setQuery(queryFromParameter);
-        }
-    }, [queryFromParameter]);
 
     useEffect(() => {
         if (!axiosInstance) {
             return;
         }
-        if (query != "") {
-            getSearchResult(axiosInstance, query).then((res) => {
+        if (searchTerm != "") {
+            getSearchResult(axiosInstance, searchTerm).then((res) => {
                 setResult(res);
             }).catch((err) => {
                 console.log("Error: ", err);
             })
+        } else {
+            setResult(undefined);
         }
-    }, [axiosInstance, query]);
+    }, [axiosInstance, searchTerm]);
+    
+    const resultParam = useMemo(() => {
+        if (result) {
+            return result;
+        } else {
+            return {
+                things: [],
+                lists: [],
+            }
+        }
+    }, [result]);
     
     return <>
-        <div className="search-container">
-            <input type="text" placeholder="Search..." value={query} onChange={(e) => setQuery(e.target.value)} />
-        </div>
-        {result && <SearchResultComponent result={result} />}
+        <SearchResultComponent result={resultParam} />
     </>
 }

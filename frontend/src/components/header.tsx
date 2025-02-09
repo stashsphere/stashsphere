@@ -1,8 +1,9 @@
 
-import { KeyboardEvent, ReactNode, useState } from 'react';
+import { KeyboardEvent, ReactNode, useContext, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import stashsphereLogo from "../assets/stashsphere.svg";
 import { Icon } from './icon';
+import { SearchContext } from '../context/search';
 
 type HeaderProps = {
   userName: string | null;
@@ -37,13 +38,14 @@ const NameAndLogo = () => {
 
 const HeaderLoggedIn = ({ userName }: { userName: string }) => {
   const [query, setQuery] = useState("");
+  const { setSearchTerm } = useContext(SearchContext);
   const navigate = useNavigate();
 
   const handleSearch = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      const encodedQuery = encodeURIComponent(query);
-      navigate(`/search?query=${encodedQuery}`);
+      navigate(`/search`);
     }
+    setSearchTerm(query);
   }
 
   return (

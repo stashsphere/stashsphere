@@ -28,6 +28,7 @@ import { EditList } from "./routes/lists/edit";
 import { ShareThing } from "./routes/things/share";
 import { ShareList } from "./routes/lists/share";
 import { Images } from "./routes/images/list";
+import { SearchContext } from "./context/search";
 
 export const App = () => {
   const [config, setConfig] = useState<Config | null>(null);
@@ -35,6 +36,11 @@ export const App = () => {
   const infoCookie = cookies["stashsphere-info"];
   const [profileKey, setProfileKey] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const searchContextValue = useMemo(
+    () => ({ searchTerm, setSearchTerm }),
+    [searchTerm, setSearchTerm ],
+  );
 
   useEffect(() => {
     getConfig().then(setConfig).catch(e => console.error(e))
@@ -73,6 +79,7 @@ export const App = () => {
             setProfileKey(profileKey + 1);
           }
         }}>
+        <SearchContext.Provider value={searchContextValue}>
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route path="/" element={<Navigate to="/things" />} />
@@ -99,6 +106,7 @@ export const App = () => {
               <Route path="/search" element={<RequireAuth><Search /></RequireAuth>} />
             </Route>
           </Routes>
+          </SearchContext.Provider>
         </AuthContext.Provider>
       </AxiosContext.Provider>
     </ConfigContext.Provider>
