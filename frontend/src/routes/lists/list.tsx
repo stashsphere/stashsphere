@@ -34,9 +34,11 @@ export const Lists = () => {
         </a>
       </div>
       {lists.totalCount === 0 ? <p className="mt-3 text-display">No lists yet</p> : null}
-      {lists.lists.map((list) => (
-        <ListInfo list={list} key={list.id} />
-      ))}
+      <div className="flex flex-row gap-4 mt-4 flex-wrap justify-center">
+        {lists.lists.map((list) => (
+          <ListInfo list={list} key={list.id} />
+        ))}
+      </div>
       {lists.lists.length > 0 &&
         <Pages
           currentPage={currentPage}

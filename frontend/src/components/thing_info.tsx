@@ -28,8 +28,8 @@ const ThingInfo = ({ thing }: ThingInfoProps) => {
       </div>
       <div className="w-80">
         <a href={`/things/${thing.id}`}>
+          <h2 className="text-display text-xl mb-2">{thing.name}</h2>
           <div className="flex flex-row gap-2">
-            <h2 className="text-display">{thing.name}</h2>
             <h2 className="text-display"><Icon icon="mdi--user" /> {thing.owner.name}</h2>
             <h2 className="text-display"><Icon icon="mdi--animation" /> {thing.quantity} {thing.quantityUnit}</h2>
           </div>

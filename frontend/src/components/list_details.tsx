@@ -61,9 +61,9 @@ export const ListDetails = (props: ListDetailsProps) => {
           <ListActions list={list} />
         </div>
         <div className="flex flex-row gap-4 mt-4 flex-wrap justify-center">
-        {list.things.map((thing) => (
-          <ThingInfo thing={thing} key={thing.id} />
-        ))}
+          {list.things.map((thing) => (
+            <ThingInfo thing={thing} key={thing.id} />
+          ))}
         </div>
       </>
     );
