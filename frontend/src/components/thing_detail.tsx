@@ -73,7 +73,7 @@ export const ThingDetails = (props: ThingDetailsProps) => {
             <div className="bg-warning text-display rounded p-2">
               {thing.privateNote}
             </div>}</>}
-        <PropertyList properties={thing.properties} />
+        <PropertyList properties={thing.properties} keyWidth="14rem"/>
         <div className="mt-4">
           <ImageGallery images={thing.images} />
         </div>

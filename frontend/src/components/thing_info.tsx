@@ -33,7 +33,7 @@ const ThingInfo = ({ thing }: ThingInfoProps) => {
             <h3 className="text-display text-sm"><Icon icon="mdi--user" /> {thing.owner.name}</h3>
           </div>
         </a>
-        <PropertyList properties={thing.properties} collapsable={true} />
+        <PropertyList properties={thing.properties} collapsable={true} keyWidth="8rem"/>
       </div>
     </div>
   )

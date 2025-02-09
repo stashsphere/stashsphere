@@ -3,7 +3,7 @@ import { Property } from "../api/resources";
 
 import PropertyComponent from "./property";
 
-const PropertyList = ({ properties, collapsable }: { properties: Property[], collapsable?: boolean }) => {
+const PropertyList = ({ properties, collapsable, keyWidth }: { properties: Property[], collapsable?: boolean, keyWidth: string }) => {
   const [collapsed, setCollapsed] = useState(true);
 
   const collapsedDisplay = collapsable ? 3 : properties.length;
@@ -18,7 +18,7 @@ const PropertyList = ({ properties, collapsable }: { properties: Property[], col
       <ul className="list-inside text-onneutral text-sm">
         {filteredProperties.map((property) => (
           <li key={property.name} className="bg-neutral-primary rounded-lg p-1">
-            <PropertyComponent property={property} />
+            <PropertyComponent property={property} keyWidth={keyWidth} />
           </li>
         ))}
       </ul>
