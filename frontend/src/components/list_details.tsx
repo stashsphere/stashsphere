@@ -60,7 +60,7 @@ export const ListDetails = (props: ListDetailsProps) => {
           <h1 className="text-2xl text-accent">{list.name}</h1>
           <ListActions list={list} />
         </div>
-        <div className="flex flex-row gap-4 mt-4 flex-wrap">
+        <div className="flex flex-row gap-4 mt-4 flex-wrap justify-center">
         {list.things.map((thing) => (
           <ThingInfo thing={thing} key={thing.id} />
         ))}
