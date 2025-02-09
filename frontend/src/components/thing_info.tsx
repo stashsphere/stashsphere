@@ -22,15 +22,16 @@ const ThingInfo = ({ thing }: ThingInfoProps) => {
 
 
   return (
-    <div className="flex flex-col gap-4 flex-start items-start">
+    <div className="flex flex-col gap-4 flex-start items-start border border-secondary rounded-md p-1">
       <div className="flex w-80 h-80 items-center justify-center bg-brand-900 p-2 rounded-md">
         {firstImageContent}
       </div>
       <div className="w-80">
         <a href={`/things/${thing.id}`}>
-          <div className="flex flex-col">
+          <div className="flex flex-row gap-2">
             <h2 className="text-display">{thing.name}</h2>
-            <h3 className="text-display text-sm"><Icon icon="mdi--user" /> {thing.owner.name}</h3>
+            <h2 className="text-display"><Icon icon="mdi--user" /> {thing.owner.name}</h2>
+            <h2 className="text-display"><Icon icon="mdi--animation" /> {thing.quantity} {thing.quantityUnit}</h2>
           </div>
         </a>
         <PropertyList properties={thing.properties} collapsable={true} keyWidth="8rem"/>
