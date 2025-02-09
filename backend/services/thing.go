@@ -289,6 +289,7 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 
 	thingQuery = append(thingQuery,
 		qm.Load(models.ThingRels.Properties),
+		qm.Load(models.ThingRels.QuantityEntries),
 		qm.Load(qm.Rels(models.ThingRels.Lists, models.ListRels.Owner)),
 		qm.Load(models.ThingRels.Owner),
 		qm.Load(qm.Rels(models.ThingRels.Shares, models.ShareRels.Owner)),
