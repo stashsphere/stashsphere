@@ -28,7 +28,7 @@ export const Lists = () => {
 
   return (
     <>
-      <div className="flex flex-row">
+      <div className="flex flex-row flex-row-reverse">
         <a href="/lists/create">
           <PrimaryButton>Add List</PrimaryButton>
         </a>

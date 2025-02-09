@@ -29,7 +29,7 @@ export const Things = () => {
 
   return (
     <>
-      <div className="flex flex-row">
+      <div className="flex flex-row flex-row-reverse">
         <a href="/things/create">
           <PrimaryButton>Add Thing</PrimaryButton>
         </a>
