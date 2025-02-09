@@ -1,49 +1,8 @@
-import { useContext, useState } from "react";
-import { Property, Thing } from "../api/resources";
+import { useContext } from "react";
+import { Thing } from "../api/resources";
 import { ConfigContext } from "../context/config";
 import { Icon } from "./icon";
-
-const ThingPropertyList = ({ properties }: { properties: Property[] }) => {
-  const [collapsed, setCollapsed] = useState(true);
-
-  const collapsedDisplay = 3;
-
-  const filteredProperties = collapsed
-    ? properties.slice(0, collapsedDisplay)
-    : properties;
-  const hasMore = properties.length > collapsedDisplay;
-
-  const formatValue = (value: Property["value"]) => {
-    if (typeof value === "string") {
-      return `${value}`;
-    } else if (typeof value === "number" && !isNaN(value)) {
-      return `${value}`;
-    } else {
-      return String(value);
-    }
-  };
-
-  return (
-    <>
-      <ul className="list-inside text-onneutral text-sm">
-        {filteredProperties.map((property) => (
-          <li key={property.name} className="bg-neutral-primary rounded-lg p-1" title={property.value as string}>
-            <b>{property.name}</b>: {formatValue(property.value)}
-          </li>
-        ))}
-      </ul>
-      {hasMore ? (
-        <button
-          onClick={() => {
-            setCollapsed(!collapsed);
-          }}
-        >
-          {collapsed ? "Show more" : "Show less"}
-        </button>
-      ) : null}
-    </>
-  );
-};
+import PropertyList from "./property_list";
 
 type ThingInfoProps = {
   thing: Thing;
@@ -73,8 +32,8 @@ const ThingInfo = ({ thing }: ThingInfoProps) => {
             <h2 className="text-display">{thing.name}</h2>
             <h3 className="text-display text-sm"><Icon icon="mdi--user" /> {thing.owner.name}</h3>
           </div>
-          <ThingPropertyList properties={thing.properties} />
         </a>
+        <PropertyList properties={thing.properties} collapsable={true} />
       </div>
     </div>
   )
