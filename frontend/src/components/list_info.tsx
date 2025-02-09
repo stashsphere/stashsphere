@@ -24,7 +24,7 @@ export const ListInfo = ({ list }: ListInfoProps) => {
   }, [list])
    
   return (
-    <div className="flex flex-col gap-4 flex-start items-start border border-secondary rounded-md p-1">
+    <div className="flex flex-col gap-4 flex-start items-start border border-secondary rounded-md p-1 justify-between">
       <div className="flex w-80 min-h-60 items-center justify-center">
         <ImageGrid imageIds={imageHashes}/>
       </div>
