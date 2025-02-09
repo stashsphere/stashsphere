@@ -13,6 +13,15 @@ export const ListInfo = ({ list }: ListInfoProps) => {
     return list.things.map(thing => thing.images[0]?.id).filter(e => e !== undefined)
   }, [list])
 
+  const thingCount = useMemo(() => {
+    if (list.things.length === 0) {
+      return "No things in this list yet";
+    } else if (list.things.length === 1) {
+      return "1 thing";
+    } else {
+      return `${list.things.length} things`;
+    }
+  }, [list])
    
   return (
     <div className="flex flex-col gap-4 flex-start items-start border border-secondary rounded-md p-1">
@@ -24,7 +33,7 @@ export const ListInfo = ({ list }: ListInfoProps) => {
         <h2 className="text-display text-xl mb-2">{list.name}</h2>
         <div className="flex flex-row gap-2">
             <h2 className="text-display"><Icon icon="mdi--user" /> {list.owner.name}</h2>
-            <h2 className="text-display"><Icon icon="mdi--animation" /> {list.things.length} things</h2>
+            <h2 className="text-display"><Icon icon="mdi--animation" /> {thingCount} things</h2>
         </div>
       </a>
       </div>
