@@ -33,7 +33,7 @@ export const ListInfo = ({ list }: ListInfoProps) => {
         <h2 className="text-display text-xl mb-2">{list.name}</h2>
         <div className="flex flex-row gap-2">
             <h2 className="text-display"><Icon icon="mdi--user" /> {list.owner.name}</h2>
-            <h2 className="text-display"><Icon icon="mdi--animation" /> {thingCount} things</h2>
+            <h2 className="text-display"><Icon icon="mdi--animation" /> {thingCount}</h2>
         </div>
       </a>
       </div>

@@ -13,7 +13,7 @@ const ImageGrid = (props: ImageGridProps) => {
     return (
         <div className="grid grid-cols-2 gap-2 m-4">
             {imageIds.map(hash =>
-                <div className="flex w-20 h-20 items-center justify-center rounded-md">
+                <div className="flex w-30 h-30 items-center justify-center rounded-md">
                     <img src={`${config.apiHost}/api/images/${hash}`} alt="Image" className="object-contain w-full h-full" />
                 </div>
             )}
