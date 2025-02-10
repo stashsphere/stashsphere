@@ -73,41 +73,31 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 		return nil, err
 	}
 	defer tmp.Close()
+	defer os.Remove(tmp.Name())
 
-	hasher := sha256.New()
-
-	firstChunk := make([]byte, 1024)
-	chunk := 0
-	for {
-		buf := make([]byte, 1024)
-		n, err := src.Read(buf)
-		if err != nil && err != io.EOF {
-			return nil, err
-		}
-		if n == 0 {
-			break
-		}
-		hasher.Write(buf[:n])
-		_, err = tmp.Write(buf[:n])
-		if err != nil {
-			return nil, err
-		}
-		if chunk == 0 {
-			copy(firstChunk, buf)
-		}
-		chunk += 1
-	}
-	hash := hasher.Sum(nil)
-	mime, err := is.mimeDecoder.TypeByBuffer(firstChunk)
+	_, err = io.Copy(tmp, src)
 	if err != nil {
-		defer os.Remove(tmp.Name())
 		return nil, err
 	}
 
+	exifRemoved, err := operations.ClearExifData(tmp.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	firstChunk := exifRemoved[:1024]
+	mime, err := is.mimeDecoder.TypeByBuffer(firstChunk)
+	if err != nil {
+		return nil, err
+	}
+
+	hasher := sha256.New()
+	hasher.Write(exifRemoved)
+	hash := hasher.Sum(nil)
 	encoding := base32.StdEncoding.WithPadding(base32.NoPadding)
 	hash32 := encoding.EncodeToString(hash[:])
-	newPath := filepath.Join(is.storePath, string(hash32))
 
+	newPath := filepath.Join(is.storePath, string(hash32))
 	imageID, err := gonanoid.New()
 	if err != nil {
 		return nil, err
@@ -124,9 +114,8 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 		return nil, err
 	}
 
-	err = os.Rename(tmp.Name(), newPath)
+	err = os.WriteFile(newPath, exifRemoved, 0640)
 	if err != nil {
-		defer os.Remove(tmp.Name())
 		return nil, err
 	}
 	log.Infof("Created %s", newPath)

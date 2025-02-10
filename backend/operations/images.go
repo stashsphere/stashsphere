@@ -2,9 +2,11 @@ package operations
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 
+	exifremove "github.com/neurosnap/go-exif-remove"
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/utils"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -81,4 +83,26 @@ func DeleteContent(ctx context.Context, exec boil.ContextExecutor, storePath str
 		return err
 	}
 	return nil
+}
+
+// input is current path
+func ClearExifData(path string) ([]byte, error) {
+	imgFile, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	imgBytes, err := io.ReadAll(imgFile)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: The picture needs to be either rotated by the user
+	// or this function needs to rotate according to the exif data,
+	// however this might already be wrong, so the application
+	// could provide such an endpoint /rotate?by=[90,180,270]
+	// TODO: this does not remove jpeg comments, not important
+	removed, err := exifremove.Remove(imgBytes)
+	if err != nil {
+		return nil, err
+	}
+	return removed, nil
 }

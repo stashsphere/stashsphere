@@ -231,3 +231,5 @@ func TestDeleteImageInUse(t *testing.T) {
 
 	assert.FileExists(t, path)
 }
+
+// TODO: assert that exif information is removed
