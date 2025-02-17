@@ -192,7 +192,6 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	shareHandler := handlers.NewShareHandler(shareService)
 
 	a := e.Group("/api")
-
 	userGroup := a.Group("/user")
 	userGroup.POST("/login", loginHandler.LoginHandlerPost)
 	userGroup.DELETE("/logout", loginHandler.LogoutHandlerDelete)
@@ -220,8 +219,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	imageGroup := a.Group("/images")
 	imageGroup.GET("", imageHandler.ImageHandlerIndex)
 	imageGroup.POST("", imageHandler.ImageHandlerPost)
-	imageGroup.GET("/:imageId", imageHandler.ImageHandlerGet)
-	imageGroup.HEAD("/:imageId", imageHandler.ImageHandlerGet)
+	imageGroup.PATCH("/:imageId", imageHandler.ImageHandlerPatch)
 	imageGroup.DELETE("/:imageId", imageHandler.ImageHandlerDelete)
 
 	shareGroup := a.Group("/shares")
@@ -229,6 +227,10 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	shareGroup.GET("/:shareId", shareHandler.ShareHandlerGet)
 
 	a.GET("/search", searchHandler.SearchHandlerGet)
+
+	e.GET("/assets/:hash", imageHandler.ImageHandlerGet)
+	e.HEAD("/assets/:hash", imageHandler.ImageHandlerGet)
+
 	return e.Start(config.ListenAddress)
 }
 

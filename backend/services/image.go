@@ -122,19 +122,18 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 	return &image, nil
 }
 
-func (is *ImageService) ImageGet(ctx context.Context, userId string, imageId string) (*os.File, *models.Image, error) {
-	image, err := models.FindImage(ctx, is.db, imageId)
+func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string) (*os.File, *models.Image, error) {
+	image, err := models.Images(models.ImageWhere.Hash.EQ(hash)).One(ctx, is.db)
 	if err != nil {
 		return nil, nil, err
 	}
-
 	sharedImagesForUser, err := operations.GetSharedImageIdsForUser(ctx, is.db, userId)
 	if err != nil {
 		return nil, nil, err
 	}
 	authorized := func() bool {
 		for _, id := range sharedImagesForUser {
-			if id == imageId {
+			if id == image.ID {
 				return true
 			}
 		}
@@ -198,4 +197,40 @@ func (is *ImageService) DeleteImage(ctx context.Context, userId string, imageId 
 		return nil
 	})
 	return image, err
+}
+
+type ModifyImageParams struct {
+	Rotation operations.Rotation
+}
+
+func (is *ImageService) ModifyImage(ctx context.Context, userId string, imageId string, params ModifyImageParams) (*models.Image, error) {
+	image, err := models.FindImage(ctx, is.db, imageId)
+	if err != nil {
+		return nil, err
+	}
+	if image.OwnerID != userId {
+		return nil, utils.ErrEntityDoesNotBelongToUser
+	}
+
+	path := filepath.Join(is.storePath, image.Hash)
+	rotatedBytes, err := operations.RotateImage(path, params.Rotation)
+	if err != nil {
+		return nil, err
+	}
+	hasher := sha256.New()
+	hasher.Write(rotatedBytes)
+	hash := hasher.Sum(nil)
+	encoding := base32.StdEncoding.WithPadding(base32.NoPadding)
+	hash32 := encoding.EncodeToString(hash[:])
+	newPath := filepath.Join(is.storePath, string(hash32))
+	err = os.WriteFile(newPath, rotatedBytes, 0640)
+	if err != nil {
+		return nil, err
+	}
+	image.Hash = hash32
+	_, err = image.Update(ctx, is.db, boil.Infer())
+	if err != nil {
+		return nil, err
+	}
+	return image, nil
 }

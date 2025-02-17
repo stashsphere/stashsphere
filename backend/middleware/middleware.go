@@ -70,7 +70,6 @@ func HeadToGetMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 				if err.Error() == echo.ErrMethodNotAllowed.Error() {
 					return c.NoContent(http.StatusOK) //nolint:errcheck
 				}
-
 				return err
 			}
 		}

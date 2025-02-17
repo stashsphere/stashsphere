@@ -12,6 +12,7 @@ type ReducedImage struct {
 	Mime      string    `json:"mime"`
 	CreatedAt time.Time `json:"createdAt"`
 	Owner     User      `json:"owner"`
+	Hash      string    `json:"hash"`
 }
 
 func ReducedImageFromModel(image *models.Image) ReducedImage {
@@ -20,6 +21,7 @@ func ReducedImageFromModel(image *models.Image) ReducedImage {
 		Name:      image.Name,
 		Mime:      image.Mime,
 		CreatedAt: image.CreatedAt,
+		Hash:      image.Hash,
 	}
 }
 
@@ -41,6 +43,7 @@ type Image struct {
 	Mime      string         `json:"mime"`
 	CreatedAt time.Time      `json:"createdAt"`
 	Owner     User           `json:"owner"`
+	Hash      string         `json:"hash"`
 	Actions   ImageActions   `json:"actions"`
 	Things    []ReducedThing `json:"things"`
 }
@@ -54,6 +57,7 @@ func ImageFromModel(image *models.Image, userId string) Image {
 		Mime:      image.Mime,
 		CreatedAt: image.CreatedAt,
 		Owner:     UserFromModel(image.R.Owner),
+		Hash:      image.Hash,
 		Things:    ReducedThingsFromModel(image.R.ImageThings, userId),
 		Actions: ImageActions{
 			CanDelete: canDelete,

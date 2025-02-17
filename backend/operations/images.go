@@ -1,16 +1,32 @@
 package operations
 
 import (
+	"bytes"
 	"context"
+	"image"
 	"io"
 	"os"
 	"path/filepath"
 
+	"image/jpeg"
+	_ "image/jpeg"
+	"image/png"
+	_ "image/png"
+
+	"github.com/disintegration/imaging"
 	exifremove "github.com/neurosnap/go-exif-remove"
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/utils"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+)
+
+type Rotation int
+
+const (
+	Rotation90  Rotation = iota
+	Rotation180          = iota
+	Rotation270          = iota
 )
 
 func ImageBelongsToUser(ctx context.Context, exec boil.ContextExecutor, userId string, imageId string) (bool, error) {
@@ -105,4 +121,62 @@ func ClearExifData(path string) ([]byte, error) {
 		return nil, err
 	}
 	return removed, nil
+}
+
+func RotateImage(path string, rotation Rotation) ([]byte, error) {
+	imgFile, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	img, codec, err := image.Decode(imgFile)
+	if err != nil {
+		return nil, err
+	}
+	var rotated *image.NRGBA
+	switch rotation {
+	case Rotation90:
+		rotated = imaging.Rotate90(img)
+	case Rotation180:
+		rotated = imaging.Rotate180(img)
+	case Rotation270:
+		rotated = imaging.Rotate270(img)
+	}
+	var b bytes.Buffer
+	if codec == "jpeg" {
+		err = jpeg.Encode(&b, rotated, &jpeg.Options{
+			Quality: 90,
+		})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = png.Encode(&b, rotated)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return b.Bytes(), nil
+}
+
+func ResizeImage(imgFile io.Reader, width int) (io.Reader, error) {
+	img, codec, err := image.Decode(imgFile)
+	if err != nil {
+		return nil, err
+	}
+	resized := imaging.Resize(img, width, 0, imaging.CatmullRom)
+	var b bytes.Buffer
+	if codec == "png" {
+		err = png.Encode(&b, resized)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = jpeg.Encode(&b, resized, &jpeg.Options{
+			Quality: 90,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &b, err
 }

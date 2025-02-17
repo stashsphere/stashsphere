@@ -1,11 +1,16 @@
 package handlers
 
 import (
+	"crypto/sha256"
+	"encoding/base32"
+	"encoding/binary"
+	"io"
 	"net/http"
 	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stashsphere/backend/middleware"
+	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
 )
@@ -45,7 +50,78 @@ func (is *ImageHandler) ImageHandlerPost(c echo.Context) error {
 	return c.JSON(http.StatusCreated, resource)
 }
 
+type ImageGetParams struct {
+	Width uint16 `query:"width" validate:"min=20,max=8192"`
+}
+
 func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
+	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
+	if !ok {
+		return c.String(http.StatusInternalServerError, "No auth context")
+	}
+	if !authCtx.Authenticated {
+		return c.String(http.StatusUnauthorized, "Not authorized")
+	}
+	var imageParams ImageGetParams
+	if err := c.Bind(&imageParams); err != nil {
+		c.Logger().Errorf("Bind error: %v", err)
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+	}
+	hash := c.Param("hash")
+	file, image, err := is.image_service.ImageGet(c.Request().Context(), authCtx.User.ID, hash)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return c.String(http.StatusNotFound, "Image Not Found")
+		}
+		c.Logger().Error(err)
+		return c.String(http.StatusInternalServerError, "Internal Server Error")
+	}
+	defer file.Close()
+
+	var etag string
+	var returnedImageReader io.Reader
+
+	resize := imageParams.Width != 0 && (image.Mime == "image/jpeg" || image.Mime == "image/png")
+
+	if resize {
+		widthBytes := make([]byte, 2)
+		binary.BigEndian.PutUint16(widthBytes, imageParams.Width)
+
+		hasher := sha256.New()
+		hasher.Write([]byte(image.Hash))
+		hasher.Write(widthBytes)
+		hash := hasher.Sum(nil)
+		encoding := base32.StdEncoding.WithPadding(base32.NoPadding)
+		hash32 := encoding.EncodeToString(hash[:])
+		etag = hash32
+	} else {
+		etag = image.Hash
+	}
+
+	if resize {
+		returnedImageReader, err = operations.ResizeImage(file, int(imageParams.Width))
+		if err != nil {
+			c.Logger().Errorf("Resize error: %v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	} else {
+		returnedImageReader = file
+	}
+
+	oldETag := c.Request().Header.Get("If-None-Match")
+	if oldETag == etag {
+		return c.String(http.StatusNotModified, "Image Not Modified")
+	}
+	c.Response().Header().Set("ETag", etag)
+	c.Response().Header().Set("Cache-Control", "no-cache")
+	return c.Stream(http.StatusOK, image.Mime, returnedImageReader)
+}
+
+type ImageModifyParams struct {
+	Rotation uint16 `json:"rotation" validate:"oneof=90 180 270"`
+}
+
+func (is *ImageHandler) ImageHandlerPatch(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
 		return c.String(http.StatusInternalServerError, "No auth context")
@@ -55,7 +131,26 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 	}
 
 	imageId := c.Param("imageId")
-	file, image, err := is.image_service.ImageGet(c.Request().Context(), authCtx.User.ID, imageId)
+
+	var params ImageModifyParams
+	err := c.Bind(&params)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Invalid parameters")
+	}
+
+	rotation := operations.Rotation90
+	switch params.Rotation {
+	case 90:
+		rotation = operations.Rotation90
+	case 180:
+		rotation = operations.Rotation180
+	case 270:
+		rotation = operations.Rotation270
+	}
+
+	image, err := is.image_service.ModifyImage(c.Request().Context(), authCtx.User.ID, imageId, services.ModifyImageParams{
+		Rotation: rotation,
+	})
 	if err != nil {
 		if os.IsNotExist(err) {
 			return c.String(http.StatusNotFound, "Image Not Found")
@@ -63,13 +158,8 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 		c.Logger().Error(err)
 		return c.String(http.StatusInternalServerError, "Internal Server Error")
 	}
-	defer file.Close()
-	oldETag := c.Request().Header.Get("If-None-Match")
-	if oldETag == image.Hash {
-		return c.String(http.StatusNotModified, "Image Not Modified")
-	}
-	c.Response().Header().Set("ETag", image.Hash)
-	return c.Stream(http.StatusOK, image.Mime, file)
+	resource := resources.ReducedImageFromModel(image)
+	return c.JSON(http.StatusCreated, resource)
 }
 
 type ImagesParams struct {
