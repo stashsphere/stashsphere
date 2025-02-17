@@ -1,20 +1,19 @@
-import { useContext } from "react";
-import { ConfigContext } from "../context/config";
+import { ReducedImage, Image } from "../api/resources";
+import { ImageComponent } from "./image";
 
 type ImageGridProps = {
-    imageIds: string[];
+    images: ReducedImage[] | Image[];
 };
 
 
 const ImageGrid = (props: ImageGridProps) => {
-    const config = useContext(ConfigContext);
-    const imageIds = props.imageIds.slice(0, props.imageIds.length > 4 ? 4 : props.imageIds.length + 1);
+    const images = props.images.slice(0, props.images.length > 4 ? 4 : props.images.length + 1);
 
     return (
         <div className="grid grid-cols-2 gap-2 m-4">
-            {imageIds.map(hash =>
+            {images.map(image =>
                 <div className="flex w-30 h-30 items-center justify-center rounded-md">
-                    <img src={`${config.apiHost}/api/images/${hash}`} alt="Image" className="object-contain w-full h-full" />
+                    <ImageComponent image={image} className="object-contain w-full h-full" defaultWidth={256} />
                 </div>
             )}
         </div>

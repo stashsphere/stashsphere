@@ -9,8 +9,8 @@ type ListInfoProps = {
 
 export const ListInfo = ({ list }: ListInfoProps) => {
   
-  const imageHashes = useMemo(() => {
-    return list.things.map(thing => thing.images[0]?.id).filter(e => e !== undefined)
+  const images = useMemo(() => {
+    return list.things.map(thing => thing.images[0]).filter(e => e !== undefined)
   }, [list])
 
   const thingCount = useMemo(() => {
@@ -26,7 +26,7 @@ export const ListInfo = ({ list }: ListInfoProps) => {
   return (
     <div className="flex flex-col gap-4 flex-start items-start border border-secondary rounded-md p-1 justify-between">
       <div className="flex w-80 min-h-60 items-center justify-center">
-        <ImageGrid imageIds={imageHashes}/>
+        <ImageGrid images={images}/>
       </div>
       <div className="w-80">
       <a href={`/lists/${list.id}`}>

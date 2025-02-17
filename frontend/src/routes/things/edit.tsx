@@ -8,7 +8,7 @@ import { AxiosContext } from "../../context/axios";
 import { useNavigate, useParams } from "react-router-dom";
 import { getThing, updateThing } from "../../api/things";
 import { Thing } from "../../api/resources";
-import { createImage } from "../../api/image";
+import { createImage, modifyImage } from "../../api/image";
 import { GrayButton, PrimaryButton } from "../../components/button";
 
 export const EditThing = () => {
@@ -32,20 +32,27 @@ export const EditThing = () => {
     if (!editedData) {
       return;
     }
-    const images_ids = [];
+    const images = [];
     for (const file of editedData.images) {
       if (file.type === "url") {
-        images_ids.push(file.image.id);
+        images.push({ id: file.image.id, rotation: file.rotation });
       } else {
         const image = await createImage(axiosInstance, file.file);
-        images_ids.push(image.id);
+        images.push({ id: image.id, rotation: file.rotation });
       }
     }
+
+    for (const image of images) {
+      if (image.rotation !== 0) {
+        await modifyImage(axiosInstance, image.id, image.rotation);
+      }
+    }
+
     const params = {
       name: editedData.name,
       privateNote: editedData.privateNote,
       description: editedData.description,
-      imagesIds: images_ids,
+      imagesIds: images.map((x) => x.id),
       properties: editedData.properties,
       quantity: editedData.quantity,
       quantityUnit: editedData.quantityUnit
@@ -60,7 +67,7 @@ export const EditThing = () => {
       name: thing?.name || "",
       images:
         thing?.images.map((x) => {
-          return { type: "url", image: x } as ThingImage;
+          return { type: "url", image: x, rotation: 0 } as ThingImage;
         }) || [],
       properties: thing?.properties || [],
       privateNote: thing?.privateNote || "",

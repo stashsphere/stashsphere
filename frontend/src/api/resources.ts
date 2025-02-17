@@ -72,6 +72,7 @@ export interface ReducedImage {
   id: string;
   name: string;
   createdAt: Date;
+  hash: string;
   owner: Owner
 }
 
@@ -84,6 +85,7 @@ export interface Image {
   name: string;
   createdAt: Date;
   owner: Owner
+  hash: string;
   things: ReducedThing[];
   actions: ImageActions;
 }

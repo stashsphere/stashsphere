@@ -36,7 +36,6 @@ export const ImageBrowser = ({onSelected}: ImageBrowserProps) => {
     }, [onSelected, selectedImages]);
     
     const onSelect = (id: string, selected: boolean) => {
-        console.log("called", id, selected)
         const selectedImage = images?.images.find((e) => e.id === id);
         if (!selectedImage) {
             return;

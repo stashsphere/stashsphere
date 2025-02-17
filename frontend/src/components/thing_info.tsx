@@ -1,19 +1,17 @@
-import { useContext } from "react";
 import { Thing } from "../api/resources";
-import { ConfigContext } from "../context/config";
 import { Icon } from "./icon";
 import PropertyList from "./property_list";
+import { ImageComponent } from "./image";
 
 type ThingInfoProps = {
   thing: Thing;
 };
 
 const ThingInfo = ({ thing }: ThingInfoProps) => {
-  const config = useContext(ConfigContext);
 
-  const firstImageId = thing.images[0]?.id;
-  const firstImageContent = firstImageId ? (
-    <img src={`${config.apiHost}/api/images/${firstImageId}`} alt="Image" className="object-contain h-full w-full" />
+  const firstImage = thing.images[0];
+  const firstImageContent = firstImage ? (
+    <ImageComponent image={firstImage} defaultWidth={512} className="object-contain h-full w-full" />
   ) : (
     <span>
       <Icon height="100%" icon="mdi--image-off-outline" />

@@ -149,6 +149,9 @@ export default {
         danger: globalColors.danger,
         display: globalColors.text.primary,
       },
+      rotate: {
+        "270": "270deg"
+      }
     }, 
   },
   variants: {

@@ -10,10 +10,11 @@ import {
 import PropertyEditor from "./property_editor";
 import { Property, ReducedImage, Image } from "../api/resources";
 import { ConfigContext } from "../context/config";
-import { DangerButton, PrimaryButton } from "./button";
+import { DangerButton, PrimaryButton, SecondaryButton } from "./button";
 import { Icon } from "./icon";
 import { ImageBrowser } from "./image_browser";
 import QuantityEditor from "./quantity_editor";
+import { urlForImage } from "../api/image";
 
 export type ThingEditorData = {
   name: string;
@@ -34,10 +35,12 @@ type ThingEditorProps = {
 export type ThingFileImage = {
   type: "file";
   file: File;
+  rotation: number;
 };
 export type ThingUrlImage = {
   type: "url";
   image: ReducedImage;
+  rotation: number;
 };
 export type ThingImage = ThingUrlImage | ThingFileImage;
 
@@ -84,9 +87,9 @@ export const ThingEditor = ({
     onChange(data);
   }, [onChange, name, images, properties, description, privateNote, quantity, quantityUnit])
 
-  const urlForImage = useMemo(
+  const imageUrl = useMemo(
     () => (image: ReducedImage) => {
-      return `${config.apiHost}/api/images/${image.id}`;
+      return urlForImage(config, image.hash, 512)
     },
     [config]
   );
@@ -98,17 +101,17 @@ export const ThingEditor = ({
       if (file.type === "file") {
         urls.push(URL.createObjectURL(file.file));
       } else {
-        urls.push(urlForImage(file.image));
+        urls.push(imageUrl(file.image));
       }
     }
     return urls;
-  }, [images, urlForImage]);
+  }, [images, imageUrl]);
 
   const addFile = (file: File) => {
     if (!file) {
       return;
     }
-    const entry: ThingFileImage = { type: "file", file };
+    const entry: ThingFileImage = { type: "file", file, rotation: 0 };
     setImages([...images, entry]);
   };
 
@@ -117,6 +120,7 @@ export const ThingEditor = ({
       return {
         type: "url",
         image: image as ReducedImage,
+        rotation: 0
       } as ThingUrlImage;
     });
     setImages([...images, ...reducedImages]);
@@ -131,9 +135,35 @@ export const ThingEditor = ({
     const file = e.target.files![0];
     addFile(file);
   }
+  
+  const clampRotation = (value: number) => {
+    const x = value % 360;
+    if (x < 0) {
+      return 360+x;
+    } else {
+      return x;
+    }
+  }
+  
+  // this will need these tailwind classes
+  // leave it so tailwind picks it up
+  // -rotate-90 -rotate-180 -rotate-270
+  const rotateLeft = (idx: number) => {
+    const rotatedImage = images[idx];
+    rotatedImage.rotation = clampRotation(rotatedImage.rotation+90);
+    images[idx] = rotatedImage;
+    setImages([...images]);
+  }
+  
+  const rotateRight = (idx: number) => {
+    const rotatedImage = images[idx];
+    rotatedImage.rotation = clampRotation(rotatedImage.rotation-90);
+    images[idx] = rotatedImage;
+    setImages([...images]);
+  }
 
   const inputRef = useRef<HTMLInputElement>(null);
-
+  
   return (
     <div>
       <div className="mb-4">
@@ -196,18 +226,32 @@ export const ThingEditor = ({
           }}
         />
       </div>
-
+      
       <h2 className="text-xl font-bold mb-4 text-secondary">Images</h2>
       <div className="mb-4">
         <div className="flex flex-wrap gap-4">
           {previewUrls.map((url, idx) => (
             <div key={url}>
               <div className="flex items-center gap-4 mb-2 flex-col">
-                <img className="w-96" src={url} alt="Preview" />
-                <DangerButton onClick={() => removeFile(idx)}>
-                  <Icon icon="mdi--trash" />
-                  Remove
-                </DangerButton>
+                  <div className="relative w-96 h-96">
+                  <div className="absolute h-full w-full flex items-center justify-center">
+                    <img className={`max-w-full max-h-full object-contain -rotate-${images[idx].rotation}`} src={url} alt="Preview" />
+                  </div>
+                </div>
+                <div className="flex flex-row gap-4">
+                  <SecondaryButton onClick={() => rotateLeft(idx)}>
+                    <Icon icon="mdi--rotate-left" />
+                  </SecondaryButton>
+
+                  <DangerButton onClick={() => removeFile(idx)}>
+                    <Icon icon="mdi--trash" />
+                    Remove
+                  </DangerButton>
+
+                  <SecondaryButton onClick={() => rotateRight(idx)}>
+                    <Icon icon="mdi--rotate-right" />
+                  </SecondaryButton>
+                </div>
               </div>
             </div>
           ))}

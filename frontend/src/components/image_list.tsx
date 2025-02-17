@@ -1,7 +1,7 @@
-import { useContext, useMemo } from "react";
+import { useMemo } from "react";
 import { Image } from "../api/resources";
-import { ConfigContext } from "../context/config";
 import { AccentButton, DangerButton, PrimaryButton } from "./button";
+import { ImageComponent } from "./image";
 
 type InterActionProps = {
     onDelete?: (id: string) => void;
@@ -14,8 +14,6 @@ type ImageTileProps = {
 } & InterActionProps;
 
 export const ImageTile = ({ image, onDelete, onSelect, selected }: ImageTileProps) => {
-    const config = useContext(ConfigContext);
-
     const usedText = useMemo(() => {
         switch (image.things.length) {
             case 0:
@@ -30,7 +28,7 @@ export const ImageTile = ({ image, onDelete, onSelect, selected }: ImageTileProp
     }, [image]);
 
     return <div className="flex w-full h-60 items-center justify-center rounded-md border border-secondary p-1 flex-col">
-        <img src={`${config.apiHost}/api/images/${image.id}`} alt="Image" className="object-contain w-full h-full" />
+        <ImageComponent defaultWidth={1024} image={image} className="object-contain w-full h-full" />
         <span className="text-display">Name: {image.name}</span>
         <span className="text-display">{usedText}</span>
         {onDelete && image.actions.canDelete && <DangerButton onClick={() => onDelete(image.id)}>Delete</DangerButton>}
