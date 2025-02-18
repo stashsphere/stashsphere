@@ -18,7 +18,7 @@ func NewRegisterHandler(userService *services.UserService) *RegisterHandler {
 }
 
 type RegisterPostParams struct {
-	Name       string `json:"name" validate:"gt=2"`
+	Name       string `json:"name" validate:"gt=1"`
 	Email      string `json:"email" validate:"email"`
 	Password   string `json:"password" validate:"gt=3"`
 	InviteCode string `json:"inviteCode"`
