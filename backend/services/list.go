@@ -41,7 +41,7 @@ func (ls *ListService) CreateList(ctx context.Context, params CreateListParams) 
 			OwnerID: params.OwnerId,
 		}
 
-		err = list.Insert(ctx, ls.db, boil.Infer())
+		err = list.Insert(ctx, tx, boil.Infer())
 		if err != nil {
 			return err
 		}
