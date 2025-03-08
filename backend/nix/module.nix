@@ -58,6 +58,7 @@ in
             '';
             User="stashsphere";
             StateDirectory="stashsphere";
+            CacheDirectory="stashsphere";
             RuntimeDirectory="stashsphere";
           };
         };
