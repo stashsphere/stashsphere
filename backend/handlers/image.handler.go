@@ -17,10 +17,11 @@ import (
 
 type ImageHandler struct {
 	image_service *services.ImageService
+	cache_service *services.CacheService
 }
 
-func NewImageHandler(image_service *services.ImageService) *ImageHandler {
-	return &ImageHandler{image_service}
+func NewImageHandler(image_service *services.ImageService, cache_service *services.CacheService) *ImageHandler {
+	return &ImageHandler{image_service, cache_service}
 }
 
 func (is *ImageHandler) ImageHandlerPost(c echo.Context) error {
@@ -99,9 +100,26 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 	}
 
 	if resize {
-		returnedImageReader, err = operations.ResizeImage(file, int(imageParams.Width))
+		if !is.cache_service.Exists(etag) {
+			resized, err := operations.ResizeImage(file, int(imageParams.Width))
+			if err != nil {
+				c.Logger().Errorf("Resize error: %v", err)
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			resizedContent, err := io.ReadAll(resized)
+			if err != nil {
+				c.Logger().Errorf("Cache error: %v", err)
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			err = is.cache_service.Put(etag, resizedContent)
+			if err != nil {
+				c.Logger().Errorf("Cache error: %v", err)
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+		}
+		returnedImageReader, err = is.cache_service.Get(etag)
 		if err != nil {
-			c.Logger().Errorf("Resize error: %v", err)
+			c.Logger().Errorf("Cache error: %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	} else {

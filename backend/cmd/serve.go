@@ -144,6 +144,10 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	if err != nil {
 		return err
 	}
+	cacheService, err := services.NewCacheService(config.ImageCachePath)
+	if err != nil {
+		return err
+	}
 	thingService := services.NewThingService(db, imageService)
 	listService := services.NewListService(db)
 	propertyService := services.NewPropertyService(db)
@@ -186,7 +190,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	registerHandler := handlers.NewRegisterHandler(userService)
 	thingHandler := handlers.NewThingHandler(thingService, listService, propertyService)
 	listHandler := handlers.NewListHandler(listService)
-	imageHandler := handlers.NewImageHandler(imageService)
+	imageHandler := handlers.NewImageHandler(imageService, cacheService)
 	searchHandler := handlers.NewSearchHandler(searchService, listService)
 	profileHandler := handlers.NewProfileHandler(userService)
 	shareHandler := handlers.NewShareHandler(shareService)
@@ -247,7 +251,12 @@ var serveCommand = &cobra.Command{
 		if stateDir == "" {
 			stateDir = "."
 		}
+		cacheDir := os.Getenv("CACHE_DIRECTORY")
+		if cacheDir == "" {
+			cacheDir = "."
+		}
 		imagePath := path.Join(stateDir, "image_store")
+		imageCachePath := path.Join(cacheDir, "image_cache")
 
 		k := koanf.New(".")
 		k.Load(confmap.Provider(map[string]interface{}{
@@ -257,6 +266,7 @@ var serveCommand = &cobra.Command{
 			"listenAddress":   ":8081",
 			"auth.privateKey": "",
 			"imagePath":       imagePath,
+			"imageCachePath":  imageCachePath,
 			"invites.enabled": false,
 			"invites.code":    "",
 			"domains.allowed": []string{"http://localhost"},

@@ -10,8 +10,9 @@ type StashsphereServeConfig struct {
 
 	ListenAddress string `koanf:"listenAddress"`
 
-	PrivateKey string `koanf:"auth.privateKey"`
-	ImagePath  string `koanf:"imagePath"`
+	PrivateKey     string `koanf:"auth.privateKey"`
+	ImagePath      string `koanf:"imagePath"`
+	ImageCachePath string `koanf:"imageCachePath"`
 
 	InviteEnabled bool   `koanf:"invites.enabled"`
 	InviteCode    string `koanf:"invites.code"`
