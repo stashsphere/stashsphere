@@ -32,7 +32,7 @@ const ListActions = ({ list }: { list: List }) => {
       </a>}
     {list.actions.canShare &&
       <a href={`/lists/${list.id}/share`}>
-        <SecondaryButton className="w-full">Share</SecondaryButton>
+        <SecondaryButton className="w-full flex flex-row">Share <div className="rounded bg-secondary-200 text-onprimary mx-1 px-1">{list.shares.length}</div></SecondaryButton>
       </a>}
     {list.actions.canDelete && <a href="#">
       <DangerButton className="w-full">Delete</DangerButton>
