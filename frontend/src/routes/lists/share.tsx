@@ -13,6 +13,7 @@ export const ShareList = () => {
     const navigate = useNavigate();
 
     const [list, setList] = useState<null | List>(null);
+    const [mutateKey, setMutateKey] = useState(0);
     const axiosInstance = useContext(AxiosContext);
     const authContext = useContext(AuthContext);
     const profile = authContext.profile;
@@ -24,7 +25,7 @@ export const ShareList = () => {
             return;
         }
         getList(axiosInstance, listId).then(setList);
-    }, [axiosInstance, listId]);
+    }, [axiosInstance, listId, mutateKey]);
 
     useEffect(() => {
         if (!axiosInstance) {
@@ -51,6 +52,6 @@ export const ShareList = () => {
     };
 
     return (
-        <ShareEditor type={"list"} list={list} profiles={profiles} userProfile={profile} onSubmit={onShare} />
+        <ShareEditor type={"list"} list={list} profiles={profiles} userProfile={profile} onSubmit={onShare} onMutate={() => setMutateKey(mutateKey+1)}/>
     )
 }

@@ -14,3 +14,7 @@ export const shareObject = async (axios: Axios, params: CreateShareParams) => {
     const share = response.data as Share;
     return share;
 }
+
+export const deleteShare = async (axios: Axios, shareId: string) => {
+    await axios.delete(`/shares/${shareId}`)
+};

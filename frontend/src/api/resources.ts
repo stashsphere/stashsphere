@@ -1,4 +1,4 @@
-export interface Owner {
+export interface User {
   id: string;
   name: string;
 }
@@ -41,7 +41,7 @@ export interface Thing {
   id: string;
   name: string;
   createdAt: Date;
-  owner: Owner;
+  owner: User;
   lists: ReducedList[];
   images: ReducedImage[];
   properties: Property[];
@@ -50,6 +50,7 @@ export interface Thing {
   actions: ThingActions;
   quantity: number;
   quantityUnit: string;
+  shares: Share[];
 }
 
 export interface ReducedThing {
@@ -58,7 +59,7 @@ export interface ReducedThing {
   description: string;
   privateNote: string | null;
   createdAt: Date;
-  owner: Owner;
+  owner: User;
 }
 
 export interface Paged {
@@ -73,7 +74,7 @@ export interface ReducedImage {
   name: string;
   createdAt: Date;
   hash: string;
-  owner: Owner
+  owner: User
 }
 
 export type ImageActions = {
@@ -84,7 +85,7 @@ export interface Image {
   id: string;
   name: string;
   createdAt: Date;
-  owner: Owner
+  owner: User
   hash: string;
   things: ReducedThing[];
   actions: ImageActions;
@@ -102,9 +103,10 @@ export interface List {
   id: string;
   name: string;
   createdAt: Date;
-  owner: Owner;
+  owner: User;
   things: Thing[];
   actions: ThingActions;
+  shares: Share[];
 }
 
 export interface PagedLists extends Paged {
@@ -124,5 +126,6 @@ export interface Profile {
 
 export interface Share {
   id: string;
-  owner: Owner;
+  owner: User;
+  target_user: User;
 }

@@ -13,6 +13,7 @@ export const ShareThing = () => {
     const navigate = useNavigate();
 
     const [thing, setThing] = useState<null | Thing>(null);
+    const [mutateKey, setMutateKey] = useState(0);
     const axiosInstance = useContext(AxiosContext);
     const authContext = useContext(AuthContext);
     const profile = authContext.profile;
@@ -24,7 +25,7 @@ export const ShareThing = () => {
             return;
         }
         getThing(axiosInstance, thingId).then(setThing);
-    }, [axiosInstance, thingId]);
+    }, [axiosInstance, thingId, mutateKey]);
 
     useEffect(() => {
         if (!axiosInstance) {
@@ -51,6 +52,6 @@ export const ShareThing = () => {
     };
 
     return (
-        <ShareEditor type={"thing"} thing={thing} profiles={profiles} userProfile={profile} onSubmit={onShare} />
+        <ShareEditor type={"thing"} thing={thing} profiles={profiles} userProfile={profile} onSubmit={onShare} onMutate={() => setMutateKey(mutateKey+1)}/>
     )
 }

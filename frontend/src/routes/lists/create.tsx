@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AxiosContext } from "../../context/axios";
 import { ListEditor, ListEditorData } from "../../components/list_editor";
@@ -6,17 +6,19 @@ import { createList } from "../../api/lists";
 import { PagedThings } from "../../api/resources";
 import { getThings } from "../../api/things";
 import { Pages } from "../../components/pages";
+import { AuthContext } from "../../context/auth";
 
 export const CreateList = () => {
+  const authCtx = useContext(AuthContext);
   const axiosInstance = useContext(AxiosContext);
   const navigate = useNavigate();
-  
-  const [selectableThings, setSelectableThings] = useState<PagedThings | undefined>(undefined)
+
+  const [selectableThingsPages, setSelectableThingsPages] = useState<PagedThings | undefined>(undefined)
   const [currentPage, setCurrentPage] = useState(0);
-  
+
   const create = async (data: ListEditorData) => {
     if (!axiosInstance) {
-        return;
+      return;
     }
     const list = await createList(axiosInstance, {
       name: data.name,
@@ -25,24 +27,32 @@ export const CreateList = () => {
     console.log("Created", list);
     navigate(`/lists/${list.id}`);
   }
-  
+
   useEffect(() => {
     if (axiosInstance === null) {
       return;
     }
     getThings(axiosInstance, currentPage)
-      .then(setSelectableThings)
+      .then(setSelectableThingsPages)
       .catch((reason) => {
         console.log(reason);
       });
   }, [axiosInstance, currentPage]);
 
+  // TODO: Move to backend
+  const selectableThings = useMemo(() => {
+    if (selectableThingsPages === undefined) {
+      return [];
+    }
+    return selectableThingsPages.things.filter((t) => t.owner.id === authCtx.profile?.id)
+  }, [authCtx.profile?.id, selectableThingsPages])
+
   return (
-    <ListEditor onChange={create} selectableThings={selectableThings?.things || []}>
+    <ListEditor onChange={create} selectableThings={selectableThings}>
       <Pages
         currentPage={currentPage}
         onPageChange={(n) => setCurrentPage(n)}
-        pages={selectableThings?.totalPageCount || 0}
+        pages={selectableThingsPages?.totalPageCount || 0}
       />
       <button
         type="submit"

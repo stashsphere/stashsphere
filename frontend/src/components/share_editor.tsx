@@ -1,16 +1,53 @@
-import { FormEvent, useMemo, useState } from "react";
-import { List, Profile, Thing } from "../api/resources";
+import { FormEvent, useContext, useMemo, useState } from "react";
+import { List, Profile, Share, Thing } from "../api/resources";
 import ThingInfo from "./thing_info";
 import { ListInfo } from "./list_info";
 import { ProfileList } from "./profile_list";
 import { Icon } from "./icon";
-import { PrimaryButton } from "./button";
+import { DangerButton, PrimaryButton, SecondaryButton } from "./button";
+import { AxiosContext } from "../context/axios";
+import { deleteShare } from "../api/share";
+
+
+type ShareDeleterProps = {
+  share: Share;
+  onDelete: () => void;
+}
+
+const ShareDeleter = ({ share, onDelete }: ShareDeleterProps) => {
+  const axiosInstance = useContext(AxiosContext);
+  const [wantDelete, setWantDelete] = useState(false);
+  
+  const onDeleteClick = () => {
+    if (axiosInstance === null) {
+      return;
+    }
+    deleteShare(axiosInstance, share.id).then(() => {
+      onDelete();
+    });
+  }
+ 
+  if (!wantDelete) {
+    return <div className="flex flex-row gap-4 my-2 justify-between">
+      <div className="text-display">{share.target_user.name}</div>
+      <SecondaryButton className="py-0 px-1" onClick={() => setWantDelete(true)}><Icon icon="mdi--trash" /></SecondaryButton>
+    </div>
+  } else {
+    return <div className="flex flex-row gap-4 my-2 justify-between">
+      <div className="text-display">Unshare for {share.target_user.name}</div>
+      <DangerButton className="py-0 px-1" onClick={() => onDeleteClick()}>Yes</DangerButton>
+      <SecondaryButton className="py-0 px-1" onClick={() => setWantDelete(false)}>No</SecondaryButton>
+    </div>
+  }
+}
+
 
 type ShareEditorProps = {
   profiles: Profile[]
   // the profile of the currently logged in user
   userProfile: Profile;
   onSubmit(targetUserProfile: Profile): void;
+  onMutate(): void;
 }
   & ({
     type: "thing";
@@ -46,16 +83,34 @@ export const ShareEditor = (props: ShareEditorProps) => {
     }
   })();
   const onSubmit = (event: FormEvent) => {
-        event.preventDefault();
+    event.preventDefault();
     if (targetUserProfile === null)
       return;
     props.onSubmit(targetUserProfile);
   };
 
-  return <div>
-    <h1 className="text-2xl text-accent">Share {props.type === "thing" ? "Thing" : "List"} to a Friend</h1>
+  const existingShares = (() => {
+    switch (props.type) {
+      case "thing":
+        return props.thing.shares;
+      case "list":
+        return props.list.shares;
+    }
+  })();
 
-    {ObjectComponent}
+  return <div>
+    <div className="grid grid-cols-2">
+      <div className="p-2">
+        <h2 className="text-xl text-accent">Share {props.type === "thing" ? "Thing" : "List"} to a Friend</h2>
+        {ObjectComponent}
+      </div>
+      <div className="p-2">
+        <h2 className="text-xl text-accent">Shared to</h2>
+        <ul>
+          {existingShares.map((x) => <ShareDeleter key={x.id} share={x} onDelete={() => props.onMutate()}/>)}
+        </ul>
+      </div>
+    </div>
 
     {targetUserProfile === null ?
       <>

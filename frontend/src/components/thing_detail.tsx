@@ -33,7 +33,7 @@ const ThingActions = ({ thing }: { thing: Thing }) => {
       </a>}
     {thing.actions.canShare &&
       <a href={`/things/${thing.id}/share`}>
-        <SecondaryButton className="w-full">Share</SecondaryButton>
+        <SecondaryButton className="w-full flex flex-row">Share <div className="rounded bg-secondary-200 text-onprimary mx-1 px-1">{thing.shares.length}</div></SecondaryButton>
       </a>}
     {thing.actions.canDelete && <a href="#">
       <DangerButton className="w-full">Delete</DangerButton>
@@ -51,7 +51,7 @@ export const ThingDetails = (props: ThingDetailsProps) => {
     }
     getThing(axiosInstance, props.id).then(setThing);
   }, [axiosInstance, props.id]);
-
+  
   if (thing === null) {
     return <h1>Loading</h1>;
   } else {
