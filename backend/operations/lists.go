@@ -16,6 +16,8 @@ func GetListUnchecked(ctx context.Context, exec boil.ContextExecutor, listId str
 		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.ThingImages)),
 		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.QuantityEntries)),
 		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.Properties)),
+		qm.Load(qm.Rels(models.ListRels.Shares, models.ShareRels.Owner)),
+		qm.Load(qm.Rels(models.ListRels.Shares, models.ShareRels.TargetUser)),
 	).One(ctx, exec)
 	if err != nil {
 		return nil, err
