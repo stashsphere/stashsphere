@@ -92,7 +92,7 @@ const HeaderLoggedOut = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex justify-between">
           <a href="/"><NameAndLogo /></a>
-          <div className="md:flex items-center space-x-1">
+          <div className="flex items-center space-x-1">
             <NavItem to="/user/login">Login</NavItem>
           </div>
         </div>

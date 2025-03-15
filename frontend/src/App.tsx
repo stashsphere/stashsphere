@@ -1,4 +1,3 @@
-import "./App.css";
 import { Layout } from "./components/layout";
 import { Config, getConfig } from "./config/config";
 import { AuthContext } from "./context/auth";

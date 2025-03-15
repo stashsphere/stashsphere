@@ -119,7 +119,7 @@ export default {
         content: globalColors.background[900],
         primary: globalColors.primary,
         "primary-hover": globalColors.primary[600],
-        secondary: globalColors.secondary[500],
+        secondary: globalColors.secondary,
         "secondary-hover": globalColors.secondary[600],
         neutral: globalColors.neutral[500],
         "neutral-hover": globalColors.neutral[600],
