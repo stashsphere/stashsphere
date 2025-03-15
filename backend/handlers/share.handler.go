@@ -66,10 +66,27 @@ func (sh *ShareHandler) ShareHandlerGet(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
 	}
 	shareId := c.Param("shareId")
-	list, err := sh.share_service.GetShare(c.Request().Context(), shareId, authCtx.User.ID)
+	share, err := sh.share_service.GetShare(c.Request().Context(), shareId, authCtx.User.ID)
 	if err != nil {
 		c.Logger().Errorf("Failed to get share: %v", err)
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, "Failed to retrieve share")
 	}
-	return c.JSON(http.StatusOK, resources.ShareFromModel(list, authCtx.User.ID))
+	return c.JSON(http.StatusOK, resources.ShareFromModel(share, authCtx.User.ID))
+}
+
+func (sh *ShareHandler) ShareHandlerDelete(c echo.Context) error {
+	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
+	if !ok {
+		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+	}
+	if !authCtx.Authenticated {
+		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+	}
+	shareId := c.Param("shareId")
+	err := sh.share_service.DeleteShare(c.Request().Context(), shareId, authCtx.User.ID)
+	if err != nil {
+		c.Logger().Errorf("Failed to delete share: %v", err)
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, "Failed to delete share")
+	}
+	return c.NoContent(http.StatusOK)
 }

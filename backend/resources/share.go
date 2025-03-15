@@ -32,8 +32,9 @@ type Share struct {
 }
 
 type ReducedShare struct {
-	TargetUser User `json:"target_user"`
-	Owner      User `json:"owner"`
+	TargetUser User   `json:"target_user"`
+	Owner      User   `json:"owner"`
+	Id         string `json:"id"`
 }
 
 func (s *Share) MarshalJSON() ([]byte, error) {
@@ -73,7 +74,7 @@ func ShareFromModel(share *models.Share, userId string) *Share {
 }
 
 func ReducedShareFromModel(s *models.Share) ReducedShare {
-	return ReducedShare{TargetUser: UserFromModel(s.R.TargetUser), Owner: UserFromModel(s.R.Owner)}
+	return ReducedShare{TargetUser: UserFromModel(s.R.TargetUser), Owner: UserFromModel(s.R.Owner), Id: s.ID}
 }
 
 func SharesFromModelSlice(mShares models.ShareSlice, userId string) []Share {

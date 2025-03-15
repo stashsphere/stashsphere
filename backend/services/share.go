@@ -149,3 +149,30 @@ func (ss *ShareService) GetShare(ctx context.Context, shareId string, requesting
 	}
 	return share, nil
 }
+
+func (ss *ShareService) DeleteShare(ctx context.Context, shareId string, requestingUser string) error {
+	err := utils.Tx(ctx, ss.db, func(tx *sql.Tx) error {
+		share, err := models.Shares(
+			models.ShareWhere.ID.EQ(shareId),
+			qm.Load(models.ShareRels.Things),
+			qm.Load(models.ShareRels.Lists),
+		).One(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if share.OwnerID != requestingUser {
+			return utils.ErrEntityDoesNotBelongToUser
+		}
+		err = share.RemoveThings(ctx, tx, share.R.Things...)
+		if err != nil {
+			return err
+		}
+		err = share.RemoveLists(ctx, tx, share.R.Lists...)
+		if err != nil {
+			return err
+		}
+		_, err = share.Delete(ctx, tx)
+		return err
+	})
+	return err
+}

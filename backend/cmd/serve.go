@@ -229,6 +229,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	shareGroup := a.Group("/shares")
 	shareGroup.POST("", shareHandler.ShareHandlerPost)
 	shareGroup.GET("/:shareId", shareHandler.ShareHandlerGet)
+	shareGroup.DELETE("/:shareId", shareHandler.ShareHandlerDelete)
 
 	a.GET("/search", searchHandler.SearchHandlerGet)
 
