@@ -15,117 +15,95 @@ import (
 
 func TestImageCreation(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	t.Cleanup(tearDownFunc)
+
 	imageService, err := services.NewTmpImageService(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	t.Cleanup(func() {
 		os.Remove(imageService.StorePath())
 	})
 	userService := services.NewUserService(db, false, "")
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	pngFile, err := testcommon.Assets.Open("assets/test.png")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	pngImage, err := imageService.CreateImage(context.Background(), testUser.ID, "test.png", pngFile)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	assert.Equal(t, pngImage.Mime, "image/png", "expected mime type to be png")
+
 	jpgFile, err := testcommon.Assets.Open("assets/test.jpg")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	jpgImage, err := imageService.CreateImage(context.Background(), testUser.ID, "test.jpg", jpgFile)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	assert.Equal(t, jpgImage.Mime, "image/jpeg", "expected mime type to be jpg")
 }
 
 func TestImageAccess(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	t.Cleanup(tearDownFunc)
 
 	userService := services.NewUserService(db, false, "")
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	alice, err := userService.CreateUser(context.Background(), *aliceParams)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	malloryParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	mallory, err := userService.CreateUser(context.Background(), *malloryParams)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	imageService, err := services.NewTmpImageService(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	t.Cleanup(func() {
 		os.Remove(imageService.StorePath())
 	})
 	pngFile, err := testcommon.Assets.Open("assets/test.png")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	pngImage, err := imageService.CreateImage(context.Background(), alice.ID, "test.png", pngFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, _, err = imageService.ImageGet(context.Background(), alice.ID, pngImage.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, _, err = imageService.ImageGet(context.Background(), mallory.ID, pngImage.ID)
+	assert.NoError(t, err)
+
+	_, _, err = imageService.ImageGet(context.Background(), alice.ID, pngImage.Hash)
+	assert.NoError(t, err)
+
+	_, _, err = imageService.ImageGet(context.Background(), mallory.ID, pngImage.Hash)
 	assert.ErrorIs(t, err, utils.ErrUserHasNoAccessRights)
 }
 
 func TestImageAccessSharedThing(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	t.Cleanup(tearDownFunc)
 	userService := services.NewUserService(db, false, "")
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	alice, err := userService.CreateUser(context.Background(), *aliceParams)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	bob, err := userService.CreateUser(context.Background(), *bobParams)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	imageService, err := services.NewTmpImageService(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	t.Cleanup(func() {
 		os.Remove(imageService.StorePath())
 	})
 	pngFile, err := testcommon.Assets.Open("assets/test.png")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	pngImage, err := imageService.CreateImage(context.Background(), alice.ID, "test.png", pngFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, _, err = imageService.ImageGet(context.Background(), bob.ID, pngImage.ID)
+	assert.NoError(t, err)
+
+	_, _, err = imageService.ImageGet(context.Background(), bob.ID, pngImage.Hash)
 	assert.ErrorIs(t, err, utils.ErrUserHasNoAccessRights, "bob does not have access yet")
 
 	thingService := services.NewThingService(db, imageService)
@@ -143,42 +121,36 @@ func TestImageAccessSharedThing(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, share)
-	_, _, err = imageService.ImageGet(context.Background(), bob.ID, pngImage.ID)
+	_, _, err = imageService.ImageGet(context.Background(), bob.ID, pngImage.Hash)
 	assert.Nil(t, err, "bob has access through thing share")
 }
 
 func TestDeleteImage(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	t.Cleanup(tearDownFunc)
 	userService := services.NewUserService(db, false, "")
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	alice, err := userService.CreateUser(context.Background(), *aliceParams)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	bob, err := userService.CreateUser(context.Background(), *bobParams)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	imageService, err := services.NewTmpImageService(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	t.Cleanup(func() {
 		os.Remove(imageService.StorePath())
 	})
 	pngFile, err := testcommon.Assets.Open("assets/test.png")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	pngImage, err := imageService.CreateImage(context.Background(), alice.ID, "test.png", pngFile)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	path := filepath.Join(imageService.StorePath(), pngImage.Hash)
 	assert.FileExists(t, path)
 	// bob should not be able to delete the image
