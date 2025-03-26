@@ -1,6 +1,8 @@
 { buildGoModule
 , version
 , file
+, postgresql
+, postgresqlTestHook
 }:
 buildGoModule {
   pname = "stashsphere-backend";
@@ -15,5 +17,10 @@ buildGoModule {
     file
   ];
   
-  doCheck = false;
+  doCheck = true;
+
+  nativeCheckInputs = [
+    postgresql
+    postgresqlTestHook
+  ];
 }

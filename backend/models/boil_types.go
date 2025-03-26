@@ -51,6 +51,50 @@ func makeCacheKey(cols boil.Columns, nzDefaults []string) string {
 	return str
 }
 
+type FriendRequestState string
+
+// Enum values for FriendRequestState
+const (
+	FriendRequestStatePending  FriendRequestState = "pending"
+	FriendRequestStateAccepted FriendRequestState = "accepted"
+	FriendRequestStateRejected FriendRequestState = "rejected"
+)
+
+func AllFriendRequestState() []FriendRequestState {
+	return []FriendRequestState{
+		FriendRequestStatePending,
+		FriendRequestStateAccepted,
+		FriendRequestStateRejected,
+	}
+}
+
+func (e FriendRequestState) IsValid() error {
+	switch e {
+	case FriendRequestStatePending, FriendRequestStateAccepted, FriendRequestStateRejected:
+		return nil
+	default:
+		return errors.New("enum is not valid")
+	}
+}
+
+func (e FriendRequestState) String() string {
+	return string(e)
+}
+
+func (e FriendRequestState) Ordinal() int {
+	switch e {
+	case FriendRequestStatePending:
+		return 0
+	case FriendRequestStateAccepted:
+		return 1
+	case FriendRequestStateRejected:
+		return 2
+
+	default:
+		panic(errors.New("enum is not valid"))
+	}
+}
+
 type PropertyType string
 
 // Enum values for PropertyType

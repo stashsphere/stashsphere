@@ -2,10 +2,10 @@ package operations
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/rs/zerolog/log"
 	"github.com/stashsphere/backend/models"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -75,7 +75,7 @@ func CreateProperty(ctx context.Context, exec boil.ContextExecutor, thingId stri
 	}
 	err = property.Insert(ctx, exec, boil.Infer())
 	if err != nil {
-		slog.Error("Failed to insert property: %v", err)
+		log.Error().Msgf("Failed to insert property: %v", err)
 		return nil, err
 	}
 	return &property, nil

@@ -3,6 +3,7 @@ package testcommon
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"database/sql"
 
@@ -19,23 +20,40 @@ func CreateTestSchema() (*sql.DB, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	schema_name := fmt.Sprintf("test_%s", schema_id)
-	log.Printf("Running in %s", schema_name)
-	root_db, err := sql.Open("postgres", "postgres://stashsphere:secret@localhost:5432/stashsphere?sslmode=disable")
+	schemaName := fmt.Sprintf("test_%s", schema_id)
+	log.Printf("Running in %s", schemaName)
+
+	pgHost := os.Getenv("PGHOST")
+	pgPort := os.Getenv("PGPORT")
+	pgUser := os.Getenv("PGUSER")
+	pgDatabase := os.Getenv("PGDATABASE")
+	pgPassword := os.Getenv("PGPASSWORD")
+	if pgPassword != "" {
+		pgPassword = "&password=" + pgPassword
+	}
+	if pgPort != "" {
+		pgPort = "&port=" + pgPort
+	}
+
+	basePath := fmt.Sprintf("postgres:///%s?host=%s%s&user=%s%s&sslmode=disable", pgDatabase, pgHost, pgPort, pgUser, pgPassword)
+
+	log.Printf("Database basePath: %s", basePath)
+
+	rootDb, err := sql.Open("postgres", basePath)
 	if err != nil {
 		return nil, nil, err
 	}
-	_, err = root_db.Exec(fmt.Sprintf("CREATE SCHEMA %s", schema_name))
+	_, err = rootDb.Exec(fmt.Sprintf("CREATE SCHEMA %s", schemaName))
 	if err != nil {
 		return nil, nil, err
 	}
 	teardownFunc := func() {
-		_, err = root_db.Exec(fmt.Sprintf("DROP SCHEMA %s CASCADE", schema_name))
+		_, err = rootDb.Exec(fmt.Sprintf("DROP SCHEMA %s CASCADE", schemaName))
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	final_db_path := fmt.Sprintf("postgres://stashsphere:secret@localhost:5432/stashsphere?sslmode=disable&search_path=%s", schema_name)
+	final_db_path := fmt.Sprintf("%s&search_path=%s", basePath, schemaName)
 	db, err := sql.Open("postgres", final_db_path)
 	if err != nil {
 		return nil, nil, err

@@ -137,7 +137,6 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 		}
 		return name
 	})
-	// TODO fix cookie domain
 	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, config.ApiDomain)
 	userService := services.NewUserService(db, config.InviteEnabled, config.InviteCode)
 	imageService, err := services.NewImageService(db, config.ImagePath)
@@ -153,6 +152,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	propertyService := services.NewPropertyService(db)
 	searchService := services.NewSearchService(db, thingService, listService)
 	shareService := services.NewShareService(db)
+	friendService := services.NewFriendService(db)
 
 	e.Validator = &CustomValidator{validator: validate, trans: &trans}
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -194,6 +194,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	searchHandler := handlers.NewSearchHandler(searchService, listService)
 	profileHandler := handlers.NewProfileHandler(userService)
 	shareHandler := handlers.NewShareHandler(shareService)
+	friendHandler := handlers.NewFriendHandler(friendService)
 
 	a := e.Group("/api")
 	userGroup := a.Group("/user")
@@ -230,6 +231,16 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	shareGroup.POST("", shareHandler.ShareHandlerPost)
 	shareGroup.GET("/:shareId", shareHandler.ShareHandlerGet)
 	shareGroup.DELETE("/:shareId", shareHandler.ShareHandlerDelete)
+
+	friendGroup := a.Group("/friends")
+	friendGroup.GET("", friendHandler.FriendsIndex)
+	friendGroup.DELETE("/:friendId", friendHandler.FriendDelete)
+
+	friendRequestGroup := a.Group("/friend_requests")
+	friendRequestGroup.GET("", friendHandler.FriendRequestIndex)
+	friendRequestGroup.POST("", friendHandler.FriendRequestPost)
+	friendRequestGroup.DELETE("/:requestId", friendHandler.FriendRequestDelete)
+	friendRequestGroup.PATCH("/:requestId", friendHandler.FriendRequestUpdate)
 
 	a.GET("/search", searchHandler.SearchHandlerGet)
 

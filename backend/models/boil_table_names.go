@@ -4,6 +4,8 @@
 package models
 
 var TableNames = struct {
+	FriendRequests  string
+	Friendships     string
 	Images          string
 	ImagesThings    string
 	Lists           string
@@ -16,6 +18,8 @@ var TableNames = struct {
 	Things          string
 	Users           string
 }{
+	FriendRequests:  "friend_requests",
+	Friendships:     "friendships",
 	Images:          "images",
 	ImagesThings:    "images_things",
 	Lists:           "lists",

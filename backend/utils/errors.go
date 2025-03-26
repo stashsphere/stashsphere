@@ -29,4 +29,5 @@ var (
 	ErrEntityDoesNotBelongToUser = errors.New("EntityDoesNotBelongToUser")
 	ErrUserHasNoAccessRights     = errors.New("UserHasNoAccessRights")
 	ErrEntityInUse               = errors.New("EntityInUse")
+	ErrFriendRequestNotPending   = errors.New("FriendRequestNotPending")
 )

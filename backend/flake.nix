@@ -27,6 +27,7 @@
         (system:
           {
             inherit (nixpkgsFor.${system}) stashsphere;
+            default = (nixpkgsFor.${system}).stashsphere;
           });
       devShells = forAllSystems (system:
         let
@@ -46,7 +47,11 @@
               postgresql
             ];
             env = {
-              "DATABASE_URL" = "postgresql://stashsphere:secret@127.0.0.1:5432/stashsphere?schema=public";
+              "PGHOST" = "127.0.0.1";
+              "PGPORT" = "5432";
+              "PGUSER" = "stashsphere";
+              "PGPASSWORD" = "secret";
+              "PGDATABASE" = "stashsphere";
             };
           };
         });
