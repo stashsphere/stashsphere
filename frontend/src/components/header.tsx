@@ -68,6 +68,7 @@ const HeaderLoggedIn = ({ userName }: { userName: string }) => {
             <NavItem to="/things">Things</NavItem>
             <NavItem to="/lists">Lists</NavItem>
             <NavItem to="/images">Images</NavItem>
+            <NavItem to="/friends">Friends</NavItem>
           </div>
           <div className='border-2 mx-2 border-highlight'></div>
           <div className="md:flex items-center space-x-1">

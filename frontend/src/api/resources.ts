@@ -129,3 +129,25 @@ export interface Share {
   owner: User;
   target_user: User;
 }
+
+export interface FriendRequest {
+  id: string,
+  sender: User;
+  receiver: User;
+  createdAt: Date;
+  state: "pending" | "accepted" | "rejected";
+}
+
+export interface FriendRequestResponse {
+  received: FriendRequest[];
+  sent: FriendRequest[];
+}
+
+export interface FriendShip {
+  friend: User;
+  friendRequest: FriendRequest;
+}
+
+export interface FriendShips {
+  friendShips: FriendShip[];
+}

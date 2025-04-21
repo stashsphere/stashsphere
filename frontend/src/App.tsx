@@ -28,6 +28,7 @@ import { ShareThing } from "./routes/things/share";
 import { ShareList } from "./routes/lists/share";
 import { Images } from "./routes/images/list";
 import { SearchContext } from "./context/search";
+import { ShowFriends } from "./routes/friends";
 
 export const App = () => {
   const [config, setConfig] = useState<Config | null>(null);
@@ -100,6 +101,7 @@ export const App = () => {
               <Route path="/lists/:listId/edit" element={<RequireAuth><EditList /></RequireAuth>} />
               <Route path="/lists/:listId/share" element={<RequireAuth><ShareList /></RequireAuth>} />
 
+              <Route path="/friends" element={<RequireAuth><ShowFriends /></RequireAuth>} />
               <Route path="/images" element={<RequireAuth><Images /></RequireAuth>} />
 
               <Route path="/search" element={<RequireAuth><Search /></RequireAuth>} />
