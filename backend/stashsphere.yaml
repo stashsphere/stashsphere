@@ -1,2 +1,9 @@
 auth:
   privateKey: "e99blD3kGbWCOlXUjSfSf54Dw50+iLGjQXzb283hreGEll2ZXmYHeMYHQ/DA951KMZOPhj+LRi8QxYab9O3V3Q"
+listenAddress: ":1323"
+database:
+  sslmode: "disable"
+  password: "secret"
+domains:
+  allowed:
+    - "http://localhost:5173"
