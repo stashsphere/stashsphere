@@ -1,16 +1,16 @@
-import { useContext, useState } from "react";
-import { createImage } from "../../api/image";
-import { ThingEditor, ThingEditorData } from "../../components/thing_editor";
-import { AxiosContext } from "../../context/axios";
-import { createThing } from "../../api/things";
-import { useNavigate } from "react-router-dom";
-import { PrimaryButton } from "../../components/button";
+import { useContext, useState } from 'react';
+import { createImage } from '../../api/image';
+import { ThingEditor, ThingEditorData } from '../../components/thing_editor';
+import { AxiosContext } from '../../context/axios';
+import { createThing } from '../../api/things';
+import { useNavigate } from 'react-router';
+import { PrimaryButton } from '../../components/button';
 
 export const CreateThing = () => {
   const axiosInstance = useContext(AxiosContext);
   const navigate = useNavigate();
 
-  const [editedData, setEditedData] = useState<null | ThingEditorData>(null)
+  const [editedData, setEditedData] = useState<null | ThingEditorData>(null);
 
   const create = async () => {
     if (!axiosInstance) {
@@ -22,7 +22,7 @@ export const CreateThing = () => {
     const images_ids = [];
 
     for (const file of editedData.images) {
-      if (file.type === "url") {
+      if (file.type === 'url') {
         images_ids.push(file.image.id);
       } else {
         const image = await createImage(axiosInstance, file.file);
@@ -37,20 +37,17 @@ export const CreateThing = () => {
       imagesIds: images_ids,
       properties: editedData.properties,
       quantity: editedData.quantity,
-      quantityUnit: editedData.quantityUnit
+      quantityUnit: editedData.quantityUnit,
     };
 
-
     const thing = await createThing(axiosInstance, params);
-    console.log("Created", thing);
+    console.log('Created', thing);
     navigate(`/things/${thing.id}`);
   };
 
   return (
     <ThingEditor onChange={setEditedData}>
-      <PrimaryButton onClick={() => create()}>
-        Create
-      </PrimaryButton>
+      <PrimaryButton onClick={() => create()}>Create</PrimaryButton>
     </ThingEditor>
   );
 };

@@ -1,6 +1,6 @@
 import { FormEvent, useContext, useEffect, useState } from 'react';
 import { AxiosContext } from '../context/axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AuthContext } from '../context/auth';
 import { PrimaryButton } from '../components/button';
 

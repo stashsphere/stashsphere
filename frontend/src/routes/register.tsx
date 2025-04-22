@@ -1,7 +1,7 @@
 import { FormEvent, useContext, useState } from 'react';
 import { PrimaryButton } from '../components/button';
 import { AxiosContext } from '../context/axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 export const Register = () => {
   const axiosInstance = useContext(AxiosContext);

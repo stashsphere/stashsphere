@@ -1,5 +1,5 @@
 import { KeyboardEvent, ReactNode, useContext, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router';
 import stashsphereLogo from '../assets/stashsphere.svg';
 import { Icon } from './icon';
 import { SearchContext } from '../context/search';

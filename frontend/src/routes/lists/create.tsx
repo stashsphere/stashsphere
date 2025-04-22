@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AxiosContext } from '../../context/axios';
 import { ListEditor, ListEditorData } from '../../components/list_editor';
 import { createList } from '../../api/lists';
