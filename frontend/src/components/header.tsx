@@ -37,6 +37,7 @@ const NameAndLogo = () => {
 
 const HeaderLoggedIn = ({ userName }: { userName: string }) => {
   const [query, setQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { setSearchTerm } = useContext(SearchContext);
   const navigate = useNavigate();
 
@@ -47,33 +48,41 @@ const HeaderLoggedIn = ({ userName }: { userName: string }) => {
     setSearchTerm(query);
   };
 
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen((prev) => !prev);
+  };
+
   return (
     <nav className="bg-primary shadow-lg mb-4">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           <a href="/">
             <NameAndLogo />
           </a>
-          <div className="flex grow mx-5">
+          <div className="flex grow mx-5 md:mx-5">
             <input
-              className="w-full my-2 px-4 py-2 text-display rounded border
-            focus:outline-hidden
-            bg-neutral-secondary
-            border-secondary"
+              className="w-full my-2 px-4 py-2 text-display rounded border focus:outline-hidden bg-neutral-secondary border-secondary"
               placeholder="Search"
               onChange={(e) => setQuery(e.target.value)}
               value={query}
               onKeyDown={(e) => handleSearch(e)}
             />
           </div>
-          <div className="md:flex items-center space-x-1">
+          <button
+            className="md:hidden text-onprimary ml-2"
+            onClick={toggleMobileMenu}
+            aria-label="Menu"
+          >
+            <Icon icon="mdi--menu" className="text-2xl" />
+          </button>
+          <div className="hidden md:flex items-center space-x-1">
             <NavItem to="/things">Things</NavItem>
             <NavItem to="/lists">Lists</NavItem>
             <NavItem to="/images">Images</NavItem>
             <NavItem to="/friends">Friends</NavItem>
           </div>
-          <div className="border-2 mx-2 border-highlight"></div>
-          <div className="md:flex items-center space-x-1">
+          <div className="hidden md:block border-2 mx-2 border-highlight"></div>
+          <div className="hidden md:flex items-center space-x-1">
             <div className="py-4 px-2 text-highlight font-semibold">
               <Icon icon="mdi--user" />
               {userName}
@@ -82,6 +91,24 @@ const HeaderLoggedIn = ({ userName }: { userName: string }) => {
             <NavItem to="/user/logout">Logout</NavItem>
           </div>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="md:hidden pt-2 pb-4 bg-primary">
+            <div className="flex flex-col space-y-2">
+              <NavItem to="/things">Things</NavItem>
+              <NavItem to="/lists">Lists</NavItem>
+              <NavItem to="/images">Images</NavItem>
+              <NavItem to="/friends">Friends</NavItem>
+              <div className="border-t-2 my-2 border-highlight"></div>
+              <div className="py-2 px-2 text-highlight font-semibold flex items-center">
+                <Icon icon="mdi--user" className="mr-2" />
+                {userName}
+              </div>
+              <NavItem to="/user/profile">Profile</NavItem>
+              <NavItem to="/user/logout">Logout</NavItem>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
