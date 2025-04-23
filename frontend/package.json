@@ -12,7 +12,7 @@
     "format:check": "prettier --check .",
     "preview": "vite preview",
     "tailwindcss": "tailwindcss",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "dependencies": {
     "axios": "^1.7.2",
