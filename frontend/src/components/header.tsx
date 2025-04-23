@@ -61,7 +61,7 @@ const HeaderLoggedIn = ({ userName }: { userName: string }) => {
           </a>
           <div className="flex grow mx-5 md:mx-5">
             <input
-              className="w-full my-2 px-4 py-2 text-display rounded border focus:outline-hidden bg-neutral-secondary border-secondary"
+              className="w-full my-2 px-4 py-2 text-display rounded border focus:outline-hidden bg-input-primary border-secondary"
               placeholder="Search"
               onChange={(e) => setQuery(e.target.value)}
               value={query}
@@ -81,7 +81,7 @@ const HeaderLoggedIn = ({ userName }: { userName: string }) => {
             <NavItem to="/images">Images</NavItem>
             <NavItem to="/friends">Friends</NavItem>
           </div>
-          <div className="hidden md:block border-2 mx-2 border-highlight"></div>
+          <div className="hidden md:block border-2 mx-2 border-highlight self-stretch"></div>
           <div className="hidden md:flex items-center space-x-1">
             <div className="py-4 px-2 text-highlight font-semibold">
               <Icon icon="mdi--user" />
