@@ -114,7 +114,6 @@ export default {
         ...globalColors,
       },
       backgroundColor: {
-        'input-primary': colors.white,
         page: globalColors.background[500],
         content: globalColors.background[900],
         primary: globalColors.primary,

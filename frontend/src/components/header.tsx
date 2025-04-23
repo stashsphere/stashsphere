@@ -61,7 +61,7 @@ const HeaderLoggedIn = ({ userName }: { userName: string }) => {
           </a>
           <div className="flex grow mx-5 md:mx-5">
             <input
-              className="w-full my-2 px-4 py-2 text-display rounded border focus:outline-hidden bg-input-primary border-secondary"
+              className="w-full my-2 px-4 py-2 text-display rounded border focus:outline-hidden border-secondary"
               placeholder="Search"
               onChange={(e) => setQuery(e.target.value)}
               value={query}
