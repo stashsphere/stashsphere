@@ -14,12 +14,12 @@ export const Pages = ({
         {allPages.map((page) => (
           <li
             key={page + 1}
-            className={`mx-2 ${page === currentPage ? "border-2 border-primary" : ""}`}
+            className={`mx-2 ${page === currentPage ? 'border-2 border-primary' : ''}`}
           >
             <a
               href="#"
               onClick={() => onPageChange(page)}
-              className="block py-1 px-3 text-primary hover:bg-primary hover:text-onprimary hover:ring"
+              className="block py-1 px-3 text-primary hover:bg-primary hover:text-onprimary hover:ring-3"
             >
               {page + 1}
             </a>

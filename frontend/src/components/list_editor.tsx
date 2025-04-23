@@ -1,6 +1,6 @@
-import { FormEvent, ReactNode, useEffect, useState } from "react";
-import { Thing } from "../api/resources";
-import ThingInfo from "./thing_info";
+import { FormEvent, ReactNode, useEffect, useState } from 'react';
+import { Thing } from '../api/resources';
+import ThingInfo from './thing_info';
 
 export type ListEditorData = {
   name: string;
@@ -14,13 +14,8 @@ type ListEditorProps = {
   onChange: (list: ListEditorData) => void;
 };
 
-export const ListEditor = ({
-  children,
-  list,
-  onChange,
-  selectableThings,
-}: ListEditorProps) => {
-  const [name, setName] = useState("");
+export const ListEditor = ({ children, list, onChange, selectableThings }: ListEditorProps) => {
+  const [name, setName] = useState('');
   const [selectedThingIDs, setSelectedThingIDs] = useState<string[]>([]);
 
   useEffect(() => {
@@ -56,10 +51,7 @@ export const ListEditor = ({
   return (
     <form onSubmit={onSubmit}>
       <div className="mb-4">
-        <label
-          htmlFor="email"
-          className="block text-primary text-sm font-medium"
-        >
+        <label htmlFor="email" className="block text-primary text-sm font-medium">
           Name
         </label>
         <input
@@ -68,7 +60,7 @@ export const ListEditor = ({
           name="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 p-2 text-display border border-gray-300 rounded"
+          className="mt-1 p-2 text-display border border-gray-300 rounded-sm"
         />
       </div>
       {selectableThings.map((thing) => (

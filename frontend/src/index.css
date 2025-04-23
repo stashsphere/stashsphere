@@ -1,36 +1,56 @@
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import 'tailwindcss';
 
-  color: rgb(161, 173, 206);
+@config '../tailwind.config.js';
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
 }
 
-.filter-light-green {
-  filter: invert(79%) sepia(73%) saturate(348%) hue-rotate(57deg) brightness(95%) contrast(88%);
-}
+@layer base {
+  :root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
 
-.filter-yellow {
-  filter: invert(100%) sepia(65%) saturate(7500%) hue-rotate(3deg) brightness(103%) contrast(100%);
-}
+    color: rgb(161, 173, 206);
 
-.filter-orange {
-  filter: invert(72%) sepia(56%) saturate(3573%) hue-rotate(354deg) brightness(94%) contrast(94%);
-}
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-.filter-aquamarine {
-  filter: invert(95%) sepia(79%) saturate(482%) hue-rotate(70deg) brightness(104%) contrast(109%);
-}
+  .filter-light-green {
+    filter: invert(79%) sepia(73%) saturate(348%) hue-rotate(57deg) brightness(95%) contrast(88%);
+  }
 
-.filter-engineering-red {
-  filter: invert(11%) sepia(80%) saturate(5636%) hue-rotate(355deg) brightness(91%) contrast(106%);
-}
+  .filter-yellow {
+    filter: invert(100%) sepia(65%) saturate(7500%) hue-rotate(3deg) brightness(103%) contrast(100%);
+  }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+  .filter-orange {
+    filter: invert(72%) sepia(56%) saturate(3573%) hue-rotate(354deg) brightness(94%) contrast(94%);
+  }
+
+  .filter-aquamarine {
+    filter: invert(95%) sepia(79%) saturate(482%) hue-rotate(70deg) brightness(104%) contrast(109%);
+  }
+
+  .filter-engineering-red {
+    filter: invert(11%) sepia(80%) saturate(5636%) hue-rotate(355deg) brightness(91%) contrast(106%);
+  }
+}

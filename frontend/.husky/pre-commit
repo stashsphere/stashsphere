@@ -1,14 +1,1 @@
-#!/usr/bin/env sh
-
-echo "Running lint-staged..."
 npx lint-staged --concurrent false
-
-status=$?
-
-if [ $status -ne 0 ]; then
-  echo "lint-staged failed. Aborting commit." >&2
-  exit $status
-fi
-
-echo "lint-staged passed."
-exit 0

@@ -1,16 +1,13 @@
-import { useEffect, useState } from "react";
-import { Property } from "../api/resources";
-import { NeutralButton } from "./button";
+import { useEffect, useState } from 'react';
+import { Property } from '../api/resources';
+import { NeutralButton } from './button';
 
 interface Props {
   properties: Property[];
   onUpdateProperties?: (properties: Property[]) => void;
 }
 
-const PropertyEditor: React.FC<Props> = ({
-  properties,
-  onUpdateProperties,
-}) => {
+const PropertyEditor: React.FC<Props> = ({ properties, onUpdateProperties }) => {
   const [localProperties, setLocalProperties] = useState<Property[]>([]);
 
   useEffect(() => {
@@ -20,13 +17,13 @@ const PropertyEditor: React.FC<Props> = ({
   const handleValueChange = (index: number, value: string) => {
     const newProperties = [...localProperties];
     switch (newProperties[index].type) {
-      case "datetime":
+      case 'datetime':
         newProperties[index].value = value;
         break;
-      case "string":
+      case 'string':
         newProperties[index].value = value;
         break;
-      case "float":
+      case 'float':
         newProperties[index].value = Number(value);
         break;
     }
@@ -37,7 +34,7 @@ const PropertyEditor: React.FC<Props> = ({
   const handleUnitChange = (index: number, value: string) => {
     const newProperties = [...localProperties];
     const atIndex = newProperties[index];
-    if (atIndex.type === "float") {
+    if (atIndex.type === 'float') {
       atIndex.unit = value;
     } else {
       return;
@@ -56,26 +53,26 @@ const PropertyEditor: React.FC<Props> = ({
   const handleTypeChange = (index: number, value: string) => {
     const newProperties = [...localProperties];
     switch (value) {
-      case "datetime":
-        if (localProperties[index].type !== "datetime") {
+      case 'datetime':
+        if (localProperties[index].type !== 'datetime') {
           newProperties[index].value = new Date().toISOString();
         }
         newProperties[index].type = value;
         break;
-      case "string":
-        if (localProperties[index].type !== "string") {
-          newProperties[index].value = "";
+      case 'string':
+        if (localProperties[index].type !== 'string') {
+          newProperties[index].value = '';
         }
         newProperties[index].type = value;
         break;
-      case "float":
-        if (localProperties[index].type !== "float") {
+      case 'float':
+        if (localProperties[index].type !== 'float') {
           newProperties[index].value = 0;
         }
         newProperties[index].type = value;
         break;
       default:
-        console.error("Invalid property type");
+        console.error('Invalid property type');
     }
     setLocalProperties(newProperties);
   };
@@ -84,46 +81,44 @@ const PropertyEditor: React.FC<Props> = ({
     event.preventDefault();
     setLocalProperties([
       ...localProperties,
-      { name: "", value: "", type: "string", unit: undefined },
+      { name: '', value: '', type: 'string', unit: undefined },
     ]);
   };
 
   const deleteProperty = (indexToDelete: number) => {
-    const newProperties = localProperties.filter(
-      (_, index) => index !== indexToDelete
-    );
+    const newProperties = localProperties.filter((_, index) => index !== indexToDelete);
     setLocalProperties(newProperties);
     if (onUpdateProperties) onUpdateProperties(newProperties);
   };
 
   const inputForPropertyType = (prop: Property, index: number) => {
     switch (prop.type) {
-      case "float":
+      case 'float':
         return (
           <input
             type="number"
             value={prop.value}
             onChange={(e) => handleValueChange(index, e.target.value)}
-            className="mt-1 block w-full text-display border border-secondary shadow-sm focus:border-secondary"
+            className="mt-1 block w-full text-display border border-secondary shadow-xs focus:border-secondary"
           />
         );
-      case "string":
+      case 'string':
         return (
           <input
             type="string"
             value={prop.value}
             onChange={(e) => handleValueChange(index, e.target.value)}
-            className="mt-1 block w-full text-display border border-secondary shadow-sm focus:border-secondary"
+            className="mt-1 block w-full text-display border border-secondary shadow-xs focus:border-secondary"
           />
         );
-      case "datetime": {
-        const formattedDate = new Date(prop.value).toISOString().split("T")[0];
+      case 'datetime': {
+        const formattedDate = new Date(prop.value).toISOString().split('T')[0];
         return (
           <input
             type="date"
             value={formattedDate}
             onChange={(e) => handleValueChange(index, e.target.value)}
-            className="mt-1 block w-full text-display border border-secondary shadow-sm focus:border-secondary"
+            className="mt-1 block w-full text-display border border-secondary shadow-xs focus:border-secondary"
           />
         );
       }
@@ -160,7 +155,7 @@ const PropertyEditor: React.FC<Props> = ({
                     type="text"
                     value={property.name}
                     onChange={(e) => handleNameChange(index, e.target.value)}
-                    className="mt-1 block w-full text-display border border-secondary shadow-sm focus:border-secondary"
+                    className="mt-1 block w-full text-display border border-secondary shadow-xs focus:border-secondary"
                   />
                 </td>
                 <td className="px-2 py-2 whitespace-nowrap">
@@ -169,9 +164,9 @@ const PropertyEditor: React.FC<Props> = ({
                 <td className="px-4 text-display">
                   <input
                     type="text"
-                    value={property.type === "float" ? property.unit : ""}
+                    value={property.type === 'float' ? property.unit : ''}
                     onChange={(e) => handleUnitChange(index, e.target.value)}
-                    disabled={property.type !== "float"}
+                    disabled={property.type !== 'float'}
                   />
                 </td>
                 <td className="px-2 py-4 whitespace-nowrap text-display">

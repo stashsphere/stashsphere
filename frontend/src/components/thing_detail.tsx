@@ -1,10 +1,10 @@
-import { useContext, useEffect, useMemo, useState } from "react";
-import { Thing } from "../api/resources";
-import { getThing } from "../api/things";
-import { AxiosContext } from "../context/axios";
-import { ImageGallery } from "./image_gallery";
-import PropertyList from "./property_list";
-import { DangerButton, SecondaryButton } from "./button";
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { Thing } from '../api/resources';
+import { getThing } from '../api/things';
+import { AxiosContext } from '../context/axios';
+import { ImageGallery } from './image_gallery';
+import PropertyList from './property_list';
+import { DangerButton, SecondaryButton } from './button';
 
 interface ThingDetailsProps {
   id: string;
@@ -23,23 +23,34 @@ const ThingActions = ({ thing }: { thing: Thing }) => {
     if (thing.actions.canDelete) {
       actionCount++;
     }
-    return `grid-cols-${actionCount}`
-  }, [thing])
+    return `grid-cols-${actionCount}`;
+  }, [thing]);
 
-  return <div className={`grid gap-x-2 ${colClass}`}>
-    {thing.actions.canEdit &&
-      <a href={`/things/${thing.id}/edit`}>
-        <SecondaryButton className="w-full">Edit</SecondaryButton>
-      </a>}
-    {thing.actions.canShare &&
-      <a href={`/things/${thing.id}/share`}>
-        <SecondaryButton className="w-full flex flex-row">Share <div className="rounded bg-secondary-200 text-onprimary mx-1 px-1">{thing.shares.length}</div></SecondaryButton>
-      </a>}
-    {thing.actions.canDelete && <a href="#">
-      <DangerButton className="w-full">Delete</DangerButton>
-    </a>}
-  </div>
-}
+  return (
+    <div className={`grid gap-x-2 ${colClass}`}>
+      {thing.actions.canEdit && (
+        <a href={`/things/${thing.id}/edit`}>
+          <SecondaryButton className="w-full">Edit</SecondaryButton>
+        </a>
+      )}
+      {thing.actions.canShare && (
+        <a href={`/things/${thing.id}/share`}>
+          <SecondaryButton className="w-full flex flex-row">
+            Share{' '}
+            <div className="rounded-sm bg-secondary-200 text-onprimary mx-1 px-1">
+              {thing.shares.length}
+            </div>
+          </SecondaryButton>
+        </a>
+      )}
+      {thing.actions.canDelete && (
+        <a href="#">
+          <DangerButton className="w-full">Delete</DangerButton>
+        </a>
+      )}
+    </div>
+  );
+};
 
 export const ThingDetails = (props: ThingDetailsProps) => {
   const [thing, setThing] = useState<null | Thing>(null);
@@ -51,7 +62,7 @@ export const ThingDetails = (props: ThingDetailsProps) => {
     }
     getThing(axiosInstance, props.id).then(setThing);
   }, [axiosInstance, props.id]);
-  
+
   if (thing === null) {
     return <h1>Loading</h1>;
   } else {
@@ -62,18 +73,20 @@ export const ThingDetails = (props: ThingDetailsProps) => {
           <ThingActions thing={thing} />
         </div>
         <h2 className="text-secondary text-xl">Quantity</h2>
-        <p className="text-display text-l">{thing.quantity} {thing.quantityUnit}</p>
+        <p className="text-display text-l">
+          {thing.quantity} {thing.quantityUnit}
+        </p>
         <h2 className="text-secondary text-xl">Description</h2>
-        <div className="text-display">
-          {thing.description}
-        </div>
-        {thing.privateNote !== null && <>
-          <h2 className="text-secondary text-xl">Private Note</h2>
-          {thing.privateNote.length > 0 &&
-            <div className="bg-warning text-display rounded p-2">
-              {thing.privateNote}
-            </div>}</>}
-        <PropertyList properties={thing.properties} keyWidth="14rem"/>
+        <div className="text-display">{thing.description}</div>
+        {thing.privateNote !== null && (
+          <>
+            <h2 className="text-secondary text-xl">Private Note</h2>
+            {thing.privateNote.length > 0 && (
+              <div className="bg-warning text-display rounded-sm p-2">{thing.privateNote}</div>
+            )}
+          </>
+        )}
+        <PropertyList properties={thing.properties} keyWidth="14rem" />
         <div className="mt-4">
           <ImageGallery images={thing.images} />
         </div>
