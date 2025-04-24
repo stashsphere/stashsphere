@@ -104,6 +104,7 @@ func DeleteContent(ctx context.Context, exec boil.ContextExecutor, storePath str
 // input is current path
 func ClearExifData(path string) ([]byte, error) {
 	imgFile, err := os.Open(path)
+	defer imgFile.Close()
 	if err != nil {
 		return nil, err
 	}

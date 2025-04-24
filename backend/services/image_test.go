@@ -42,6 +42,14 @@ func TestImageCreation(t *testing.T) {
 	jpgImage, err := imageService.CreateImage(context.Background(), testUser.ID, "test.jpg", jpgFile)
 	assert.NoError(t, err)
 	assert.Equal(t, jpgImage.Mime, "image/jpeg", "expected mime type to be jpg")
+
+	webpFile, err := testcommon.Assets.Open("assets/test.webp")
+	assert.NoError(t, err)
+
+	webpImage, err := imageService.CreateImage(context.Background(), testUser.ID, "test.webp", webpFile)
+	assert.NoError(t, err)
+	assert.Equal(t, webpImage.Mime, "image/webp", "expected mime type to be webp")
+
 }
 
 func TestImageAccess(t *testing.T) {

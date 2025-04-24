@@ -85,14 +85,31 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 		return nil, err
 	}
 
-	firstChunk := exifRemoved[:1024]
+	var srcData []byte
+	if len(exifRemoved) == 0 {
+		imgFile, err := os.Open(tmp.Name())
+		defer imgFile.Close()
+		if err != nil {
+			return nil, err
+		}
+		srcData, err = io.ReadAll(imgFile)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		srcData = exifRemoved
+	}
+
+	srcDataLength := len(srcData)
+
+	firstChunk := srcData[:min(srcDataLength, 1024)]
 	mime, err := is.mimeDecoder.TypeByBuffer(firstChunk)
 	if err != nil {
 		return nil, err
 	}
 
 	hasher := sha256.New()
-	hasher.Write(exifRemoved)
+	hasher.Write(srcData)
 	hash := hasher.Sum(nil)
 	encoding := base32.StdEncoding.WithPadding(base32.NoPadding)
 	hash32 := encoding.EncodeToString(hash[:])
@@ -114,7 +131,7 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 		return nil, err
 	}
 
-	err = os.WriteFile(newPath, exifRemoved, 0640)
+	err = os.WriteFile(newPath, srcData, 0640)
 	if err != nil {
 		return nil, err
 	}
