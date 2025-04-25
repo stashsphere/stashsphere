@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stashsphere/backend/models"
@@ -142,6 +143,9 @@ func (ss *ShareService) GetShare(ctx context.Context, shareId string, requesting
 		models.ShareWhere.ID.EQ(shareId),
 	).One(ctx, ss.db)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, utils.ErrNotFoundError{EntityName: "Share"}
+		}
 		return nil, err
 	}
 	if share.OwnerID != requestingUser && share.TargetUserID != requestingUser {

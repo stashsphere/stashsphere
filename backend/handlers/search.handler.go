@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stashsphere/backend/middleware"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
+	"github.com/stashsphere/backend/utils"
 )
 
 type SearchHandler struct {
@@ -29,25 +29,22 @@ type SearchParams struct {
 func (sh *SearchHandler) SearchHandlerGet(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.Redirect(http.StatusSeeOther, "/user/login")
+		return utils.ErrNotAuthenticated
 	}
 	searchParams := SearchParams{}
 	if err := c.Bind(&searchParams); err != nil {
-		fmt.Printf("Validation Failed %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Could not parse params")
+		return &utils.ErrParameterError{Err: err}
 	}
 	results, err := sh.search_service.Search(c.Request().Context(), authCtx.User.ID, &services.SearchParams{Query: searchParams.Query})
 	if err != nil {
-		c.Logger().Error("Could not search: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Could not search")
+		return err
 	}
 	sharedListIds, err := sh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
-		c.Logger().Warn("Could not get shared lists: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.JSON(http.StatusOK, resources.SearchResultsFromModel(results, authCtx.User.ID, sharedListIds))
 }

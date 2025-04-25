@@ -7,6 +7,7 @@ import (
 	"github.com/stashsphere/backend/middleware"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
+	"github.com/stashsphere/backend/utils"
 )
 
 type ShareHandler struct {
@@ -35,24 +36,21 @@ func NewShareParamsToCreateShareParams(params NewShareParams, ownerId string) *s
 func (sh *ShareHandler) ShareHandlerPost(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	shareParams := NewShareParams{}
 	if err := c.Bind(&shareParams); err != nil {
-		c.Logger().Errorf("Bind error: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	if err := c.Validate(shareParams); err != nil {
-		c.Logger().Errorf("Validation error: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	share, err := sh.share_service.CreateShare(c.Request().Context(), *NewShareParamsToCreateShareParams(shareParams, authCtx.User.ID))
 	if err != nil {
-		c.Logger().Errorf("Could not share object: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity)
+		return err
 	}
 	return c.JSON(http.StatusCreated, resources.ShareFromModel(share, authCtx.User.ID))
 }
@@ -60,16 +58,15 @@ func (sh *ShareHandler) ShareHandlerPost(c echo.Context) error {
 func (sh *ShareHandler) ShareHandlerGet(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	shareId := c.Param("shareId")
 	share, err := sh.share_service.GetShare(c.Request().Context(), shareId, authCtx.User.ID)
 	if err != nil {
-		c.Logger().Errorf("Failed to get share: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, "Failed to retrieve share")
+		return err
 	}
 	return c.JSON(http.StatusOK, resources.ShareFromModel(share, authCtx.User.ID))
 }
@@ -77,16 +74,15 @@ func (sh *ShareHandler) ShareHandlerGet(c echo.Context) error {
 func (sh *ShareHandler) ShareHandlerDelete(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	shareId := c.Param("shareId")
 	err := sh.share_service.DeleteShare(c.Request().Context(), shareId, authCtx.User.ID)
 	if err != nil {
-		c.Logger().Errorf("Failed to delete share: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, "Failed to delete share")
+		return err
 	}
 	return c.NoContent(http.StatusOK)
 }

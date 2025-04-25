@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -52,11 +53,18 @@ func (fs *FriendService) CreateFriendRequest(ctx context.Context, params CreateF
 }
 
 func (fs *FriendService) GetFriendRequest(ctx context.Context, id string) (*models.FriendRequest, error) {
-	return models.FriendRequests(
+	friendRequest, err := models.FriendRequests(
 		models.FriendRequestWhere.ID.EQ(id),
 		qm.Load(models.FriendRequestRels.Sender),
 		qm.Load(models.FriendRequestRels.Receiver),
 	).One(ctx, fs.db)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, utils.ErrNotFoundError{EntityName: "FriendRequest"}
+		}
+		return nil, err
+	}
+	return friendRequest, err
 }
 
 type CancelFriendRequestParams struct {
@@ -67,6 +75,9 @@ type CancelFriendRequestParams struct {
 func (fs *FriendService) CancelFriendRequest(ctx context.Context, params CancelFriendRequestParams) (*models.FriendRequest, error) {
 	request, err := models.FriendRequests(models.FriendRequestWhere.ID.EQ(params.RequestId)).One(ctx, fs.db)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, utils.ErrNotFoundError{EntityName: "FriendRequest"}
+		}
 		return nil, err
 	}
 	if request.SenderID != params.UserId {
@@ -118,6 +129,9 @@ func (fs *FriendService) ReactFriendRequest(ctx context.Context, params ReactFri
 	err := utils.Tx(ctx, fs.db, func(tx *sql.Tx) error {
 		request, err := models.FriendRequests(models.FriendRequestWhere.ID.EQ(params.FriendRequestId)).One(ctx, tx)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return utils.ErrNotFoundError{EntityName: "FriendRequest"}
+			}
 			return err
 		}
 		// only the receiver can accept or reject a friend request``
@@ -176,7 +190,9 @@ func (fs *FriendService) Unfriend(ctx context.Context, userId string, friendId s
 			qm.Or2(models.FriendshipWhere.Friend2ID.EQ(userId))),
 	).One(ctx, fs.db)
 	if err != nil {
-		return err
+		if errors.Is(err, sql.ErrNoRows) {
+			return utils.ErrNotFoundError{EntityName: "Friend"}
+		}
 	}
 	_, err = friendShip.Delete(ctx, fs.db)
 	return err

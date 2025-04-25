@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"math"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -105,6 +106,9 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 func (ts *ThingService) GetThing(ctx context.Context, thingId string, userId string) (*models.Thing, error) {
 	thing, err := operations.GetThingUnchecked(ctx, ts.db, thingId)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, utils.ErrNotFoundError{EntityName: "Thing"}
+		}
 		return nil, err
 	}
 	sharedThingsForUser, err := operations.GetSharedThingIdsForUser(ctx, ts.db, userId)
@@ -149,6 +153,9 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 			models.ThingWhere.ID.EQ(thingId),
 		).One(ctx, tx)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return utils.ErrNotFoundError{EntityName: "Thing"}
+			}
 			return err
 		}
 		if thing.OwnerID != userId {

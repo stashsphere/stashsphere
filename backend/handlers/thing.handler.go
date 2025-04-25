@@ -12,6 +12,7 @@ import (
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
+	"github.com/stashsphere/backend/utils"
 )
 
 type ThingHandler struct {
@@ -32,15 +33,14 @@ type ThingsParams struct {
 func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return c.String(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.String(http.StatusUnauthorized, "Not authorized")
+		return utils.ErrNotAuthenticated
 	}
 	var params ThingsParams
-	err := c.Bind(&params)
-	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid parameters")
+	if err := c.Bind(&params); err != nil {
+		return &utils.ErrParameterError{Err: err}
 	}
 	if params.PerPage == 0 {
 		params.PerPage = 50
@@ -55,13 +55,11 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 		},
 	)
 	if err != nil {
-		c.Logger().Error("Could not query owned things for User %d. %v", authCtx.User.ID, err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "")
+		return err
 	}
 	sharedListIds, err := th.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
-		c.Logger().Warn("Could not get shared lists: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	paginated := resources.PaginatedThings{
 		Things:         resources.ThingsFromModelSlice(things, authCtx.User.ID, sharedListIds),
@@ -164,24 +162,21 @@ func NewThingParamsToCreateThingParams(param NewThingParams, ownerId string) ser
 func (th *ThingHandler) ThingHandlerPost(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	thingParams := NewThingParams{}
 	if err := c.Bind(&thingParams); err != nil {
-		c.Logger().Errorf("Bind error: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	if err := c.Validate(thingParams); err != nil {
-		c.Logger().Errorf("Validation error: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	thing, err := th.thing_service.CreateThing(c.Request().Context(), NewThingParamsToCreateThingParams(thingParams, authCtx.User.ID))
 	if err != nil {
-		c.Logger().Errorf("Could not create thing: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity)
+		return err
 	}
 	return c.JSON(http.StatusCreated, resources.ReducedThingFromModel(thing, authCtx.User.ID))
 }
@@ -224,35 +219,31 @@ func UpdateThingParamsToUpdateThingParams(param UpdateThingParams) services.Upda
 func (th *ThingHandler) ThingHandlerPatch(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.Redirect(http.StatusSeeOther, "/user/login")
+		return utils.ErrNotAuthenticated
 	}
 	thingId := c.Param("thingId")
 	thingParams := UpdateThingParams{}
 	if err := c.Bind(&thingParams); err != nil {
-		c.Logger().Errorf("Bind failed: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	if err := c.Validate(thingParams); err != nil {
-		c.Logger().Errorf("Validation failed: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "TODO")
+		return &utils.ErrParameterError{Err: err}
 	}
 	thing, err := th.thing_service.EditThing(c.Request().Context(), thingId, authCtx.User.ID, UpdateThingParamsToUpdateThingParams(thingParams))
 	if err != nil {
-		c.Logger().Errorf("Failed to edit thing: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, "Failed to edit thing")
+		return err
 	}
 	c.Logger().Infof("Thing edited: %v", thing.ID)
 	updated_thing, err := th.thing_service.GetThing(c.Request().Context(), thingId, authCtx.User.ID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, "Failed to retrieve updated thing")
+		return err
 	}
 	sharedListIds, err := th.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
-		c.Logger().Warn("Could not get shared lists: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.JSON(http.StatusOK, resources.ThingFromModel(updated_thing, authCtx.User.ID, sharedListIds))
 }
@@ -260,23 +251,19 @@ func (th *ThingHandler) ThingHandlerPatch(c echo.Context) error {
 func (th *ThingHandler) ThingHandlerShow(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		c.Logger().Errorf("No auth context")
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		c.Logger().Errorf("User is not authenticated")
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	thingId := c.Param("thingId")
 	thing, err := th.thing_service.GetThing(c.Request().Context(), thingId, authCtx.User.ID)
 	if err != nil {
-		c.Logger().Errorf("Failed to get thing: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, "Failed to retrieve thing")
+		return err
 	}
 	sharedListIds, err := th.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
-		c.Logger().Warn("Could not get shared lists: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.JSON(http.StatusOK, resources.ThingFromModel(thing, authCtx.User.ID, sharedListIds))
 }

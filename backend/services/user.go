@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stashsphere/backend/models"
@@ -60,6 +61,9 @@ func (us *UserService) CreateUser(ctx context.Context, params CreateUserParams) 
 func (us *UserService) FindUserByID(ctx context.Context, userId string) (*models.User, error) {
 	user, err := models.Users(models.UserWhere.ID.EQ(userId)).One(ctx, us.db)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, utils.ErrNotFoundError{EntityName: "user"}
+		}
 		return nil, err
 	}
 	return user, nil
@@ -68,6 +72,9 @@ func (us *UserService) FindUserByID(ctx context.Context, userId string) (*models
 func (us *UserService) UpdateUser(ctx context.Context, userId string, name string) (*models.User, error) {
 	user, err := models.Users(models.UserWhere.ID.EQ(userId)).One(ctx, us.db)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, utils.ErrNotFoundError{EntityName: "user"}
+		}
 		return nil, err
 	}
 	user.Name = name

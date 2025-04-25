@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"math"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -78,6 +79,9 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 	err := utils.Tx(ctx, ls.db, func(tx *sql.Tx) error {
 		list, err := models.Lists(qm.Load(models.ListRels.Things), models.ListWhere.ID.EQ(listId)).One(ctx, tx)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return utils.ErrNotFoundError{EntityName: "List"}
+			}
 			return err
 		}
 		if list.OwnerID != userId {
@@ -98,6 +102,9 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 		for _, thingId := range params.ThingIds {
 			thing, err := models.Things(models.ThingWhere.ID.EQ(thingId)).One(ctx, tx)
 			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return utils.ErrNotFoundError{EntityName: "Thing"}
+				}
 				return err
 			}
 			if thing.OwnerID != userId {

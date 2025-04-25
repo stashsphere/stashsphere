@@ -7,6 +7,7 @@ import (
 	"github.com/stashsphere/backend/middleware"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
+	"github.com/stashsphere/backend/utils"
 )
 
 type FriendHandler struct {
@@ -26,23 +27,21 @@ type NewFriendRequestParams struct {
 func (fh *FriendHandler) FriendRequestPost(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	friendRequestParams := NewFriendRequestParams{}
 	if err := c.Bind(&friendRequestParams); err != nil {
-		c.Logger().Errorf("Bind error: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	request, err := fh.friend_service.CreateFriendRequest(c.Request().Context(), services.CreateFriendRequestParams{
 		UserId:     authCtx.User.ID,
 		ReceiverId: friendRequestParams.ReceiverId,
 	})
 	if err != nil {
-		c.Logger().Errorf("Could not create friend request: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity)
+		return err
 	}
 	return c.JSON(http.StatusCreated, resources.FriendRequestFromModel(request, authCtx.User.ID))
 }
@@ -50,15 +49,14 @@ func (fh *FriendHandler) FriendRequestPost(c echo.Context) error {
 func (fh *FriendHandler) FriendRequestIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	requests, err := fh.friend_service.GetFriendRequests(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
-		c.Logger().Errorf("Could not fetch friend request: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.JSON(http.StatusOK, resources.FriendRequestsResponseFromResult(requests, authCtx.User.ID))
 }
@@ -66,10 +64,10 @@ func (fh *FriendHandler) FriendRequestIndex(c echo.Context) error {
 func (fh *FriendHandler) FriendRequestDelete(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	requestId := c.Param("requestId")
 	_, err := fh.friend_service.CancelFriendRequest(c.Request().Context(), services.CancelFriendRequestParams{
@@ -77,7 +75,7 @@ func (fh *FriendHandler) FriendRequestDelete(c echo.Context) error {
 		RequestId: requestId,
 	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.NoContent(http.StatusOK)
 }
@@ -89,15 +87,14 @@ type UpdateFriendRequestParams struct {
 func (fh *FriendHandler) FriendRequestUpdate(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	friendRequestParams := UpdateFriendRequestParams{}
 	if err := c.Bind(&friendRequestParams); err != nil {
-		c.Logger().Errorf("Bind error: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	requestId := c.Param("requestId")
 	request, err := fh.friend_service.ReactFriendRequest(c.Request().Context(), services.ReactFriendRequestParams{
@@ -106,8 +103,7 @@ func (fh *FriendHandler) FriendRequestUpdate(c echo.Context) error {
 		Accept:          friendRequestParams.Accept,
 	})
 	if err != nil {
-		c.Logger().Errorf("Could not update friend request: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.JSON(http.StatusOK, resources.FriendRequestFromModel(request, authCtx.User.ID))
 }
@@ -115,15 +111,14 @@ func (fh *FriendHandler) FriendRequestUpdate(c echo.Context) error {
 func (fh *FriendHandler) FriendsIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	friends, err := fh.friend_service.GetFriends(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
-		c.Logger().Errorf("Could not fetch friends: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.JSON(http.StatusOK, resources.FriendShipsResponseFromModel(friends, authCtx.User.ID))
 }
@@ -131,15 +126,15 @@ func (fh *FriendHandler) FriendsIndex(c echo.Context) error {
 func (fh *FriendHandler) FriendDelete(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized")
+		return utils.ErrNotAuthenticated
 	}
 	friendId := c.Param("friendId")
 	err := fh.friend_service.Unfriend(c.Request().Context(), authCtx.User.ID, friendId)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.NoContent(http.StatusOK)
 }

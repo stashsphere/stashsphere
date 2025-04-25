@@ -34,7 +34,6 @@
           pkgs = nixpkgsFor.${system};
         in
         {
-          # combined dev shell for backend and frontend
           default = pkgs.mkShell {
             name = "default";
             buildInputs = with pkgs; [

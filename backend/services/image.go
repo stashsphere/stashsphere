@@ -147,6 +147,9 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string) (*os.File, *models.Image, error) {
 	image, err := models.Images(models.ImageWhere.Hash.EQ(hash)).One(ctx, is.db)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil, utils.ErrNotFoundError{EntityName: "Image"}
+		}
 		return nil, nil, err
 	}
 	sharedImagesForUser, err := operations.GetSharedImageIdsForUser(ctx, is.db, userId)
@@ -206,6 +209,9 @@ func (is *ImageService) DeleteImage(ctx context.Context, userId string, imageId 
 	err := utils.Tx(ctx, is.db, func(tx *sql.Tx) error {
 		deletedImage, err := operations.DeleteImage(ctx, tx, userId, imageId)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return utils.ErrNotFoundError{EntityName: "Image"}
+			}
 			return err
 		}
 		if deletedImage == nil {

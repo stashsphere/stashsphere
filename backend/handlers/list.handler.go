@@ -7,6 +7,7 @@ import (
 	"github.com/stashsphere/backend/middleware"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
+	"github.com/stashsphere/backend/utils"
 )
 
 type ListHandler struct {
@@ -35,24 +36,21 @@ func NewListParamsToCreateListParams(param NewListParams, ownerId string) servic
 func (lh *ListHandler) ListHandlerPost(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.Redirect(http.StatusSeeOther, "/user/login")
+		return utils.ErrNotAuthenticated
 	}
 	params := NewListParams{}
 	if err := c.Bind(&params); err != nil {
-		c.Logger().Warn("Could not bind: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	if err := c.Validate(params); err != nil {
-		c.Logger().Warn("Could not validate list: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity)
+		return &utils.ErrParameterError{Err: err}
 	}
 	list, err := lh.list_service.CreateList(c.Request().Context(), NewListParamsToCreateListParams(params, authCtx.User.ID))
 	if err != nil {
-		c.Logger().Warn("Could not create list: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity)
+		return err
 	}
 	return c.JSON(http.StatusCreated, resources.ReducedListFromModel(list, authCtx.User.ID))
 }
@@ -60,21 +58,19 @@ func (lh *ListHandler) ListHandlerPost(c echo.Context) error {
 func (lh *ListHandler) ListHandlerShow(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.Redirect(http.StatusSeeOther, "/user/login")
+		return utils.ErrNotAuthenticated
 	}
 	listId := c.Param("listId")
 	list, err := lh.list_service.GetList(c.Request().Context(), listId, authCtx.User.ID)
 	if err != nil {
-		c.Logger().Warn("Could not get list: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	sharedListIds, err := lh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
-		c.Logger().Warn("Could not get shared lists: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.JSON(http.StatusOK, resources.ListFromModel(list, authCtx.User.ID, sharedListIds))
 }
@@ -87,15 +83,14 @@ type ListsParams struct {
 func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.Redirect(http.StatusSeeOther, "/user/login")
+		return utils.ErrNotAuthenticated
 	}
 	var params ListsParams
-	err := c.Bind(&params)
-	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid parameters")
+	if err := c.Bind(&params); err != nil {
+		return &utils.ErrParameterError{Err: err}
 	}
 	if params.PerPage == 0 {
 		params.PerPage = 50
@@ -109,13 +104,11 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 		},
 	)
 	if err != nil {
-		c.Logger().Errorf("Could not fetch lists for user: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Server Error")
+		return err
 	}
 	sharedListIds, err := lh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
-		c.Logger().Warn("Could not get shared lists: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	paginated := resources.PaginatedLists{
 		Things:         resources.ListsFromModelSlice(lists, authCtx.User.ID, sharedListIds),
@@ -150,28 +143,23 @@ func (lh *ListHandler) ListHandlerPatch(c echo.Context) error {
 	listId := c.Param("listId")
 	listParams := UpdateListParams{}
 	if err := c.Bind(&listParams); err != nil {
-		c.Logger().Errorf("Bind failed: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	if err := c.Validate(listParams); err != nil {
-		c.Logger().Errorf("Validation failed: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "TODO")
+		return &utils.ErrParameterError{Err: err}
 	}
 	list, err := lh.list_service.UpdateList(c.Request().Context(), listId, authCtx.User.ID, UpdateListParamsToUpdateListParams(listParams))
 	if err != nil {
-		c.Logger().Errorf("Failed to edit list: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, "Failed to edit list")
+		return err
 	}
 	c.Logger().Infof("List edited: %v", list.ID)
 	list, err = lh.list_service.GetList(c.Request().Context(), listId, authCtx.User.ID)
 	if err != nil {
-		c.Logger().Warn("Could not get list: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity)
+		return err
 	}
 	sharedListIds, err := lh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
-		c.Logger().Warn("Could not get shared lists: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.JSON(http.StatusOK, resources.ListFromModel(list, authCtx.User.ID, sharedListIds))
 }

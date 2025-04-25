@@ -1,10 +1,9 @@
 package handlers
 
 import (
-	"net/http"
-
 	"github.com/labstack/echo/v4"
 	"github.com/stashsphere/backend/services"
+	"github.com/stashsphere/backend/utils"
 )
 
 type RegisterHandler struct {
@@ -27,10 +26,10 @@ type RegisterPostParams struct {
 func (rh *RegisterHandler) RegisterHandlerPost(c echo.Context) error {
 	registerParams := RegisterPostParams{}
 	if err := c.Bind(&registerParams); err != nil {
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	if err := c.Validate(registerParams); err != nil {
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	_, err := rh.userService.CreateUser(c.Request().Context(), services.CreateUserParams{
 		Name:       registerParams.Name,
@@ -39,8 +38,7 @@ func (rh *RegisterHandler) RegisterHandlerPost(c echo.Context) error {
 		InviteCode: registerParams.InviteCode,
 	})
 	if err != nil {
-		c.Logger().Errorf("error creating user: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity)
+		return err
 	}
 	return nil
 }

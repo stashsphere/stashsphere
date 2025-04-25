@@ -13,6 +13,7 @@ import (
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
+	"github.com/stashsphere/backend/utils"
 )
 
 type ImageHandler struct {
@@ -27,10 +28,10 @@ func NewImageHandler(image_service *services.ImageService, cache_service *servic
 func (is *ImageHandler) ImageHandlerPost(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return c.String(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.String(http.StatusUnauthorized, "Not authorized")
+		return utils.ErrNotAuthenticated
 	}
 	// Source
 	file, err := c.FormFile("file")
@@ -58,15 +59,14 @@ type ImageGetParams struct {
 func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return c.String(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.String(http.StatusUnauthorized, "Not authorized")
+		return utils.ErrNotAuthenticated
 	}
 	var imageParams ImageGetParams
 	if err := c.Bind(&imageParams); err != nil {
-		c.Logger().Errorf("Bind error: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return &utils.ErrParameterError{Err: err}
 	}
 	hash := c.Param("hash")
 	file, image, err := is.image_service.ImageGet(c.Request().Context(), authCtx.User.ID, hash)
@@ -74,8 +74,7 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 		if os.IsNotExist(err) {
 			return c.String(http.StatusNotFound, "Image Not Found")
 		}
-		c.Logger().Error(err)
-		return c.String(http.StatusInternalServerError, "Internal Server Error")
+		return err
 	}
 	defer file.Close()
 
@@ -103,24 +102,20 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 		if !is.cache_service.Exists(etag) {
 			resized, err := operations.ResizeImage(file, int(imageParams.Width))
 			if err != nil {
-				c.Logger().Errorf("Resize error: %v", err)
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				return err
 			}
 			resizedContent, err := io.ReadAll(resized)
 			if err != nil {
-				c.Logger().Errorf("Cache error: %v", err)
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				return err
 			}
 			err = is.cache_service.Put(etag, resizedContent)
 			if err != nil {
-				c.Logger().Errorf("Cache error: %v", err)
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				return err
 			}
 		}
 		returnedImageReader, err = is.cache_service.Get(etag)
 		if err != nil {
-			c.Logger().Errorf("Cache error: %v", err)
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return err
 		}
 	} else {
 		returnedImageReader = file
@@ -142,18 +137,17 @@ type ImageModifyParams struct {
 func (is *ImageHandler) ImageHandlerPatch(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return c.String(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.String(http.StatusUnauthorized, "Not authorized")
+		return utils.ErrNotAuthenticated
 	}
 
 	imageId := c.Param("imageId")
 
 	var params ImageModifyParams
-	err := c.Bind(&params)
-	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid parameters")
+	if err := c.Bind(&params); err != nil {
+		return &utils.ErrParameterError{Err: err}
 	}
 
 	rotation := operations.Rotation90
@@ -171,10 +165,10 @@ func (is *ImageHandler) ImageHandlerPatch(c echo.Context) error {
 	})
 	if err != nil {
 		if os.IsNotExist(err) {
-			return c.String(http.StatusNotFound, "Image Not Found")
+			return &utils.ErrNotFoundError{EntityName: "Image"}
 		}
 		c.Logger().Error(err)
-		return c.String(http.StatusInternalServerError, "Internal Server Error")
+		return err
 	}
 	resource := resources.ReducedImageFromModel(image)
 	return c.JSON(http.StatusCreated, resource)
@@ -190,15 +184,14 @@ type ImagesParams struct {
 func (is *ImageHandler) ImageHandlerIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return c.String(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.String(http.StatusUnauthorized, "Not authorized")
+		return utils.ErrNotAuthenticated
 	}
 	var params ImagesParams
-	err := c.Bind(&params)
-	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid parameters")
+	if err := c.Bind(&params); err != nil {
+		return &utils.ErrParameterError{Err: err}
 	}
 	if params.PerPage == 0 {
 		params.PerPage = 50
@@ -206,8 +199,7 @@ func (is *ImageHandler) ImageHandlerIndex(c echo.Context) error {
 
 	totalCount, totalPageCount, images, err := is.image_service.ImageIndex(c.Request().Context(), authCtx.User.ID, params.PerPage, params.Page)
 	if err != nil {
-		c.Logger().Warn("Could not retrieve images: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	paginated := resources.PaginatedImages{
 		Images:         resources.ImagesFromModelSlice(images, authCtx.User.ID),
@@ -222,16 +214,15 @@ func (is *ImageHandler) ImageHandlerIndex(c echo.Context) error {
 func (is *ImageHandler) ImageHandlerDelete(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return c.String(http.StatusInternalServerError, "No auth context")
+		return utils.ErrNoAuthContext
 	}
 	if !authCtx.Authenticated {
-		return c.String(http.StatusUnauthorized, "Not authorized")
+		return utils.ErrNotAuthenticated
 	}
 	imageId := c.Param("imageId")
 	deletedImage, err := is.image_service.DeleteImage(c.Request().Context(), authCtx.User.ID, imageId)
 	if err != nil {
-		c.Logger().Warn("Could not delete images: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 	return c.JSON(http.StatusOK, resources.ReducedImageFromModel(deletedImage))
 }

@@ -183,6 +183,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	}))
 	e.Use(inv_middleware.ExtractClaims("token"))
 	e.Use(inv_middleware.HeadToGetMiddleware)
+	e.HTTPErrorHandler = inv_middleware.CreateStashSphereHTTPErrorHandler(e)
 	// TODO add refresh token middleware: check whether accessToken is less than 15min of lifetime, try to access refreshtoken, if validate
 	// set new access and refresh token
 
