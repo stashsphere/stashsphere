@@ -30,4 +30,6 @@ var (
 	ErrUserHasNoAccessRights     = errors.New("UserHasNoAccessRights")
 	ErrEntityInUse               = errors.New("EntityInUse")
 	ErrFriendRequestNotPending   = errors.New("FriendRequestNotPending")
+	// file is not of the allowed mime types
+	ErrIllegalMimeType = errors.New("IllegalMimeType")
 )

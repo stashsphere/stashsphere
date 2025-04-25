@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/labstack/gommon/log"
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -106,6 +107,10 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 	mime, err := is.mimeDecoder.TypeByBuffer(firstChunk)
 	if err != nil {
 		return nil, err
+	}
+
+	if !strings.HasPrefix(mime, "image/") {
+		return nil, utils.ErrIllegalMimeType
 	}
 
 	hasher := sha256.New()
