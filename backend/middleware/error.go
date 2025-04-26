@@ -43,6 +43,9 @@ func CreateStashSphereHTTPErrorHandler(echoInstance *echo.Echo) func(err error, 
 		case utils.ErrIllegalMimeType:
 			statusCode = http.StatusBadRequest
 			message = "Invalid file type"
+		case utils.ErrPendingFriendRequestExists:
+			statusCode = http.StatusConflict
+			message = "A pending request already exists"
 
 		default:
 			switch e := err.(type) {

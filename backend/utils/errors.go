@@ -52,5 +52,7 @@ var (
 	// the user is not authenticated, request w/o a token
 	ErrNotAuthenticated = errors.New("NotAuthenticated")
 	// file is not of the allowed mime types
-	ErrIllegalMimeType = errors.New("IllegalMimeType")
+	ErrIllegalMimeType            = errors.New("IllegalMimeType")
+	ErrPendingFriendRequestExists = errors.New("PendingFriendRequestExists")
+	ErrFriendShipExists           = errors.New("FriendshipExists")
 )

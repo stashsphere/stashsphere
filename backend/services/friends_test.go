@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFriendRequestCreation(t *testing.T) {
+func TestFriendRequestCreationReject(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
 
@@ -46,6 +46,13 @@ func TestFriendRequestCreation(t *testing.T) {
 	assert.Len(t, result.Received, 1)
 	assert.Len(t, result.Sent, 0)
 
+	secondRequest, err := friendService.CreateFriendRequest(context.Background(), services.CreateFriendRequestParams{
+		UserId:     testUser.ID,
+		ReceiverId: otherUser.ID,
+	})
+	assert.Nil(t, secondRequest)
+	assert.ErrorIs(t, err, utils.ErrPendingFriendRequestExists)
+
 	// the other user cannot cancel a request that they did not send
 	_, err = friendService.CancelFriendRequest(context.Background(), services.CancelFriendRequestParams{
 		UserId:    otherUser.ID,
@@ -66,4 +73,50 @@ func TestFriendRequestCreation(t *testing.T) {
 	count, err = models.FriendRequests(models.FriendRequestWhere.ID.EQ(request.ID)).Count(context.Background(), db)
 	assert.NoError(t, err)
 	assert.Zero(t, count)
+}
+
+func TestFriendRequestCreationAccept(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+
+	t.Cleanup(tearDownFunc)
+
+	userService := services.NewUserService(db, false, "")
+	friendService := services.NewFriendService(db)
+	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
+	assert.NoError(t, err)
+	otherUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	otherUser, err := userService.CreateUser(context.Background(), *otherUserParams)
+	assert.NoError(t, err)
+
+	request, err := friendService.CreateFriendRequest(context.Background(), services.CreateFriendRequestParams{
+		UserId:     testUser.ID,
+		ReceiverId: otherUser.ID,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, request)
+
+	friends, err := friendService.GetFriends(context.Background(), testUser.ID)
+	assert.NoError(t, err)
+	assert.Len(t, friends, 0)
+
+	_, err = friendService.ReactFriendRequest(context.Background(), services.ReactFriendRequestParams{
+		FriendRequestId: request.ID,
+		UserId:          otherUser.ID,
+		Accept:          true,
+	})
+	assert.NoError(t, err)
+
+	friends, err = friendService.GetFriends(context.Background(), testUser.ID)
+	assert.NoError(t, err)
+	assert.Len(t, friends, 1)
+
+	// friend ship exists, cannot be requested again
+	secondRequest, err := friendService.CreateFriendRequest(context.Background(), services.CreateFriendRequestParams{
+		UserId:     testUser.ID,
+		ReceiverId: otherUser.ID,
+	})
+	assert.ErrorIs(t, err, utils.ErrFriendShipExists)
+	assert.Nil(t, secondRequest)
 }

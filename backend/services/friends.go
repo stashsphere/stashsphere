@@ -29,8 +29,23 @@ type CreateFriendRequestParams struct {
 func (fs *FriendService) CreateFriendRequest(ctx context.Context, params CreateFriendRequestParams) (*models.FriendRequest, error) {
 	var outerRequest *models.FriendRequest
 	err := utils.Tx(ctx, fs.db, func(tx *sql.Tx) error {
-		// TODO check for existing friendship
-		// check for pending friend requests
+		pendingFriendRequests, err := models.FriendRequests(models.FriendRequestWhere.State.EQ(models.FriendRequestStatePending), models.FriendRequestWhere.SenderID.EQ(params.UserId)).Count(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if pendingFriendRequests > 0 {
+			return utils.ErrPendingFriendRequestExists
+		}
+
+		existingFriendShip, err := models.Friendships(
+			qm.Expr(models.FriendshipWhere.Friend1ID.EQ(params.UserId),
+				qm.Or2(models.FriendshipWhere.Friend2ID.EQ(params.UserId)))).Count(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if existingFriendShip > 0 {
+			return utils.ErrFriendShipExists
+		}
 		requestId, err := gonanoid.New()
 		request := models.FriendRequest{
 			ID:         requestId,
