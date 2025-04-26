@@ -29,14 +29,14 @@ type SearchParams struct {
 func (sh *SearchHandler) SearchHandlerGet(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	searchParams := SearchParams{}
 	if err := c.Bind(&searchParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	results, err := sh.search_service.Search(c.Request().Context(), authCtx.User.ID, &services.SearchParams{Query: searchParams.Query})
 	if err != nil {

@@ -43,7 +43,7 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 				return err
 			}
 			if !res {
-				return utils.ErrEntityDoesNotBelongToUser
+				return utils.EntityDoesNotBelongToUserError{}
 			}
 		}
 
@@ -107,7 +107,7 @@ func (ts *ThingService) GetThing(ctx context.Context, thingId string, userId str
 	thing, err := operations.GetThingUnchecked(ctx, ts.db, thingId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, utils.ErrNotFoundError{EntityName: "Thing"}
+			return nil, utils.NotFoundError{EntityName: "Thing"}
 		}
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (ts *ThingService) GetThing(ctx context.Context, thingId string, userId str
 		return false
 	}()
 	if !authorized {
-		return nil, utils.ErrUserHasNoAccessRights
+		return nil, utils.UserHasNoAccessRightsError{}
 	}
 
 	return thing, nil
@@ -154,12 +154,12 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 		).One(ctx, tx)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				return utils.ErrNotFoundError{EntityName: "Thing"}
+				return utils.NotFoundError{EntityName: "Thing"}
 			}
 			return err
 		}
 		if thing.OwnerID != userId {
-			return utils.ErrEntityDoesNotBelongToUser
+			return utils.EntityDoesNotBelongToUserError{}
 		}
 
 		thing.PrivateNote = params.PrivateNote
@@ -189,7 +189,7 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 				return err
 			}
 			if !res {
-				return utils.ErrEntityDoesNotBelongToUser
+				return utils.EntityDoesNotBelongToUserError{}
 			}
 		}
 

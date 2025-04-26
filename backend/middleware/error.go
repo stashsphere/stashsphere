@@ -21,35 +21,11 @@ func CreateStashSphereHTTPErrorHandler(echoInstance *echo.Echo) func(err error, 
 		statusCode := http.StatusInternalServerError
 		message := "Internal Server Error"
 
-		switch err {
-		case utils.ErrWrongInviteCode:
-			statusCode = http.StatusBadRequest
-			message = "Invalid invite code"
-		case utils.ErrEntityDoesNotBelongToUser:
-			statusCode = http.StatusForbidden
-			message = "Entity does not belong to user"
-		case utils.ErrUserHasNoAccessRights:
-			statusCode = http.StatusForbidden
-			message = "Insufficient permissions"
-		case utils.ErrEntityInUse:
-			statusCode = http.StatusBadRequest
-			message = "Entity is currently in use"
-		case utils.ErrFriendRequestNotPending:
-			statusCode = http.StatusBadRequest
-			message = "Friend request not pending"
-		case utils.ErrNoAuthContext, utils.ErrNotAuthenticated:
-			statusCode = http.StatusUnauthorized
-			message = "Authentication required"
-		case utils.ErrIllegalMimeType:
-			statusCode = http.StatusBadRequest
-			message = "Invalid file type"
-		case utils.ErrPendingFriendRequestExists:
-			statusCode = http.StatusConflict
-			message = "A pending request already exists"
-
-		default:
-			switch e := err.(type) {
-			case utils.InventoryValidationError:
+		// Check if the error implements ErrorInterface
+		switch e := err.(type) {
+		case utils.StashsphereError:
+			switch e.ErrorType() {
+			case utils.ErrInventoryValidation:
 				statusCode = http.StatusBadRequest
 				message = e.Error()
 			case utils.ErrParameterError:
@@ -58,11 +34,35 @@ func CreateStashSphereHTTPErrorHandler(echoInstance *echo.Echo) func(err error, 
 			case utils.ErrNotFoundError:
 				statusCode = http.StatusNotFound
 				message = e.Error()
-			default:
-				c.Logger().Error("Unhandled error:", err)
-				echoInstance.DefaultHTTPErrorHandler(err, c)
-				return
+			case utils.ErrWrongInviteCode:
+				statusCode = http.StatusBadRequest
+				message = "Invalid invite code"
+			case utils.ErrEntityDoesNotBelongToUser:
+				statusCode = http.StatusForbidden
+				message = "Entity does not belong to user"
+			case utils.ErrUserHasNoAccessRights:
+				statusCode = http.StatusForbidden
+				message = "Insufficient permissions"
+			case utils.ErrEntityInUse:
+				statusCode = http.StatusBadRequest
+				message = "Entity is currently in use"
+			case utils.ErrFriendRequestNotPending:
+				statusCode = http.StatusBadRequest
+				message = "Friend request not pending"
+			case utils.ErrNoAuthContext, utils.ErrNotAuthenticated:
+				statusCode = http.StatusUnauthorized
+				message = "Authentication required"
+			case utils.ErrIllegalMimeType:
+				statusCode = http.StatusBadRequest
+				message = "Invalid file type"
+			case utils.ErrPendingFriendRequestExists:
+				statusCode = http.StatusConflict
+				message = "A pending request already exists"
 			}
+		default:
+			c.Logger().Error("Unhandled error type:", err)
+			echoInstance.DefaultHTTPErrorHandler(err, c)
+			return
 		}
 
 		// Construct the error response

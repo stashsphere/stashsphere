@@ -27,7 +27,7 @@ type LoginPostParams struct {
 func (lh *LoginHandler) LoginHandlerPost(c echo.Context) error {
 	loginParams := LoginPostParams{}
 	if err := c.Bind(&loginParams); err != nil {
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		return utils.ParameterError{Err: err}
 	}
 	_, accessToken, infoToken, err := lh.authService.AuthorizeUser(c.Request().Context(), loginParams.Email, loginParams.Password)
 	if err != nil {
@@ -40,10 +40,10 @@ func (lh *LoginHandler) LoginHandlerPost(c echo.Context) error {
 func (lh *LoginHandler) LogoutHandlerDelete(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	lh.authService.ClearAuthCookies(c)
 	return nil

@@ -21,10 +21,10 @@ func NewProfileHandler(userService *services.UserService) *ProfileHandler {
 func (ph *ProfileHandler) ProfileHandlerGet(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	user, err := ph.userService.FindUserByID(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
@@ -40,14 +40,14 @@ type ProfileUpdateParams struct {
 func (ph *ProfileHandler) ProfileHandlerPatch(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	params := ProfileUpdateParams{}
 	if err := c.Bind(&params); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	user, err := ph.userService.UpdateUser(c.Request().Context(), authCtx.User.ID, params.Name)
 	if err != nil {
@@ -59,10 +59,10 @@ func (ph *ProfileHandler) ProfileHandlerPatch(c echo.Context) error {
 func (ph *ProfileHandler) ProfileHandlerIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	users, err := ph.userService.GetAllUsers(c.Request().Context())
 	if err != nil {

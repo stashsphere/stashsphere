@@ -73,10 +73,10 @@ func DeleteImage(ctx context.Context, exec boil.ContextExecutor, userId string, 
 		return nil, err
 	}
 	if image.OwnerID != userId {
-		return nil, utils.ErrEntityDoesNotBelongToUser
+		return nil, utils.EntityDoesNotBelongToUserError{}
 	}
 	if len(image.R.ImageThings) > 0 {
-		return nil, utils.ErrEntityInUse
+		return nil, utils.EntityInUseError{}
 	}
 	_, err = image.Delete(ctx, exec)
 	if err != nil {
@@ -91,7 +91,7 @@ func DeleteContent(ctx context.Context, exec boil.ContextExecutor, storePath str
 		return err
 	}
 	if imagesWithHash > 0 {
-		return utils.ErrEntityInUse
+		return utils.EntityInUseError{}
 	}
 	path := filepath.Join(storePath, contentId)
 	err = os.Remove(path)

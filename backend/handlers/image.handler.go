@@ -28,10 +28,10 @@ func NewImageHandler(image_service *services.ImageService, cache_service *servic
 func (is *ImageHandler) ImageHandlerPost(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	// Source
 	file, err := c.FormFile("file")
@@ -59,14 +59,14 @@ type ImageGetParams struct {
 func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	var imageParams ImageGetParams
 	if err := c.Bind(&imageParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	hash := c.Param("hash")
 	file, image, err := is.image_service.ImageGet(c.Request().Context(), authCtx.User.ID, hash)
@@ -137,17 +137,17 @@ type ImageModifyParams struct {
 func (is *ImageHandler) ImageHandlerPatch(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 
 	imageId := c.Param("imageId")
 
 	var params ImageModifyParams
 	if err := c.Bind(&params); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 
 	rotation := operations.Rotation90
@@ -165,7 +165,7 @@ func (is *ImageHandler) ImageHandlerPatch(c echo.Context) error {
 	})
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &utils.ErrNotFoundError{EntityName: "Image"}
+			return &utils.NotFoundError{EntityName: "Image"}
 		}
 		c.Logger().Error(err)
 		return err
@@ -184,14 +184,14 @@ type ImagesParams struct {
 func (is *ImageHandler) ImageHandlerIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	var params ImagesParams
 	if err := c.Bind(&params); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	if params.PerPage == 0 {
 		params.PerPage = 50
@@ -214,10 +214,10 @@ func (is *ImageHandler) ImageHandlerIndex(c echo.Context) error {
 func (is *ImageHandler) ImageHandlerDelete(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	imageId := c.Param("imageId")
 	deletedImage, err := is.image_service.DeleteImage(c.Request().Context(), authCtx.User.ID, imageId)

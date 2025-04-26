@@ -26,10 +26,10 @@ type RegisterPostParams struct {
 func (rh *RegisterHandler) RegisterHandlerPost(c echo.Context) error {
 	registerParams := RegisterPostParams{}
 	if err := c.Bind(&registerParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	if err := c.Validate(registerParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	_, err := rh.userService.CreateUser(c.Request().Context(), services.CreateUserParams{
 		Name:       registerParams.Name,

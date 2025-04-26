@@ -2,16 +2,36 @@ package utils
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strings"
 )
 
-type InventoryValidationError struct {
+const (
+	ErrInventoryValidation        = "inventory-validation"
+	ErrParameterError             = "parameter-error"
+	ErrNotFoundError              = "not-found"
+	ErrWrongInviteCode            = "wrong-invite-code"
+	ErrEntityDoesNotBelongToUser  = "entity-does-not-belong-to-user"
+	ErrUserHasNoAccessRights      = "user-has-no-access-rights"
+	ErrEntityInUse                = "entity-in-use"
+	ErrFriendRequestNotPending    = "friend-request-not-pending"
+	ErrNoAuthContext              = "no-auth-context"
+	ErrNotAuthenticated           = "not_authenticated"
+	ErrIllegalMimeType            = "illegal-mime-type"
+	ErrPendingFriendRequestExists = "pending-friend-request-exists"
+	ErrFriendShipExists           = "friend-ship-exists"
+)
+
+type StashsphereError interface {
+	Error() string
+	ErrorType() string
+}
+
+type StashsphereValidationError struct {
 	Errors map[string]string
 }
 
-func (ie InventoryValidationError) Error() string {
+func (ie StashsphereValidationError) Error() string {
 	buff := bytes.NewBufferString("")
 
 	for k, v := range ie.Errors {
@@ -25,34 +45,68 @@ func (ie InventoryValidationError) Error() string {
 
 }
 
-type ErrParameterError struct {
+type ParameterError struct {
 	Err error
 }
 
-func (r ErrParameterError) Error() string {
+func (r ParameterError) Error() string {
 	return fmt.Sprintf("ParameterError: %v", r.Err)
 }
 
-type ErrNotFoundError struct {
+type NotFoundError struct {
 	EntityName string
 }
 
-func (r ErrNotFoundError) Error() string {
+func (r NotFoundError) Error() string {
 	return fmt.Sprintf("%s not found", r.EntityName)
 }
 
-var (
-	ErrWrongInviteCode           = errors.New("WrongInviteCode")
-	ErrEntityDoesNotBelongToUser = errors.New("EntityDoesNotBelongToUser")
-	ErrUserHasNoAccessRights     = errors.New("UserHasNoAccessRights")
-	ErrEntityInUse               = errors.New("EntityInUse")
-	ErrFriendRequestNotPending   = errors.New("FriendRequestNotPending")
-	// internal error: no auth context has been found
-	ErrNoAuthContext = errors.New("NoAuthContext")
-	// the user is not authenticated, request w/o a token
-	ErrNotAuthenticated = errors.New("NotAuthenticated")
-	// file is not of the allowed mime types
-	ErrIllegalMimeType            = errors.New("IllegalMimeType")
-	ErrPendingFriendRequestExists = errors.New("PendingFriendRequestExists")
-	ErrFriendShipExists           = errors.New("FriendshipExists")
-)
+type WrongInviteCodeError struct{}
+
+func (r WrongInviteCodeError) ErrorType() string { return ErrWrongInviteCode }
+func (r WrongInviteCodeError) Error() string     { return "Invalid invite code" }
+
+type EntityDoesNotBelongToUserError struct{}
+
+func (r EntityDoesNotBelongToUserError) ErrorType() string { return ErrEntityDoesNotBelongToUser }
+func (r EntityDoesNotBelongToUserError) Error() string     { return "Entity does not belong to user" }
+
+type UserHasNoAccessRightsError struct{}
+
+func (r UserHasNoAccessRightsError) ErrorType() string { return ErrUserHasNoAccessRights }
+func (r UserHasNoAccessRightsError) Error() string     { return "User has no access rights" }
+
+type EntityInUseError struct{}
+
+func (r EntityInUseError) ErrorType() string { return ErrEntityInUse }
+func (r EntityInUseError) Error() string     { return "Entity is in use" }
+
+type FriendRequestNotPendingError struct{}
+
+func (r FriendRequestNotPendingError) ErrorType() string { return ErrFriendRequestNotPending }
+func (r FriendRequestNotPendingError) Error() string     { return "Friend request is not pending" }
+
+type NoAuthContextError struct{}
+
+func (r NoAuthContextError) ErrorType() string { return ErrNoAuthContext }
+func (r NoAuthContextError) Error() string     { return "No authentication context found" }
+
+type NotAuthenticatedError struct{}
+
+func (r NotAuthenticatedError) ErrorType() string { return ErrNotAuthenticated }
+func (r NotAuthenticatedError) Error() string     { return "User is not authenticated" }
+
+type IllegalMimeTypeError struct{}
+
+func (r IllegalMimeTypeError) ErrorType() string { return ErrIllegalMimeType }
+func (r IllegalMimeTypeError) Error() string     { return "Invalid MIME type" }
+
+type PendingFriendRequestExistsError struct{}
+
+func (r PendingFriendRequestExistsError) ErrorType() string { return ErrPendingFriendRequestExists }
+func (r PendingFriendRequestExistsError) Error() string     { return "Pending friend request exists" }
+
+type FriendShipExistsError struct{}
+
+func (r FriendShipExistsError) ErrorType() string { return ErrFriendShipExists }
+func (r FriendShipExistsError) Error() string     { return "Friendship already exists" }

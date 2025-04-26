@@ -31,7 +31,7 @@ type CreateUserParams struct {
 
 func (us *UserService) CreateUser(ctx context.Context, params CreateUserParams) (*models.User, error) {
 	if us.inviteRequired && params.InviteCode != us.inviteCode {
-		return nil, utils.ErrWrongInviteCode
+		return nil, utils.WrongInviteCodeError{}
 	}
 
 	passwordHash, err := operations.HashPassword(params.Password)
@@ -62,7 +62,7 @@ func (us *UserService) FindUserByID(ctx context.Context, userId string) (*models
 	user, err := models.Users(models.UserWhere.ID.EQ(userId)).One(ctx, us.db)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, utils.ErrNotFoundError{EntityName: "user"}
+			return nil, utils.NotFoundError{EntityName: "user"}
 		}
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (us *UserService) UpdateUser(ctx context.Context, userId string, name strin
 	user, err := models.Users(models.UserWhere.ID.EQ(userId)).One(ctx, us.db)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, utils.ErrNotFoundError{EntityName: "user"}
+			return nil, utils.NotFoundError{EntityName: "user"}
 		}
 		return nil, err
 	}

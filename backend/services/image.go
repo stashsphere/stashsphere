@@ -110,7 +110,7 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 	}
 
 	if !strings.HasPrefix(mime, "image/") {
-		return nil, utils.ErrIllegalMimeType
+		return nil, utils.IllegalMimeTypeError{}
 	}
 
 	hasher := sha256.New()
@@ -148,7 +148,7 @@ func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string
 	image, err := models.Images(models.ImageWhere.Hash.EQ(hash)).One(ctx, is.db)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil, utils.ErrNotFoundError{EntityName: "Image"}
+			return nil, nil, utils.NotFoundError{EntityName: "Image"}
 		}
 		return nil, nil, err
 	}
@@ -168,7 +168,7 @@ func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string
 		return false
 	}()
 	if !authorized {
-		return nil, nil, utils.ErrUserHasNoAccessRights
+		return nil, nil, utils.UserHasNoAccessRightsError{}
 	}
 
 	path := filepath.Join(is.storePath, image.Hash)
@@ -210,7 +210,7 @@ func (is *ImageService) DeleteImage(ctx context.Context, userId string, imageId 
 		deletedImage, err := operations.DeleteImage(ctx, tx, userId, imageId)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				return utils.ErrNotFoundError{EntityName: "Image"}
+				return utils.NotFoundError{EntityName: "Image"}
 			}
 			return err
 		}
@@ -218,7 +218,7 @@ func (is *ImageService) DeleteImage(ctx context.Context, userId string, imageId 
 			return errors.New("Unexpected error: image is nil")
 		}
 		err = operations.DeleteContent(ctx, tx, is.storePath, deletedImage.Hash)
-		if err != nil && !errors.Is(err, utils.ErrEntityInUse) {
+		if err != nil && !errors.Is(err, utils.EntityInUseError{}) {
 			return err
 		}
 		image = deletedImage
@@ -237,7 +237,7 @@ func (is *ImageService) ModifyImage(ctx context.Context, userId string, imageId 
 		return nil, err
 	}
 	if image.OwnerID != userId {
-		return nil, utils.ErrEntityDoesNotBelongToUser
+		return nil, utils.EntityDoesNotBelongToUserError{}
 	}
 
 	path := filepath.Join(is.storePath, image.Hash)

@@ -36,17 +36,17 @@ func NewShareParamsToCreateShareParams(params NewShareParams, ownerId string) *s
 func (sh *ShareHandler) ShareHandlerPost(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	shareParams := NewShareParams{}
 	if err := c.Bind(&shareParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	if err := c.Validate(shareParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	share, err := sh.share_service.CreateShare(c.Request().Context(), *NewShareParamsToCreateShareParams(shareParams, authCtx.User.ID))
 	if err != nil {
@@ -58,10 +58,10 @@ func (sh *ShareHandler) ShareHandlerPost(c echo.Context) error {
 func (sh *ShareHandler) ShareHandlerGet(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	shareId := c.Param("shareId")
 	share, err := sh.share_service.GetShare(c.Request().Context(), shareId, authCtx.User.ID)
@@ -74,10 +74,10 @@ func (sh *ShareHandler) ShareHandlerGet(c echo.Context) error {
 func (sh *ShareHandler) ShareHandlerDelete(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	shareId := c.Param("shareId")
 	err := sh.share_service.DeleteShare(c.Request().Context(), shareId, authCtx.User.ID)

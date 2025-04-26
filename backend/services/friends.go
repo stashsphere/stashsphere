@@ -34,7 +34,7 @@ func (fs *FriendService) CreateFriendRequest(ctx context.Context, params CreateF
 			return err
 		}
 		if pendingFriendRequests > 0 {
-			return utils.ErrPendingFriendRequestExists
+			return utils.PendingFriendRequestExistsError{}
 		}
 
 		existingFriendShip, err := models.Friendships(
@@ -44,7 +44,7 @@ func (fs *FriendService) CreateFriendRequest(ctx context.Context, params CreateF
 			return err
 		}
 		if existingFriendShip > 0 {
-			return utils.ErrFriendShipExists
+			return utils.FriendShipExistsError{}
 		}
 		requestId, err := gonanoid.New()
 		request := models.FriendRequest{
@@ -75,7 +75,7 @@ func (fs *FriendService) GetFriendRequest(ctx context.Context, id string) (*mode
 	).One(ctx, fs.db)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, utils.ErrNotFoundError{EntityName: "FriendRequest"}
+			return nil, utils.NotFoundError{EntityName: "FriendRequest"}
 		}
 		return nil, err
 	}
@@ -91,12 +91,12 @@ func (fs *FriendService) CancelFriendRequest(ctx context.Context, params CancelF
 	request, err := models.FriendRequests(models.FriendRequestWhere.ID.EQ(params.RequestId)).One(ctx, fs.db)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, utils.ErrNotFoundError{EntityName: "FriendRequest"}
+			return nil, utils.NotFoundError{EntityName: "FriendRequest"}
 		}
 		return nil, err
 	}
 	if request.SenderID != params.UserId {
-		return nil, utils.ErrEntityDoesNotBelongToUser
+		return nil, utils.EntityDoesNotBelongToUserError{}
 	}
 	_, err = request.Delete(ctx, fs.db)
 	if err != nil {
@@ -145,17 +145,17 @@ func (fs *FriendService) ReactFriendRequest(ctx context.Context, params ReactFri
 		request, err := models.FriendRequests(models.FriendRequestWhere.ID.EQ(params.FriendRequestId)).One(ctx, tx)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				return utils.ErrNotFoundError{EntityName: "FriendRequest"}
+				return utils.NotFoundError{EntityName: "FriendRequest"}
 			}
 			return err
 		}
 		// only the receiver can accept or reject a friend request``
 		if request.ReceiverID != params.UserId {
-			return utils.ErrEntityDoesNotBelongToUser
+			return utils.EntityDoesNotBelongToUserError{}
 		}
 		// only requests that are pending can be accepted or rejected
 		if request.State != models.FriendRequestStatePending {
-			return utils.ErrFriendRequestNotPending
+			return utils.FriendRequestNotPendingError{}
 		}
 
 		if !params.Accept {
@@ -206,7 +206,7 @@ func (fs *FriendService) Unfriend(ctx context.Context, userId string, friendId s
 	).One(ctx, fs.db)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return utils.ErrNotFoundError{EntityName: "Friend"}
+			return utils.NotFoundError{EntityName: "Friend"}
 		}
 	}
 	_, err = friendShip.Delete(ctx, fs.db)

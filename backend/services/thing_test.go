@@ -65,7 +65,7 @@ func TestThingAccess(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = thingService.GetThing(context.Background(), thing.ID, mallory.ID)
-	assert.ErrorIs(t, err, utils.ErrUserHasNoAccessRights)
+	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{})
 }
 
 func TestThingAccessShareThing(t *testing.T) {
@@ -97,7 +97,7 @@ func TestThingAccessShareThing(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = thingService.GetThing(context.Background(), thing.ID, bob.ID)
-	assert.ErrorIs(t, err, utils.ErrUserHasNoAccessRights)
+	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{})
 
 	share, err := shareService.CreateThingShare(context.Background(), services.CreateThingShareParams{
 		ThingId:      thing.ID,

@@ -33,14 +33,14 @@ type ThingsParams struct {
 func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	var params ThingsParams
 	if err := c.Bind(&params); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	if params.PerPage == 0 {
 		params.PerPage = 50
@@ -162,17 +162,17 @@ func NewThingParamsToCreateThingParams(param NewThingParams, ownerId string) ser
 func (th *ThingHandler) ThingHandlerPost(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	thingParams := NewThingParams{}
 	if err := c.Bind(&thingParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	if err := c.Validate(thingParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	thing, err := th.thing_service.CreateThing(c.Request().Context(), NewThingParamsToCreateThingParams(thingParams, authCtx.User.ID))
 	if err != nil {
@@ -219,18 +219,18 @@ func UpdateThingParamsToUpdateThingParams(param UpdateThingParams) services.Upda
 func (th *ThingHandler) ThingHandlerPatch(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	thingId := c.Param("thingId")
 	thingParams := UpdateThingParams{}
 	if err := c.Bind(&thingParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	if err := c.Validate(thingParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	thing, err := th.thing_service.EditThing(c.Request().Context(), thingId, authCtx.User.ID, UpdateThingParamsToUpdateThingParams(thingParams))
 	if err != nil {
@@ -251,10 +251,10 @@ func (th *ThingHandler) ThingHandlerPatch(c echo.Context) error {
 func (th *ThingHandler) ThingHandlerShow(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	thingId := c.Param("thingId")
 	thing, err := th.thing_service.GetThing(c.Request().Context(), thingId, authCtx.User.ID)

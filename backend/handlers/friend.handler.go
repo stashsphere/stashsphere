@@ -27,14 +27,14 @@ type NewFriendRequestParams struct {
 func (fh *FriendHandler) FriendRequestPost(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	friendRequestParams := NewFriendRequestParams{}
 	if err := c.Bind(&friendRequestParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	request, err := fh.friend_service.CreateFriendRequest(c.Request().Context(), services.CreateFriendRequestParams{
 		UserId:     authCtx.User.ID,
@@ -49,10 +49,10 @@ func (fh *FriendHandler) FriendRequestPost(c echo.Context) error {
 func (fh *FriendHandler) FriendRequestIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	requests, err := fh.friend_service.GetFriendRequests(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
@@ -64,10 +64,10 @@ func (fh *FriendHandler) FriendRequestIndex(c echo.Context) error {
 func (fh *FriendHandler) FriendRequestDelete(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	requestId := c.Param("requestId")
 	_, err := fh.friend_service.CancelFriendRequest(c.Request().Context(), services.CancelFriendRequestParams{
@@ -87,14 +87,14 @@ type UpdateFriendRequestParams struct {
 func (fh *FriendHandler) FriendRequestUpdate(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	friendRequestParams := UpdateFriendRequestParams{}
 	if err := c.Bind(&friendRequestParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	requestId := c.Param("requestId")
 	request, err := fh.friend_service.ReactFriendRequest(c.Request().Context(), services.ReactFriendRequestParams{
@@ -111,10 +111,10 @@ func (fh *FriendHandler) FriendRequestUpdate(c echo.Context) error {
 func (fh *FriendHandler) FriendsIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	friends, err := fh.friend_service.GetFriends(c.Request().Context(), authCtx.User.ID)
 	if err != nil {
@@ -126,10 +126,10 @@ func (fh *FriendHandler) FriendsIndex(c echo.Context) error {
 func (fh *FriendHandler) FriendDelete(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	friendId := c.Param("friendId")
 	err := fh.friend_service.Unfriend(c.Request().Context(), authCtx.User.ID, friendId)

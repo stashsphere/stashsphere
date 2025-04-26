@@ -52,7 +52,7 @@ func (ls *ListService) CreateList(ctx context.Context, params CreateListParams) 
 				return err
 			}
 			if thing.OwnerID != params.OwnerId {
-				return utils.ErrEntityDoesNotBelongToUser
+				return utils.EntityDoesNotBelongToUserError{}
 			}
 			err = thing.AddLists(ctx, tx, false, &list)
 			if err != nil {
@@ -80,12 +80,12 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 		list, err := models.Lists(qm.Load(models.ListRels.Things), models.ListWhere.ID.EQ(listId)).One(ctx, tx)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				return utils.ErrNotFoundError{EntityName: "List"}
+				return utils.NotFoundError{EntityName: "List"}
 			}
 			return err
 		}
 		if list.OwnerID != userId {
-			return utils.ErrEntityDoesNotBelongToUser
+			return utils.EntityDoesNotBelongToUserError{}
 		}
 
 		list.Name = params.Name
@@ -103,12 +103,12 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 			thing, err := models.Things(models.ThingWhere.ID.EQ(thingId)).One(ctx, tx)
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
-					return utils.ErrNotFoundError{EntityName: "Thing"}
+					return utils.NotFoundError{EntityName: "Thing"}
 				}
 				return err
 			}
 			if thing.OwnerID != userId {
-				return utils.ErrEntityDoesNotBelongToUser
+				return utils.EntityDoesNotBelongToUserError{}
 			}
 			err = thing.AddLists(ctx, tx, false, list)
 			if err != nil {
@@ -220,7 +220,7 @@ func (ls *ListService) GetList(ctx context.Context, listId string, userId string
 		return false
 	}()
 	if !authorized {
-		return nil, utils.ErrUserHasNoAccessRights
+		return nil, utils.UserHasNoAccessRightsError{}
 	}
 	return list, nil
 }
@@ -235,7 +235,7 @@ func (ls *ListService) AddThingToList(ctx context.Context, thingId string, listI
 		return nil, err
 	}
 	if thing.OwnerID != userId || list.OwnerID != userId {
-		return nil, utils.ErrEntityDoesNotBelongToUser
+		return nil, utils.EntityDoesNotBelongToUserError{}
 	}
 	err = list.AddThings(ctx, ls.db, true, thing)
 	if err != nil {
@@ -254,7 +254,7 @@ func (ls *ListService) RemoveThingFromList(ctx context.Context, thingId string, 
 		return nil, err
 	}
 	if thing.OwnerID != userId || list.OwnerID != userId {
-		return nil, utils.ErrEntityDoesNotBelongToUser
+		return nil, utils.EntityDoesNotBelongToUserError{}
 	}
 	err = list.RemoveThings(ctx, ls.db, thing)
 	if err != nil {

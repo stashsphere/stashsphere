@@ -51,14 +51,14 @@ func TestFriendRequestCreationReject(t *testing.T) {
 		ReceiverId: otherUser.ID,
 	})
 	assert.Nil(t, secondRequest)
-	assert.ErrorIs(t, err, utils.ErrPendingFriendRequestExists)
+	assert.ErrorIs(t, err, utils.PendingFriendRequestExistsError{})
 
 	// the other user cannot cancel a request that they did not send
 	_, err = friendService.CancelFriendRequest(context.Background(), services.CancelFriendRequestParams{
 		UserId:    otherUser.ID,
 		RequestId: request.ID,
 	})
-	assert.ErrorIs(t, err, utils.ErrEntityDoesNotBelongToUser)
+	assert.ErrorIs(t, err, utils.EntityDoesNotBelongToUserError{})
 
 	count, err := models.FriendRequests(models.FriendRequestWhere.ID.EQ(request.ID)).Count(context.Background(), db)
 	assert.NoError(t, err)
@@ -117,6 +117,6 @@ func TestFriendRequestCreationAccept(t *testing.T) {
 		UserId:     testUser.ID,
 		ReceiverId: otherUser.ID,
 	})
-	assert.ErrorIs(t, err, utils.ErrFriendShipExists)
+	assert.ErrorIs(t, err, utils.FriendShipExistsError{})
 	assert.Nil(t, secondRequest)
 }

@@ -39,7 +39,7 @@ func (ss *ShareService) CreateThingShare(ctx context.Context, params CreateThing
 		}
 		// only the owner of the thing can share it
 		if thing.OwnerID != params.OwnerId {
-			return utils.ErrEntityDoesNotBelongToUser
+			return utils.EntityDoesNotBelongToUserError{}
 		}
 		shareId, err := gonanoid.New()
 		if err != nil {
@@ -83,7 +83,7 @@ func (ss *ShareService) CreateListShare(ctx context.Context, params CreateListSh
 		}
 		// only the owner of the list can share it
 		if list.OwnerID != params.OwnerId {
-			return utils.ErrEntityDoesNotBelongToUser
+			return utils.EntityDoesNotBelongToUserError{}
 		}
 		shareId, err := gonanoid.New()
 		if err != nil {
@@ -144,12 +144,12 @@ func (ss *ShareService) GetShare(ctx context.Context, shareId string, requesting
 	).One(ctx, ss.db)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, utils.ErrNotFoundError{EntityName: "Share"}
+			return nil, utils.NotFoundError{EntityName: "Share"}
 		}
 		return nil, err
 	}
 	if share.OwnerID != requestingUser && share.TargetUserID != requestingUser {
-		return nil, utils.ErrEntityDoesNotBelongToUser
+		return nil, utils.EntityDoesNotBelongToUserError{}
 	}
 	return share, nil
 }
@@ -165,7 +165,7 @@ func (ss *ShareService) DeleteShare(ctx context.Context, shareId string, request
 			return err
 		}
 		if share.OwnerID != requestingUser {
-			return utils.ErrEntityDoesNotBelongToUser
+			return utils.EntityDoesNotBelongToUserError{}
 		}
 		err = share.RemoveThings(ctx, tx, share.R.Things...)
 		if err != nil {

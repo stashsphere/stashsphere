@@ -54,7 +54,7 @@ func TestImageCreation(t *testing.T) {
 	assert.NoError(t, err)
 
 	binImage, err := imageService.CreateImage(context.Background(), testUser.ID, "test.bin", binFile)
-	assert.ErrorIs(t, err, utils.ErrIllegalMimeType)
+	assert.ErrorIs(t, err, utils.IllegalMimeTypeError{})
 	assert.Nil(t, binImage)
 }
 
@@ -88,7 +88,7 @@ func TestImageAccess(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, _, err = imageService.ImageGet(context.Background(), mallory.ID, pngImage.Hash)
-	assert.ErrorIs(t, err, utils.ErrUserHasNoAccessRights)
+	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{})
 }
 
 func TestImageAccessSharedThing(t *testing.T) {
@@ -118,7 +118,7 @@ func TestImageAccessSharedThing(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, _, err = imageService.ImageGet(context.Background(), bob.ID, pngImage.Hash)
-	assert.ErrorIs(t, err, utils.ErrUserHasNoAccessRights, "bob does not have access yet")
+	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{}, "bob does not have access yet")
 
 	thingService := services.NewThingService(db, imageService)
 	shareService := services.NewShareService(db)
@@ -169,7 +169,7 @@ func TestDeleteImage(t *testing.T) {
 	assert.FileExists(t, path)
 	// bob should not be able to delete the image
 	_, err = imageService.DeleteImage(context.Background(), bob.ID, pngImage.ID)
-	assert.ErrorIs(t, err, utils.ErrEntityDoesNotBelongToUser)
+	assert.ErrorIs(t, err, utils.EntityDoesNotBelongToUserError{})
 	// alice should be able to delete the image
 	deletedImage, err := imageService.DeleteImage(context.Background(), alice.ID, pngImage.ID)
 	assert.NoError(t, err)
@@ -212,7 +212,7 @@ func TestDeleteImageInUse(t *testing.T) {
 	assert.FileExists(t, path)
 
 	deletedImage, err := imageService.DeleteImage(context.Background(), alice.ID, pngImage.ID)
-	assert.ErrorIs(t, err, utils.ErrEntityInUse)
+	assert.ErrorIs(t, err, utils.EntityInUseError{})
 	assert.Nil(t, deletedImage)
 
 	assert.FileExists(t, path)

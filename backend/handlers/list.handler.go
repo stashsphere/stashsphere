@@ -36,17 +36,17 @@ func NewListParamsToCreateListParams(param NewListParams, ownerId string) servic
 func (lh *ListHandler) ListHandlerPost(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	params := NewListParams{}
 	if err := c.Bind(&params); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	if err := c.Validate(params); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	list, err := lh.list_service.CreateList(c.Request().Context(), NewListParamsToCreateListParams(params, authCtx.User.ID))
 	if err != nil {
@@ -58,10 +58,10 @@ func (lh *ListHandler) ListHandlerPost(c echo.Context) error {
 func (lh *ListHandler) ListHandlerShow(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	listId := c.Param("listId")
 	list, err := lh.list_service.GetList(c.Request().Context(), listId, authCtx.User.ID)
@@ -83,14 +83,14 @@ type ListsParams struct {
 func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
 	if !ok {
-		return utils.ErrNoAuthContext
+		return utils.NoAuthContextError{}
 	}
 	if !authCtx.Authenticated {
-		return utils.ErrNotAuthenticated
+		return utils.NotAuthenticatedError{}
 	}
 	var params ListsParams
 	if err := c.Bind(&params); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	if params.PerPage == 0 {
 		params.PerPage = 50
@@ -143,10 +143,10 @@ func (lh *ListHandler) ListHandlerPatch(c echo.Context) error {
 	listId := c.Param("listId")
 	listParams := UpdateListParams{}
 	if err := c.Bind(&listParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	if err := c.Validate(listParams); err != nil {
-		return &utils.ErrParameterError{Err: err}
+		return &utils.ParameterError{Err: err}
 	}
 	list, err := lh.list_service.UpdateList(c.Request().Context(), listId, authCtx.User.ID, UpdateListParamsToUpdateListParams(listParams))
 	if err != nil {

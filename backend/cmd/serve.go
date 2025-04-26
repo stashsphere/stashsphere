@@ -46,7 +46,7 @@ type CustomValidator struct {
 func (cv *CustomValidator) Validate(i interface{}) error {
 	if err := cv.validator.Struct(i); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
-		errors := utils.InventoryValidationError{
+		errors := utils.StashsphereValidationError{
 			Errors: make(map[string]string),
 		}
 		for _, fieldErr := range validationErrors {
