@@ -8,14 +8,28 @@ type HeaderProps = {
   userName: string | null;
 };
 
-const NavItem = ({ to, children }: { to: string; children: ReactNode }) => {
+const NavItem = ({
+  to,
+  children,
+  onCLick,
+}: {
+  to: string;
+  children: ReactNode;
+  onCLick?: () => void;
+}) => {
   return (
     <NavLink
       to={to}
+      onClick={onCLick}
       className={({ isActive }) => {
-        let name =
-          'text-onprimary py-4 px-2 font-semibold hover:border-b-4 hover:border-secondary-hover transition duration-300';
-        name += isActive ? ' border-b-4 border-secondary' : '';
+        let name = 'text-onprimary py-4 px-2 font-semibold border-b-4 transition duration-300';
+
+        if (isActive) {
+          name += ' border-secondary';
+        } else {
+          name += ' border-transparent hover:border-secondary-hover';
+        }
+
         return name;
       }}
     >
@@ -93,19 +107,31 @@ const HeaderLoggedIn = ({ userName }: { userName: string }) => {
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden pt-2 pb-4 bg-primary">
+          <div className="md:hidden fixed top-[header-height] left-0 right-0 pt-2 pb-4 bg-primary shadow-lg z-50">
             <div className="flex flex-col space-y-2">
-              <NavItem to="/things">Things</NavItem>
-              <NavItem to="/lists">Lists</NavItem>
-              <NavItem to="/images">Images</NavItem>
-              <NavItem to="/friends">Friends</NavItem>
+              <NavItem to="/things" onCLick={toggleMobileMenu}>
+                Things
+              </NavItem>
+              <NavItem to="/lists" onCLick={toggleMobileMenu}>
+                Lists
+              </NavItem>
+              <NavItem to="/images" onCLick={toggleMobileMenu}>
+                Images
+              </NavItem>
+              <NavItem to="/friends" onCLick={toggleMobileMenu}>
+                Friends
+              </NavItem>
               <div className="border-t-2 my-2 border-highlight"></div>
               <div className="py-2 px-2 text-highlight font-semibold flex items-center">
                 <Icon icon="mdi--user" className="mr-2" />
                 {userName}
               </div>
-              <NavItem to="/user/profile">Profile</NavItem>
-              <NavItem to="/user/logout">Logout</NavItem>
+              <NavItem to="/user/profile" onCLick={toggleMobileMenu}>
+                Profile
+              </NavItem>
+              <NavItem to="/user/logout" onCLick={toggleMobileMenu}>
+                Logout
+              </NavItem>
             </div>
           </div>
         )}
