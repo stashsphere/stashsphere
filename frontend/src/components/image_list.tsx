@@ -32,15 +32,19 @@ export const ImageTile = ({ data: image, onDelete, onSelect, selected }: ImageTi
 
   return (
     <div
-      className="flex flex-col p-1
+      className="flex flex-col m-1 rounded-sm
       group
-      hover:scale-102
+      hover:scale-102 hover:shadow-sm/30
       transition duration-300 ease-in-out transform"
       tabIndex={0}
     >
-      <ImageComponent defaultWidth={1024} image={image} className="object-contain w-full h-full" />
+      <ImageComponent
+        defaultWidth={1024}
+        image={image}
+        className="object-contain w-full h-full rounded-sm"
+      />
       <div
-        className="flex flex-col absolute opacity-0 bottom-1 left-1 right-1 bg-content/90 pointer-events-none
+        className="flex flex-col absolute opacity-0 bottom-0 left-0 right-0 bg-content/90 pointer-events-none
         group-hover:opacity-100 group-focus:opacity-100 group-hover:pointer-events-auto group-focus:pointer-events-auto
         transition duration-300 ease-in-out transform"
       >
