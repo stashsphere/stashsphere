@@ -32,7 +32,7 @@ export const ImageTile = ({ data: image, onDelete, onSelect, selected }: ImageTi
 
   return (
     <div
-      className="flex flex-col m-1 rounded-sm
+      className="flex flex-col rounded-sm
       group
       hover:scale-102 hover:shadow-sm/30
       transition duration-300 ease-in-out transform"
@@ -82,6 +82,7 @@ export const ImageList = ({ images, selectedImageIds, ...rest }: ImageListProps)
         key={masonryKey}
         items={images}
         maxColumnCount={3}
+        columnGutter={20}
         render={({ data, width, index }) => (
           <ImageTile
             key={data.id}
