@@ -9,31 +9,31 @@ export interface ReducedList {
 }
 
 export type PropertyString = {
-  type: "string";
+  type: 'string';
   name: string;
   value: string;
   unit: undefined;
-}
+};
 
 export type PropertyFloat = {
-  type: "float";
+  type: 'float';
   name: string;
   value: number;
   unit: string;
-}
+};
 
 export type PropertyDatetime = {
-  type: "datetime";
+  type: 'datetime';
   name: string;
   value: string;
   unit: undefined;
-}
+};
 
 export type ThingActions = {
   canEdit: boolean;
   canShare: boolean;
   canDelete: boolean;
-}
+};
 
 export type Property = PropertyString | PropertyFloat | PropertyDatetime;
 
@@ -74,18 +74,18 @@ export interface ReducedImage {
   name: string;
   createdAt: Date;
   hash: string;
-  owner: User
+  owner: User;
 }
 
 export type ImageActions = {
   canDelete: boolean;
-}
+};
 
 export interface Image {
   id: string;
   name: string;
   createdAt: Date;
-  owner: User
+  owner: User;
   hash: string;
   things: ReducedThing[];
   actions: ImageActions;
@@ -131,11 +131,11 @@ export interface Share {
 }
 
 export interface FriendRequest {
-  id: string,
+  id: string;
   sender: User;
   receiver: User;
   createdAt: Date;
-  state: "pending" | "accepted" | "rejected";
+  state: 'pending' | 'accepted' | 'rejected';
 }
 
 export interface FriendRequestResponse {
