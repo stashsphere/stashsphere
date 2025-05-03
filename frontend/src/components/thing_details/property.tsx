@@ -1,5 +1,5 @@
-import { Property } from '../api/resources';
-import { Icon } from './icon';
+import { Property } from '../../api/resources';
+import { Icon } from '../shared';
 
 export type PropertyProps = {
   property: Property;

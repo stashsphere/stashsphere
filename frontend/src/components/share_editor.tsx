@@ -3,7 +3,7 @@ import { List, Profile, Share, Thing, User } from '../api/resources';
 import ThingInfo from './thing_info';
 import { ListInfo } from './list_info';
 import { UserList } from './user_list';
-import { Icon } from './icon';
+import { Icon } from './shared';
 import { DangerButton, PrimaryButton, SecondaryButton } from './button';
 import { AxiosContext } from '../context/axios';
 import { deleteShare } from '../api/share';
@@ -131,7 +131,7 @@ export const ShareEditor = (props: ShareEditorProps) => {
         <>
           <div className="relative flex items-center my-2">
             <span className="absolute ml-2 w-8 h-8">
-              <Icon icon="mdi--search" height={'100%'} />
+              <Icon icon="mdi--search" />
             </span>
 
             <input
@@ -148,7 +148,7 @@ export const ShareEditor = (props: ShareEditorProps) => {
         <>
           <div className="flex items-center p-3 mt-2 text-sm text-gray-600 dark:text-gray-300 border border-green-500 mb-2">
             <div className="w-16 h-16">
-              <Icon icon="mdi--image-off-outline" height={'100%'} width={'75%'} />
+              <Icon icon="mdi--image-off-outline" />
             </div>
             <div className="mx-1">
               <h1 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
@@ -157,7 +157,7 @@ export const ShareEditor = (props: ShareEditorProps) => {
             </div>
             <div className="grow"></div>
             <div className="w-16 h-16" onClick={() => setTargetUser(null)}>
-              <Icon icon="mdi--close" height={'100%'} width={'75%'} />
+              <Icon icon="mdi--close" />
             </div>
           </div>
           <form onSubmit={onSubmit}>

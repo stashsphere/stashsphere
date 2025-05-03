@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { ReducedImage } from '../api/resources';
-import { ImageComponent } from './image';
+import { ReducedImage } from '../../api/resources';
+import { ImageComponent } from '../image';
 
 type ImageGalleryProps = {
   images: ReducedImage[];
 };
 
-export const ImageGallery = ({ images }: ImageGalleryProps) => {
+export const ThingImages = ({ images }: ImageGalleryProps) => {
   const [selectedImage, setSelectedImage] = useState<ReducedImage | null>(
     images.length === 0 ? null : images[0]
   );
@@ -24,15 +24,15 @@ export const ImageGallery = ({ images }: ImageGalleryProps) => {
         className="w-full h-auto mb-4 rounded-sm"
         alt="Main"
       />
-      <div className="flex justify-around">
-        {images.map((image, index) => (
+      <div className="flex flex-wrap justify-between gap-2">
+        {images.map((image) => (
           <ImageComponent
+            key={image.id}
             image={image}
             defaultWidth={300}
             alt="Thumbnail"
-            key={index}
             onClick={() => setSelectedImage(image)}
-            className={`w-24 h-auto cursor-pointer rounded-sm shadow-sm hover:shadow-lg transition duration-300 ease-in-out transform hover:scale-105 ${getThumbnailClass(image)}`}
+            className={`w-24 h-24 object-cover object-center cursor-pointer rounded-sm shadow-sm hover:shadow-lg transition duration-300 ease-in-out transform hover:scale-105 ${getThumbnailClass(image)}`}
           />
         ))}
       </div>

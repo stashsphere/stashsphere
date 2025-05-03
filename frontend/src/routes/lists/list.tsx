@@ -1,10 +1,10 @@
-import { useContext, useEffect, useState } from "react";
-import { AxiosContext } from "../../context/axios";
-import { getLists } from "../../api/lists";
-import { PagedLists } from "../../api/resources";
-import { Pages } from "../../components/pages";
-import { PrimaryButton } from "../../components/button";
-import { ListInfo } from "../../components/list_info";
+import { useContext, useEffect, useState } from 'react';
+import { AxiosContext } from '../../context/axios';
+import { getLists } from '../../api/lists';
+import { PagedLists } from '../../api/resources';
+import { Pages } from '../../components/pages';
+import { PrimaryButton } from '../../components/button';
+import { ListInfo } from '../../components/list_info';
 
 export const Lists = () => {
   const axiosInstance = useContext(AxiosContext);
@@ -39,13 +39,13 @@ export const Lists = () => {
           <ListInfo list={list} key={list.id} />
         ))}
       </div>
-      {lists.lists.length > 0 &&
+      {lists.lists.length > 0 && (
         <Pages
           currentPage={currentPage}
           onPageChange={(n) => setCurrentPage(n)}
           pages={lists.totalPageCount}
-      />
-      }
+        />
+      )}
     </>
   );
 };

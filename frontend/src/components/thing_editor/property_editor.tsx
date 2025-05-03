@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Property } from '../api/resources';
-import { NeutralButton } from './button';
+import { Property } from '../../api/resources';
+import { NeutralButton } from '../button';
 
 interface Props {
   properties: Property[];

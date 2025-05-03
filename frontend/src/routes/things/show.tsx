@@ -1,5 +1,5 @@
 import { useParams } from 'react-router';
-import { ThingDetails } from '../../components/thing_detail';
+import { ThingDetails } from '../../components/thing_details/thing_details';
 
 export const ShowThing = () => {
   const { thingId } = useParams();

@@ -1,12 +1,12 @@
 import { ChangeEvent, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import PropertyEditor from './property_editor';
-import { Property, ReducedImage, Image } from '../api/resources';
-import { ConfigContext } from '../context/config';
-import { DangerButton, PrimaryButton, SecondaryButton } from './button';
-import { Icon } from './icon';
-import { ImageBrowser } from './image_browser';
+import { Property, ReducedImage, Image } from '../../api/resources';
+import { ConfigContext } from '../../context/config';
+import { DangerButton, PrimaryButton, SecondaryButton } from '../button';
+import { Icon } from '../shared';
+import { ImageBrowser } from '../image_browser';
 import QuantityEditor from './quantity_editor';
-import { urlForImage } from '../api/image';
+import { urlForImage } from '../../api/image';
 
 export type ThingEditorData = {
   name: string;
