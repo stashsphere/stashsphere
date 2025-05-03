@@ -19,7 +19,8 @@ func TestFriendRequestCreationReject(t *testing.T) {
 	t.Cleanup(tearDownFunc)
 
 	userService := services.NewUserService(db, false, "")
-	friendService := services.NewFriendService(db)
+	notifcationService := services.NewNotificationService(db)
+	friendService := services.NewFriendService(db, notifcationService)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)
@@ -82,7 +83,8 @@ func TestFriendRequestCreationAccept(t *testing.T) {
 	t.Cleanup(tearDownFunc)
 
 	userService := services.NewUserService(db, false, "")
-	friendService := services.NewFriendService(db)
+	notifcationService := services.NewNotificationService(db)
+	friendService := services.NewFriendService(db, notifcationService)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)

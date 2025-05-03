@@ -16,7 +16,7 @@ type FriendHandler struct {
 
 func NewFriendHandler(friend_service *services.FriendService) *FriendHandler {
 	return &FriendHandler{
-		friend_service: friend_service,
+		friend_service,
 	}
 }
 

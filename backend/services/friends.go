@@ -7,7 +7,9 @@ import (
 	"time"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/rs/zerolog/log"
 	"github.com/stashsphere/backend/models"
+	"github.com/stashsphere/backend/notifications"
 	"github.com/stashsphere/backend/utils"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -15,10 +17,11 @@ import (
 
 type FriendService struct {
 	db *sql.DB
+	ns *NotificationService
 }
 
-func NewFriendService(db *sql.DB) *FriendService {
-	return &FriendService{db}
+func NewFriendService(db *sql.DB, ns *NotificationService) *FriendService {
+	return &FriendService{db, ns}
 }
 
 type CreateFriendRequestParams struct {
@@ -47,13 +50,15 @@ func (fs *FriendService) CreateFriendRequest(ctx context.Context, params CreateF
 			return utils.FriendShipExistsError{}
 		}
 		requestId, err := gonanoid.New()
+		if err != nil {
+			return err
+		}
 		request := models.FriendRequest{
 			ID:         requestId,
 			SenderID:   params.UserId,
 			ReceiverID: params.ReceiverId,
 			CreatedAt:  time.Now(),
 		}
-
 		err = request.Insert(ctx, tx, boil.Infer())
 		if err != nil {
 			return err
@@ -63,6 +68,16 @@ func (fs *FriendService) CreateFriendRequest(ctx context.Context, params CreateF
 	})
 	if err != nil {
 		return nil, err
+	}
+	_, err = fs.ns.CreateNotification(ctx, CreateNotification{
+		RecipientId: outerRequest.ReceiverID,
+		Content: notifications.FriendRequest{
+			RequestId: outerRequest.ID,
+			SenderId:  outerRequest.SenderID,
+		},
+	})
+	if err != nil {
+		log.Error().Msgf("Could not create notification: %v", err)
 	}
 	return fs.GetFriendRequest(ctx, outerRequest.ID)
 }

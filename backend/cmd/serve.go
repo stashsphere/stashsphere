@@ -139,6 +139,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	})
 	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, config.ApiDomain)
 	userService := services.NewUserService(db, config.InviteEnabled, config.InviteCode)
+	notificationService := services.NewNotificationService(db)
 	imageService, err := services.NewImageService(db, config.ImagePath)
 	if err != nil {
 		return err
@@ -152,7 +153,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	propertyService := services.NewPropertyService(db)
 	searchService := services.NewSearchService(db, thingService, listService)
 	shareService := services.NewShareService(db)
-	friendService := services.NewFriendService(db)
+	friendService := services.NewFriendService(db, notificationService)
 
 	e.Validator = &CustomValidator{validator: validate, trans: &trans}
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -197,6 +198,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	userHandler := handlers.NewUserHandler(userService)
 	shareHandler := handlers.NewShareHandler(shareService)
 	friendHandler := handlers.NewFriendHandler(friendService)
+	notificationHandler := handlers.NewNotificationHandler(notificationService)
 
 	a := e.Group("/api")
 	userGroup := a.Group("/user")
@@ -244,6 +246,10 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	friendRequestGroup.POST("", friendHandler.FriendRequestPost)
 	friendRequestGroup.DELETE("/:requestId", friendHandler.FriendRequestDelete)
 	friendRequestGroup.PATCH("/:requestId", friendHandler.FriendRequestUpdate)
+
+	notificationsGroup := a.Group("/notifications")
+	notificationsGroup.GET("", notificationHandler.Index)
+	notificationsGroup.PATCH("/:notificationId", notificationHandler.Acknowledge)
 
 	a.GET("/search", searchHandler.SearchHandlerGet)
 

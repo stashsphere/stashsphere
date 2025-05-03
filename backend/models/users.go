@@ -78,6 +78,7 @@ var UserRels = struct {
 	Friend2Friendships     string
 	OwnerImages            string
 	OwnerLists             string
+	RecipientNotifications string
 	OwnerShares            string
 	TargetUserShares       string
 	OwnerThings            string
@@ -88,6 +89,7 @@ var UserRels = struct {
 	Friend2Friendships:     "Friend2Friendships",
 	OwnerImages:            "OwnerImages",
 	OwnerLists:             "OwnerLists",
+	RecipientNotifications: "RecipientNotifications",
 	OwnerShares:            "OwnerShares",
 	TargetUserShares:       "TargetUserShares",
 	OwnerThings:            "OwnerThings",
@@ -101,6 +103,7 @@ type userR struct {
 	Friend2Friendships     FriendshipSlice    `boil:"Friend2Friendships" json:"Friend2Friendships" toml:"Friend2Friendships" yaml:"Friend2Friendships"`
 	OwnerImages            ImageSlice         `boil:"OwnerImages" json:"OwnerImages" toml:"OwnerImages" yaml:"OwnerImages"`
 	OwnerLists             ListSlice          `boil:"OwnerLists" json:"OwnerLists" toml:"OwnerLists" yaml:"OwnerLists"`
+	RecipientNotifications NotificationSlice  `boil:"RecipientNotifications" json:"RecipientNotifications" toml:"RecipientNotifications" yaml:"RecipientNotifications"`
 	OwnerShares            ShareSlice         `boil:"OwnerShares" json:"OwnerShares" toml:"OwnerShares" yaml:"OwnerShares"`
 	TargetUserShares       ShareSlice         `boil:"TargetUserShares" json:"TargetUserShares" toml:"TargetUserShares" yaml:"TargetUserShares"`
 	OwnerThings            ThingSlice         `boil:"OwnerThings" json:"OwnerThings" toml:"OwnerThings" yaml:"OwnerThings"`
@@ -151,6 +154,13 @@ func (r *userR) GetOwnerLists() ListSlice {
 		return nil
 	}
 	return r.OwnerLists
+}
+
+func (r *userR) GetRecipientNotifications() NotificationSlice {
+	if r == nil {
+		return nil
+	}
+	return r.RecipientNotifications
 }
 
 func (r *userR) GetOwnerShares() ShareSlice {
@@ -572,6 +582,20 @@ func (o *User) OwnerLists(mods ...qm.QueryMod) listQuery {
 	)
 
 	return Lists(queryMods...)
+}
+
+// RecipientNotifications retrieves all the notification's Notifications with an executor via recipient_id column.
+func (o *User) RecipientNotifications(mods ...qm.QueryMod) notificationQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"notifications\".\"recipient_id\"=?", o.ID),
+	)
+
+	return Notifications(queryMods...)
 }
 
 // OwnerShares retrieves all the share's Shares with an executor via owner_id column.
@@ -1294,6 +1318,119 @@ func (userL) LoadOwnerLists(ctx context.Context, e boil.ContextExecutor, singula
 	return nil
 }
 
+// LoadRecipientNotifications allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadRecipientNotifications(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`notifications`),
+		qm.WhereIn(`notifications.recipient_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load notifications")
+	}
+
+	var resultSlice []*Notification
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice notifications")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on notifications")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for notifications")
+	}
+
+	if len(notificationAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.RecipientNotifications = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &notificationR{}
+			}
+			foreign.R.Recipient = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.RecipientID {
+				local.R.RecipientNotifications = append(local.R.RecipientNotifications, foreign)
+				if foreign.R == nil {
+					foreign.R = &notificationR{}
+				}
+				foreign.R.Recipient = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // LoadOwnerShares allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
 func (userL) LoadOwnerShares(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
@@ -1946,6 +2083,59 @@ func (o *User) AddOwnerLists(ctx context.Context, exec boil.ContextExecutor, ins
 			}
 		} else {
 			rel.R.Owner = o
+		}
+	}
+	return nil
+}
+
+// AddRecipientNotifications adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.RecipientNotifications.
+// Sets related.R.Recipient appropriately.
+func (o *User) AddRecipientNotifications(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Notification) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.RecipientID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"notifications\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"recipient_id"}),
+				strmangle.WhereClause("\"", "\"", 2, notificationPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.RecipientID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			RecipientNotifications: related,
+		}
+	} else {
+		o.R.RecipientNotifications = append(o.R.RecipientNotifications, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &notificationR{
+				Recipient: o,
+			}
+		} else {
+			rel.R.Recipient = o
 		}
 	}
 	return nil
