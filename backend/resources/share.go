@@ -26,13 +26,13 @@ func (st ShareType) String() string {
 
 type Share struct {
 	Type       ShareType   `json:"type"`
-	TargetUser User        `json:"target_user"`
+	TargetUser User        `json:"targetUser"`
 	Owner      User        `json:"owner"`
 	Object     interface{} `json:"share"`
 }
 
 type ReducedShare struct {
-	TargetUser User   `json:"target_user"`
+	TargetUser User   `json:"targetUser"`
 	Owner      User   `json:"owner"`
 	Id         string `json:"id"`
 }
