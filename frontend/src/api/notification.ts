@@ -3,11 +3,11 @@ import { PagedNotifications } from './resources';
 
 export const fetchNotifications = async (
   axios: Axios,
-  onlyAcknowledged: boolean,
+  onlyUnacknowledged: boolean,
   currentPage: number
 ) => {
   const response = await axios.get(
-    `/notifications?page=${currentPage}&onlyAcknowledged=${onlyAcknowledged}`
+    `/notifications?page=${currentPage}&onlyUnacknowledged=${onlyUnacknowledged}`
   );
 
   const notifications = response.data as PagedNotifications;
