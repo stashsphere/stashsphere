@@ -55,18 +55,3 @@ func (ph *ProfileHandler) ProfileHandlerPatch(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, resources.ProfileFromModel(user))
 }
-
-func (ph *ProfileHandler) ProfileHandlerIndex(c echo.Context) error {
-	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
-	if !ok {
-		return utils.NoAuthContextError{}
-	}
-	if !authCtx.Authenticated {
-		return utils.NotAuthenticatedError{}
-	}
-	users, err := ph.userService.GetAllUsers(c.Request().Context())
-	if err != nil {
-		return err
-	}
-	return c.JSON(http.StatusOK, resources.ProfilesFromModelSlice(users))
-}

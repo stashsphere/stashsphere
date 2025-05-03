@@ -15,3 +15,11 @@ func UserFromModel(value *models.User) User {
 		Name: value.Name,
 	}
 }
+
+func UsersFromModelSlice(mUsers models.UserSlice) []User {
+	users := make([]User, len(mUsers))
+	for i, user := range mUsers {
+		users[i] = UserFromModel(user)
+	}
+	return users
+}

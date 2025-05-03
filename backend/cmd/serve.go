@@ -194,6 +194,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	imageHandler := handlers.NewImageHandler(imageService, cacheService)
 	searchHandler := handlers.NewSearchHandler(searchService, listService)
 	profileHandler := handlers.NewProfileHandler(userService)
+	userHandler := handlers.NewUserHandler(userService)
 	shareHandler := handlers.NewShareHandler(shareService)
 	friendHandler := handlers.NewFriendHandler(friendService)
 
@@ -206,7 +207,8 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	userGroup.PATCH("/profile", profileHandler.ProfileHandlerPatch)
 
 	usersGroup := a.Group("/users")
-	usersGroup.GET("", profileHandler.ProfileHandlerIndex)
+	usersGroup.GET("", userHandler.Index)
+	usersGroup.GET("/:userId", userHandler.Get)
 
 	thingsGroup := a.Group("/things")
 	thingsGroup.GET("", thingHandler.ThingHandlerIndex)
