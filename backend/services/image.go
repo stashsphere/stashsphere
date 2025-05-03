@@ -13,9 +13,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/labstack/gommon/log"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rakyll/magicmime"
+	"github.com/rs/zerolog/log"
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/utils"
@@ -140,7 +140,7 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("Created %s", newPath)
+	log.Info().Msgf("Created %s", newPath)
 	return &image, nil
 }
 
