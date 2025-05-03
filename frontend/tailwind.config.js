@@ -147,6 +147,7 @@ export default {
         warning: globalColors.warning,
         danger: globalColors.danger,
         display: globalColors.text.primary,
+        'display-light': globalColors.text.primary[300],
       },
       rotate: {
         270: '270deg',

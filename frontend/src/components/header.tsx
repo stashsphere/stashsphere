@@ -6,6 +6,7 @@ import { SearchContext } from '../context/search';
 
 type HeaderProps = {
   userName: string | null;
+  hasUnacknowledgedNotifications: boolean;
 };
 
 const NavItem = ({
@@ -49,7 +50,21 @@ const NameAndLogo = () => {
   );
 };
 
-const HeaderLoggedIn = ({ userName }: { userName: string }) => {
+const NotificationItem = ({ hasUnacknowledged }: { hasUnacknowledged: boolean }) => {
+  if (hasUnacknowledged) {
+    return <Icon className="text-highlight" icon={'mdi--notifications'} />;
+  } else {
+    return <Icon className="" icon={'mdi--notifications-none'} />;
+  }
+};
+
+const HeaderLoggedIn = ({
+  userName,
+  hasUnacknowledgedNotifications,
+}: {
+  userName: string;
+  hasUnacknowledgedNotifications: boolean;
+}) => {
   const [query, setQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { setSearchTerm } = useContext(SearchContext);
@@ -97,11 +112,15 @@ const HeaderLoggedIn = ({ userName }: { userName: string }) => {
           </div>
           <div className="hidden md:block border-2 mx-2 border-highlight self-stretch"></div>
           <div className="hidden md:flex items-center space-x-1">
-            <div className="py-4 px-2 text-highlight font-semibold">
-              <Icon icon="mdi--user" />
-              {userName}
-            </div>
-            <NavItem to="/user/profile">Profile</NavItem>
+            <NavItem to="/user/profile" onCLick={toggleMobileMenu}>
+              <span className="text-highlight">
+                <Icon icon="mdi--user" className="mr-2" />
+                {userName}
+              </span>
+            </NavItem>
+            <NavItem to="/notifications">
+              <NotificationItem hasUnacknowledged={hasUnacknowledgedNotifications} />
+            </NavItem>
             <NavItem to="/user/logout">Logout</NavItem>
           </div>
         </div>
@@ -122,12 +141,9 @@ const HeaderLoggedIn = ({ userName }: { userName: string }) => {
                 Friends
               </NavItem>
               <div className="border-t-2 my-2 border-highlight"></div>
-              <div className="py-2 px-2 text-highlight font-semibold flex items-center">
+              <NavItem to="/user/profile" onCLick={toggleMobileMenu}>
                 <Icon icon="mdi--user" className="mr-2" />
                 {userName}
-              </div>
-              <NavItem to="/user/profile" onCLick={toggleMobileMenu}>
-                Profile
               </NavItem>
               <NavItem to="/user/logout" onCLick={toggleMobileMenu}>
                 Logout
@@ -157,6 +173,13 @@ const HeaderLoggedOut = () => {
   );
 };
 
-export const Header = ({ userName }: HeaderProps) => {
-  return userName !== null ? <HeaderLoggedIn userName={userName} /> : <HeaderLoggedOut />;
+export const Header = ({ userName, hasUnacknowledgedNotifications }: HeaderProps) => {
+  return userName !== null ? (
+    <HeaderLoggedIn
+      userName={userName}
+      hasUnacknowledgedNotifications={hasUnacknowledgedNotifications}
+    />
+  ) : (
+    <HeaderLoggedOut />
+  );
 };

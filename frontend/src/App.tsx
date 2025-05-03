@@ -29,6 +29,7 @@ import { ShareList } from './routes/lists/share';
 import { Images } from './routes/images/list';
 import { SearchContext } from './context/search';
 import { ShowFriends } from './routes/friends';
+import { ShowNotifications } from './routes/notifications';
 
 export const App = () => {
   const [config, setConfig] = useState<Config | null>(null);
@@ -213,6 +214,14 @@ export const App = () => {
                   element={
                     <RequireAuth>
                       <Search />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/notifications"
+                  element={
+                    <RequireAuth>
+                      <ShowNotifications />
                     </RequireAuth>
                   }
                 />
