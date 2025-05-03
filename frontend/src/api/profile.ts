@@ -28,16 +28,3 @@ export const patchProfile = async (axios: Axios, params: ProfileUpdateParams) =>
   const profile = response.data as Profile;
   return profile;
 };
-
-export const getAllProfiles = async (axios: Axios) => {
-  const response = await axios.get('/users', {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (response.status !== 200) {
-    throw `Go error ${response}`;
-  }
-  return response.data as Profile[];
-};

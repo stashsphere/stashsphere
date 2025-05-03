@@ -7,12 +7,12 @@ import {
   reactToFriendRequest,
   sendFriendRequest,
 } from '../../api/friend';
-import { FriendRequest, FriendShip, Profile } from '../../api/resources';
-import { getAllProfiles } from '../../api/profile';
+import { FriendRequest, FriendShip, User } from '../../api/resources';
 import { AuthContext } from '../../context/auth';
-import { ProfileList } from '../../components/profile_list';
+import { UserList } from '../../components/user_list';
 import { PrimaryButton, SecondaryButton } from '../../components/button';
 import { Icon } from '../../components/icon';
+import { getAllUsers } from '../../api/user';
 
 const FriendShipEntry = ({
   friendShip,
@@ -107,11 +107,11 @@ const ReceivedFriendRequestEntry = ({
 };
 
 const SendFriendRequestComponent = ({
-  profile,
+  user,
   onSuccess,
   onCancel,
 }: {
-  profile: Profile;
+  user: User;
   onSuccess: () => void;
   onCancel: () => void;
 }) => {
@@ -121,7 +121,7 @@ const SendFriendRequestComponent = ({
     if (axiosInstance === null) {
       return;
     }
-    sendFriendRequest(axiosInstance, profile.id)
+    sendFriendRequest(axiosInstance, user.id)
       .then(() => {
         onSuccess();
       })
@@ -133,7 +133,7 @@ const SendFriendRequestComponent = ({
 
   return (
     <div className="flex flex-col">
-      <span className="text-display">Send friend request to {profile.name}?</span>
+      <span className="text-display">Send friend request to {user.name}?</span>
       <div className="grid grid-cols-2 gap-2 max-w-sm">
         <PrimaryButton onClick={onSend}>Ok</PrimaryButton>
         <SecondaryButton onClick={onCancel}>Cancel</SecondaryButton>
@@ -149,8 +149,8 @@ export const ShowFriends = () => {
   const [sentFriendRequests, setSentFriendRequests] = useState<FriendRequest[]>([]);
   const [receivedFriendRequests, setReceivedFriendRequests] = useState<FriendRequest[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [targetUserProfile, setTargetUserProfile] = useState<Profile | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [targetUser, setTargetUser] = useState<User | null>(null);
   const [mutateKey, setMutateKey] = useState(0);
 
   const userProfile = authContext.profile;
@@ -159,25 +159,23 @@ export const ShowFriends = () => {
     if (!axiosInstance) {
       return;
     }
-    getAllProfiles(axiosInstance).then(setProfiles);
+    getAllUsers(axiosInstance).then(setUsers);
   }, [axiosInstance]);
 
-  const searchAbleProfiles = useMemo(() => {
+  const searchableUsers = useMemo(() => {
     if (userProfile === null) {
       return [];
     }
-    return profiles.filter((profile) => profile.id !== userProfile.id);
-  }, [profiles, userProfile]);
+    return users.filter((user) => user.id !== userProfile.id);
+  }, [users, userProfile]);
 
-  const selectableProfiles = useMemo(() => {
+  const selectableUsers = useMemo(() => {
     if (searchTerm === '') return [];
     // TODO filter out existing friends
-    return searchAbleProfiles.filter(
-      (profile) =>
-        profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        profile.email.toLowerCase().includes(searchTerm.toLowerCase())
+    return searchableUsers.filter((profile) =>
+      profile.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchAbleProfiles, searchTerm]);
+  }, [searchableUsers, searchTerm]);
 
   useEffect(() => {
     if (axiosInstance === null) {
@@ -214,18 +212,18 @@ export const ShowFriends = () => {
             placeholder="Search for names and email addresses"
             className="mt-1 p-2 text-display border border-gray-300 rounded-sm w-full"
           />
-          {targetUserProfile === null ? (
-            <ProfileList
-              profiles={selectableProfiles}
+          {targetUser === null ? (
+            <UserList
+              users={selectableUsers}
               hintText="Send friend request"
-              onClick={setTargetUserProfile}
+              onClick={setTargetUser}
             />
           ) : (
             <SendFriendRequestComponent
-              profile={targetUserProfile}
-              onCancel={() => setTargetUserProfile(null)}
+              user={targetUser}
+              onCancel={() => setTargetUser(null)}
               onSuccess={() => {
-                setTargetUserProfile(null);
+                setTargetUser(null);
                 setSearchTerm('');
                 updateState();
               }}

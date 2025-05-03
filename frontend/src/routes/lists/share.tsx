@@ -3,10 +3,10 @@ import { ShareEditor } from '../../components/share_editor';
 import { useContext, useEffect, useState } from 'react';
 import { AxiosContext } from '../../context/axios';
 import { getList } from '../../api/lists';
-import { Profile, List } from '../../api/resources';
+import { Profile, List, User } from '../../api/resources';
 import { AuthContext } from '../../context/auth';
-import { getAllProfiles } from '../../api/profile';
 import { shareObject } from '../../api/share';
+import { getAllUsers } from '../../api/user';
 
 export const ShareList = () => {
   const { listId } = useParams();
@@ -18,7 +18,7 @@ export const ShareList = () => {
   const authContext = useContext(AuthContext);
   const profile = authContext.profile;
 
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     if (!axiosInstance || listId === undefined) {
@@ -31,21 +31,21 @@ export const ShareList = () => {
     if (!axiosInstance) {
       return;
     }
-    getAllProfiles(axiosInstance).then(setProfiles);
+    getAllUsers(axiosInstance).then(setUsers);
   }, [axiosInstance]);
 
   if (list === null || profile === null) {
     return <h1>Loading</h1>;
   }
 
-  const onShare = async (targetUserProfile: Profile) => {
+  const onShare = async (targetUser: Profile) => {
     if (!axiosInstance) {
       return;
     }
-    console.log('Sharing List to', targetUserProfile);
+    console.log('Sharing List to', targetUser);
     const share = await shareObject(axiosInstance, {
       objectId: list.id,
-      targetUserId: targetUserProfile.id,
+      targetUserId: targetUser.id,
     });
     console.log('Share result', share);
     navigate(`/lists/${listId}`);
@@ -55,7 +55,7 @@ export const ShareList = () => {
     <ShareEditor
       type={'list'}
       list={list}
-      profiles={profiles}
+      users={users}
       userProfile={profile}
       onSubmit={onShare}
       onMutate={() => setMutateKey(mutateKey + 1)}

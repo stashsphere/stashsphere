@@ -3,10 +3,10 @@ import { ShareEditor } from '../../components/share_editor';
 import { useContext, useEffect, useState } from 'react';
 import { AxiosContext } from '../../context/axios';
 import { getThing } from '../../api/things';
-import { Profile, Thing } from '../../api/resources';
+import { Thing, User } from '../../api/resources';
 import { AuthContext } from '../../context/auth';
-import { getAllProfiles } from '../../api/profile';
 import { shareObject } from '../../api/share';
+import { getAllUsers } from '../../api/user';
 
 export const ShareThing = () => {
   const { thingId } = useParams();
@@ -18,7 +18,7 @@ export const ShareThing = () => {
   const authContext = useContext(AuthContext);
   const profile = authContext.profile;
 
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     if (!axiosInstance || thingId === undefined) {
@@ -31,21 +31,21 @@ export const ShareThing = () => {
     if (!axiosInstance) {
       return;
     }
-    getAllProfiles(axiosInstance).then(setProfiles);
+    getAllUsers(axiosInstance).then(setUsers);
   }, [axiosInstance]);
 
   if (thing === null || profile === null) {
     return <h1>Loading</h1>;
   }
 
-  const onShare = async (targetUserProfile: Profile) => {
+  const onShare = async (targetUser: User) => {
     if (!axiosInstance) {
       return;
     }
-    console.log('Sharing Thing to', targetUserProfile);
+    console.log('Sharing Thing to', targetUser);
     const share = await shareObject(axiosInstance, {
       objectId: thing.id,
-      targetUserId: targetUserProfile.id,
+      targetUserId: targetUser.id,
     });
     console.log('Share result', share);
     navigate(`/things/${thingId}`);
@@ -55,7 +55,7 @@ export const ShareThing = () => {
     <ShareEditor
       type={'thing'}
       thing={thing}
-      profiles={profiles}
+      users={users}
       userProfile={profile}
       onSubmit={onShare}
       onMutate={() => setMutateKey(mutateKey + 1)}

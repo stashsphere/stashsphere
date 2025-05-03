@@ -1,8 +1,8 @@
 import { FormEvent, useContext, useMemo, useState } from 'react';
-import { List, Profile, Share, Thing } from '../api/resources';
+import { List, Profile, Share, Thing, User } from '../api/resources';
 import ThingInfo from './thing_info';
 import { ListInfo } from './list_info';
-import { ProfileList } from './profile_list';
+import { UserList } from './user_list';
 import { Icon } from './icon';
 import { DangerButton, PrimaryButton, SecondaryButton } from './button';
 import { AxiosContext } from '../context/axios';
@@ -29,7 +29,7 @@ const ShareDeleter = ({ share, onDelete }: ShareDeleterProps) => {
   if (!wantDelete) {
     return (
       <div className="flex flex-row gap-4 my-2 justify-between">
-        <div className="text-display">{share.target_user.name}</div>
+        <div className="text-display">{share.targetUser.name}</div>
         <SecondaryButton className="py-0 px-1" onClick={() => setWantDelete(true)}>
           <Icon icon="mdi--trash" />
         </SecondaryButton>
@@ -38,7 +38,7 @@ const ShareDeleter = ({ share, onDelete }: ShareDeleterProps) => {
   } else {
     return (
       <div className="flex flex-row gap-4 my-2 justify-between">
-        <div className="text-display">Unshare for {share.target_user.name}</div>
+        <div className="text-display">Unshare for {share.targetUser.name}</div>
         <DangerButton className="py-0 px-1" onClick={() => onDeleteClick()}>
           Yes
         </DangerButton>
@@ -51,10 +51,10 @@ const ShareDeleter = ({ share, onDelete }: ShareDeleterProps) => {
 };
 
 type ShareEditorProps = {
-  profiles: Profile[];
+  users: User[];
   // the profile of the currently logged in user
   userProfile: Profile;
-  onSubmit(targetUserProfile: Profile): void;
+  onSubmit(targetUser: User): void;
   onMutate(): void;
 } & (
   | {
@@ -68,22 +68,20 @@ type ShareEditorProps = {
 );
 
 export const ShareEditor = (props: ShareEditorProps) => {
-  const [targetUserProfile, setTargetUserProfile] = useState<Profile | null>(null);
+  const [targetUser, setTargetUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const searchAbleProfiles = useMemo(() => {
-    return props.profiles.filter((profile) => profile.id !== props.userProfile.id);
-  }, [props.profiles, props.userProfile]);
+  const searchableUsers = useMemo(() => {
+    return props.users.filter((user) => user.id !== props.userProfile.id);
+  }, [props.users, props.userProfile]);
 
-  const selectableProfiles = useMemo(() => {
+  const selectableUsers = useMemo(() => {
     if (searchTerm === '') return [];
 
-    return searchAbleProfiles.filter(
-      (profile) =>
-        profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        profile.email.toLowerCase().includes(searchTerm.toLowerCase())
+    return searchableUsers.filter((user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchAbleProfiles, searchTerm]);
+  }, [searchableUsers, searchTerm]);
 
   const ObjectComponent = (() => {
     switch (props.type) {
@@ -97,8 +95,8 @@ export const ShareEditor = (props: ShareEditorProps) => {
   })();
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (targetUserProfile === null) return;
-    props.onSubmit(targetUserProfile);
+    if (targetUser === null) return;
+    props.onSubmit(targetUser);
   };
 
   const existingShares = (() => {
@@ -129,7 +127,7 @@ export const ShareEditor = (props: ShareEditorProps) => {
         </div>
       </div>
 
-      {targetUserProfile === null ? (
+      {targetUser === null ? (
         <>
           <div className="relative flex items-center my-2">
             <span className="absolute ml-2 w-8 h-8">
@@ -140,15 +138,11 @@ export const ShareEditor = (props: ShareEditorProps) => {
               onChange={(e) => setSearchTerm(e.target.value)}
               value={searchTerm}
               type="text"
-              placeholder="Search for names and email addresses"
+              placeholder="Search for names"
               className="block w-full py-2.5 text-gray-700 placeholder-gray-400/70 bg-white border border-gray-200 rounded-lg pl-11 pr-5 rtl:pr-11 rtl:pl-5 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-300 focus:ring-blue-300 focus:outline-hidden focus:ring-3 focus:ring-opacity-40"
             ></input>
           </div>
-          <ProfileList
-            profiles={selectableProfiles}
-            hintText="Share to this user"
-            onClick={setTargetUserProfile}
-          />
+          <UserList users={selectableUsers} hintText="Share to this user" onClick={setTargetUser} />
         </>
       ) : (
         <>
@@ -158,17 +152,16 @@ export const ShareEditor = (props: ShareEditorProps) => {
             </div>
             <div className="mx-1">
               <h1 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                {targetUserProfile.name}
+                {targetUser.name}
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{targetUserProfile.email}</p>
             </div>
             <div className="grow"></div>
-            <div className="w-16 h-16" onClick={() => setTargetUserProfile(null)}>
+            <div className="w-16 h-16" onClick={() => setTargetUser(null)}>
               <Icon icon="mdi--close" height={'100%'} width={'75%'} />
             </div>
           </div>
           <form onSubmit={onSubmit}>
-            <PrimaryButton type="submit">Share to {targetUserProfile.name}</PrimaryButton>
+            <PrimaryButton type="submit">Share to {targetUser.name}</PrimaryButton>
           </form>
         </>
       )}

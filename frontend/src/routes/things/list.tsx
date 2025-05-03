@@ -1,10 +1,10 @@
-import { useContext, useEffect, useState } from "react";
-import { AxiosContext } from "../../context/axios";
-import { PagedThings } from "../../api/resources";
-import { getThings } from "../../api/things";
-import { Pages } from "../../components/pages";
-import ThingInfo from "../../components/thing_info";
-import { PrimaryButton } from "../../components/button";
+import { useContext, useEffect, useState } from 'react';
+import { AxiosContext } from '../../context/axios';
+import { PagedThings } from '../../api/resources';
+import { getThings } from '../../api/things';
+import { Pages } from '../../components/pages';
+import ThingInfo from '../../components/thing_info';
+import { PrimaryButton } from '../../components/button';
 
 export const Things = () => {
   const axiosInstance = useContext(AxiosContext);
@@ -38,14 +38,14 @@ export const Things = () => {
         {things.things.map((thing) => (
           <ThingInfo thing={thing} key={thing.id} />
         ))}
-      </div >
-      {things.things.length > 0 &&
+      </div>
+      {things.things.length > 0 && (
         <Pages
           currentPage={currentPage}
           onPageChange={(n) => setCurrentPage(n)}
           pages={things.totalPageCount}
         />
-      }
+      )}
     </>
   );
 };
