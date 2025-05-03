@@ -127,7 +127,7 @@ export interface Profile {
 export interface Share {
   id: string;
   owner: User;
-  target_user: User;
+  targetUser: User;
 }
 
 export interface FriendRequest {
@@ -150,4 +150,25 @@ export interface FriendShip {
 
 export interface FriendShips {
   friendShips: FriendShip[];
+}
+
+export interface BaseNotification {
+  id: string;
+  createdAt: Date;
+  acknowledged: boolean;
+}
+
+export interface FriendRequestNotification extends BaseNotification {
+  contentType: 'FRIEND_REQUEST';
+  content: {
+    senderId: string;
+    requestId: string;
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface StashsphereNotification extends FriendRequestNotification {}
+
+export interface PagedNotifications extends Paged {
+  notifications: StashsphereNotification[];
 }
