@@ -199,6 +199,16 @@ func (fs *FriendService) ReactFriendRequest(ctx context.Context, params ReactFri
 	if err != nil {
 		return nil, err
 	}
+	_, err = fs.ns.CreateNotification(ctx, CreateNotification{
+		RecipientId: outerRequest.ReceiverID,
+		Content: notifications.FriendRequestReaction{
+			RequestId: outerRequest.ID,
+			Accepted:  params.Accept,
+		},
+	})
+	if err != nil {
+		log.Error().Msgf("Could not create notification: %v", err)
+	}
 	return fs.GetFriendRequest(ctx, outerRequest.ID)
 }
 

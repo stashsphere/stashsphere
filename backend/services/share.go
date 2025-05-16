@@ -6,7 +6,9 @@ import (
 	"errors"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/rs/zerolog/log"
 	"github.com/stashsphere/backend/models"
+	"github.com/stashsphere/backend/notifications"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/utils"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -15,11 +17,13 @@ import (
 
 type ShareService struct {
 	db *sql.DB
+	ns *NotificationService
 }
 
-func NewShareService(db *sql.DB) *ShareService {
+func NewShareService(db *sql.DB, ns *NotificationService) *ShareService {
 	return &ShareService{
 		db,
+		ns,
 	}
 }
 
@@ -64,6 +68,16 @@ func (ss *ShareService) CreateThingShare(ctx context.Context, params CreateThing
 	if err != nil {
 		return nil, err
 	}
+	_, err = ss.ns.CreateNotification(ctx, CreateNotification{
+		RecipientId: outerShare.TargetUserID,
+		Content: notifications.ThingShared{
+			ThingId:  params.ThingId,
+			SharerId: params.OwnerId,
+		},
+	})
+	if err != nil {
+		log.Error().Msgf("Could not create notification: %v", err)
+	}
 	return ss.GetShare(ctx, outerShare.ID, outerShare.TargetUserID)
 }
 
@@ -107,6 +121,16 @@ func (ss *ShareService) CreateListShare(ctx context.Context, params CreateListSh
 	})
 	if err != nil {
 		return nil, err
+	}
+	_, err = ss.ns.CreateNotification(ctx, CreateNotification{
+		RecipientId: outerShare.TargetUserID,
+		Content: notifications.ListShared{
+			ListId:   params.ListId,
+			SharerId: params.OwnerId,
+		},
+	})
+	if err != nil {
+		log.Error().Msgf("Could not create notification: %v", err)
 	}
 	return ss.GetShare(ctx, outerShare.ID, outerShare.TargetUserID)
 }

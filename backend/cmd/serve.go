@@ -149,10 +149,10 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 		return err
 	}
 	thingService := services.NewThingService(db, imageService)
-	listService := services.NewListService(db)
+	listService := services.NewListService(db, notificationService)
 	propertyService := services.NewPropertyService(db)
 	searchService := services.NewSearchService(db, thingService, listService)
-	shareService := services.NewShareService(db)
+	shareService := services.NewShareService(db, notificationService)
 	friendService := services.NewFriendService(db, notificationService)
 
 	e.Validator = &CustomValidator{validator: validate, trans: &trans}

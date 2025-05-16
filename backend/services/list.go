@@ -16,10 +16,11 @@ import (
 
 type ListService struct {
 	db *sql.DB
+	ns *NotificationService
 }
 
-func NewListService(db *sql.DB) *ListService {
-	return &ListService{db}
+func NewListService(db *sql.DB, ns *NotificationService) *ListService {
+	return &ListService{db, ns}
 }
 
 type CreateListParams struct {
@@ -76,6 +77,7 @@ type UpdateListParams struct {
 
 func (ls *ListService) UpdateList(ctx context.Context, listId string, userId string, params UpdateListParams) (*models.List, error) {
 	var outerList *models.List
+	var newIdsInParameters []string
 	err := utils.Tx(ctx, ls.db, func(tx *sql.Tx) error {
 		list, err := models.Lists(qm.Load(models.ListRels.Things), models.ListWhere.ID.EQ(listId)).One(ctx, tx)
 		if err != nil {
@@ -92,6 +94,17 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 		_, err = list.Update(ctx, tx, boil.Infer())
 		if err != nil {
 			return err
+		}
+
+		oldThingIds := make(map[string]bool)
+		for _, oldThing := range list.R.Things {
+			oldThingIds[oldThing.ID] = true
+		}
+		for _, newId := range params.ThingIds {
+			if _, ok := oldThingIds[newId]; !ok {
+				// the newId does not exist yet
+				newIdsInParameters = append(newIdsInParameters, newId)
+			}
 		}
 
 		err = list.RemoveThings(ctx, tx, list.R.Things...)

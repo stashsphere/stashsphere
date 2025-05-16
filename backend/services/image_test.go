@@ -121,7 +121,8 @@ func TestImageAccessSharedThing(t *testing.T) {
 	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{}, "bob does not have access yet")
 
 	thingService := services.NewThingService(db, imageService)
-	shareService := services.NewShareService(db)
+	notificationService := services.NewNotificationService(db)
+	shareService := services.NewShareService(db, notificationService)
 
 	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
 	thingParams.OwnerId = alice.ID

@@ -80,7 +80,8 @@ func TestThingAccessShareThing(t *testing.T) {
 	})
 
 	userService := services.NewUserService(db, false, "")
-	shareService := services.NewShareService(db)
+	notificationService := services.NewNotificationService(db)
+	shareService := services.NewShareService(db, notificationService)
 	thingService := services.NewThingService(db, is)
 
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
