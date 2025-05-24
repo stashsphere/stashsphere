@@ -192,7 +192,7 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 
 	listQuery = append(listQuery,
 		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.Owner)),
-		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.ThingImages)),
+		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.Images)),
 		qm.Load(models.ListRels.Owner),
 		searchCond,
 		sortCond,

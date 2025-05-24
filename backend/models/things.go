@@ -94,14 +94,14 @@ var ThingWhere = struct {
 // ThingRels is where relationship names are stored.
 var ThingRels = struct {
 	Owner           string
-	ThingImages     string
+	Images          string
 	Lists           string
 	Properties      string
 	QuantityEntries string
 	Shares          string
 }{
 	Owner:           "Owner",
-	ThingImages:     "ThingImages",
+	Images:          "Images",
 	Lists:           "Lists",
 	Properties:      "Properties",
 	QuantityEntries: "QuantityEntries",
@@ -111,7 +111,7 @@ var ThingRels = struct {
 // thingR is where relationships are stored.
 type thingR struct {
 	Owner           *User              `boil:"Owner" json:"Owner" toml:"Owner" yaml:"Owner"`
-	ThingImages     ImageSlice         `boil:"ThingImages" json:"ThingImages" toml:"ThingImages" yaml:"ThingImages"`
+	Images          ImageSlice         `boil:"Images" json:"Images" toml:"Images" yaml:"Images"`
 	Lists           ListSlice          `boil:"Lists" json:"Lists" toml:"Lists" yaml:"Lists"`
 	Properties      PropertySlice      `boil:"Properties" json:"Properties" toml:"Properties" yaml:"Properties"`
 	QuantityEntries QuantityEntrySlice `boil:"QuantityEntries" json:"QuantityEntries" toml:"QuantityEntries" yaml:"QuantityEntries"`
@@ -130,11 +130,11 @@ func (r *thingR) GetOwner() *User {
 	return r.Owner
 }
 
-func (r *thingR) GetThingImages() ImageSlice {
+func (r *thingR) GetImages() ImageSlice {
 	if r == nil {
 		return nil
 	}
-	return r.ThingImages
+	return r.Images
 }
 
 func (r *thingR) GetLists() ListSlice {
@@ -492,16 +492,16 @@ func (o *Thing) Owner(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
-// ThingImages retrieves all the image's Images with an executor via id column.
-func (o *Thing) ThingImages(mods ...qm.QueryMod) imageQuery {
+// Images retrieves all the image's Images with an executor.
+func (o *Thing) Images(mods ...qm.QueryMod) imageQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
 	}
 
 	queryMods = append(queryMods,
-		qm.InnerJoin("\"images_things\" on \"images\".\"id\" = \"images_things\".\"thing_id\""),
-		qm.Where("\"images_things\".\"image_id\"=?", o.ID),
+		qm.InnerJoin("\"images_things\" on \"images\".\"id\" = \"images_things\".\"image_id\""),
+		qm.Where("\"images_things\".\"thing_id\"=?", o.ID),
 	)
 
 	return Images(queryMods...)
@@ -685,9 +685,9 @@ func (thingL) LoadOwner(ctx context.Context, e boil.ContextExecutor, singular bo
 	return nil
 }
 
-// LoadThingImages allows an eager lookup of values, cached into the
+// LoadImages allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (thingL) LoadThingImages(ctx context.Context, e boil.ContextExecutor, singular bool, maybeThing interface{}, mods queries.Applicator) error {
+func (thingL) LoadImages(ctx context.Context, e boil.ContextExecutor, singular bool, maybeThing interface{}, mods queries.Applicator) error {
 	var slice []*Thing
 	var object *Thing
 
@@ -740,10 +740,10 @@ func (thingL) LoadThingImages(ctx context.Context, e boil.ContextExecutor, singu
 	}
 
 	query := NewQuery(
-		qm.Select("\"images\".\"id\", \"images\".\"name\", \"images\".\"mime\", \"images\".\"hash\", \"images\".\"owner_id\", \"images\".\"created_at\", \"a\".\"image_id\""),
+		qm.Select("\"images\".\"id\", \"images\".\"name\", \"images\".\"mime\", \"images\".\"hash\", \"images\".\"owner_id\", \"images\".\"created_at\", \"a\".\"thing_id\""),
 		qm.From("\"images\""),
-		qm.InnerJoin("\"images_things\" as \"a\" on \"images\".\"id\" = \"a\".\"thing_id\""),
-		qm.WhereIn("\"a\".\"image_id\" in ?", argsSlice...),
+		qm.InnerJoin("\"images_things\" as \"a\" on \"images\".\"id\" = \"a\".\"image_id\""),
+		qm.WhereIn("\"a\".\"thing_id\" in ?", argsSlice...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -788,12 +788,12 @@ func (thingL) LoadThingImages(ctx context.Context, e boil.ContextExecutor, singu
 		}
 	}
 	if singular {
-		object.R.ThingImages = resultSlice
+		object.R.Images = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
 				foreign.R = &imageR{}
 			}
-			foreign.R.ImageThings = append(foreign.R.ImageThings, object)
+			foreign.R.Things = append(foreign.R.Things, object)
 		}
 		return nil
 	}
@@ -802,11 +802,11 @@ func (thingL) LoadThingImages(ctx context.Context, e boil.ContextExecutor, singu
 		localJoinCol := localJoinCols[i]
 		for _, local := range slice {
 			if local.ID == localJoinCol {
-				local.R.ThingImages = append(local.R.ThingImages, foreign)
+				local.R.Images = append(local.R.Images, foreign)
 				if foreign.R == nil {
 					foreign.R = &imageR{}
 				}
-				foreign.R.ImageThings = append(foreign.R.ImageThings, local)
+				foreign.R.Things = append(foreign.R.Things, local)
 				break
 			}
 		}
@@ -1348,11 +1348,11 @@ func (o *Thing) SetOwner(ctx context.Context, exec boil.ContextExecutor, insert 
 	return nil
 }
 
-// AddThingImages adds the given related objects to the existing relationships
+// AddImages adds the given related objects to the existing relationships
 // of the thing, optionally inserting them as new records.
-// Appends related to o.R.ThingImages.
-// Sets related.R.ImageThings appropriately.
-func (o *Thing) AddThingImages(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Image) error {
+// Appends related to o.R.Images.
+// Sets related.R.Things appropriately.
+func (o *Thing) AddImages(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Image) error {
 	var err error
 	for _, rel := range related {
 		if insert {
@@ -1363,7 +1363,7 @@ func (o *Thing) AddThingImages(ctx context.Context, exec boil.ContextExecutor, i
 	}
 
 	for _, rel := range related {
-		query := "insert into \"images_things\" (\"image_id\", \"thing_id\") values ($1, $2)"
+		query := "insert into \"images_things\" (\"thing_id\", \"image_id\") values ($1, $2)"
 		values := []interface{}{o.ID, rel.ID}
 
 		if boil.IsDebug(ctx) {
@@ -1378,32 +1378,32 @@ func (o *Thing) AddThingImages(ctx context.Context, exec boil.ContextExecutor, i
 	}
 	if o.R == nil {
 		o.R = &thingR{
-			ThingImages: related,
+			Images: related,
 		}
 	} else {
-		o.R.ThingImages = append(o.R.ThingImages, related...)
+		o.R.Images = append(o.R.Images, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &imageR{
-				ImageThings: ThingSlice{o},
+				Things: ThingSlice{o},
 			}
 		} else {
-			rel.R.ImageThings = append(rel.R.ImageThings, o)
+			rel.R.Things = append(rel.R.Things, o)
 		}
 	}
 	return nil
 }
 
-// SetThingImages removes all previously related items of the
+// SetImages removes all previously related items of the
 // thing replacing them completely with the passed
 // in related items, optionally inserting them as new records.
-// Sets o.R.ImageThings's ThingImages accordingly.
-// Replaces o.R.ThingImages with related.
-// Sets related.R.ImageThings's ThingImages accordingly.
-func (o *Thing) SetThingImages(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Image) error {
-	query := "delete from \"images_things\" where \"image_id\" = $1"
+// Sets o.R.Things's Images accordingly.
+// Replaces o.R.Images with related.
+// Sets related.R.Things's Images accordingly.
+func (o *Thing) SetImages(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Image) error {
+	query := "delete from \"images_things\" where \"thing_id\" = $1"
 	values := []interface{}{o.ID}
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1415,25 +1415,25 @@ func (o *Thing) SetThingImages(ctx context.Context, exec boil.ContextExecutor, i
 		return errors.Wrap(err, "failed to remove relationships before set")
 	}
 
-	removeThingImagesFromImageThingsSlice(o, related)
+	removeImagesFromThingsSlice(o, related)
 	if o.R != nil {
-		o.R.ThingImages = nil
+		o.R.Images = nil
 	}
 
-	return o.AddThingImages(ctx, exec, insert, related...)
+	return o.AddImages(ctx, exec, insert, related...)
 }
 
-// RemoveThingImages relationships from objects passed in.
-// Removes related items from R.ThingImages (uses pointer comparison, removal does not keep order)
-// Sets related.R.ImageThings.
-func (o *Thing) RemoveThingImages(ctx context.Context, exec boil.ContextExecutor, related ...*Image) error {
+// RemoveImages relationships from objects passed in.
+// Removes related items from R.Images (uses pointer comparison, removal does not keep order)
+// Sets related.R.Things.
+func (o *Thing) RemoveImages(ctx context.Context, exec boil.ContextExecutor, related ...*Image) error {
 	if len(related) == 0 {
 		return nil
 	}
 
 	var err error
 	query := fmt.Sprintf(
-		"delete from \"images_things\" where \"image_id\" = $1 and \"thing_id\" in (%s)",
+		"delete from \"images_things\" where \"thing_id\" = $1 and \"image_id\" in (%s)",
 		strmangle.Placeholders(dialect.UseIndexPlaceholders, len(related), 2, 1),
 	)
 	values := []interface{}{o.ID}
@@ -1450,22 +1450,22 @@ func (o *Thing) RemoveThingImages(ctx context.Context, exec boil.ContextExecutor
 	if err != nil {
 		return errors.Wrap(err, "failed to remove relationships before set")
 	}
-	removeThingImagesFromImageThingsSlice(o, related)
+	removeImagesFromThingsSlice(o, related)
 	if o.R == nil {
 		return nil
 	}
 
 	for _, rel := range related {
-		for i, ri := range o.R.ThingImages {
+		for i, ri := range o.R.Images {
 			if rel != ri {
 				continue
 			}
 
-			ln := len(o.R.ThingImages)
+			ln := len(o.R.Images)
 			if ln > 1 && i < ln-1 {
-				o.R.ThingImages[i] = o.R.ThingImages[ln-1]
+				o.R.Images[i] = o.R.Images[ln-1]
 			}
-			o.R.ThingImages = o.R.ThingImages[:ln-1]
+			o.R.Images = o.R.Images[:ln-1]
 			break
 		}
 	}
@@ -1473,21 +1473,21 @@ func (o *Thing) RemoveThingImages(ctx context.Context, exec boil.ContextExecutor
 	return nil
 }
 
-func removeThingImagesFromImageThingsSlice(o *Thing, related []*Image) {
+func removeImagesFromThingsSlice(o *Thing, related []*Image) {
 	for _, rel := range related {
 		if rel.R == nil {
 			continue
 		}
-		for i, ri := range rel.R.ImageThings {
+		for i, ri := range rel.R.Things {
 			if o.ID != ri.ID {
 				continue
 			}
 
-			ln := len(rel.R.ImageThings)
+			ln := len(rel.R.Things)
 			if ln > 1 && i < ln-1 {
-				rel.R.ImageThings[i] = rel.R.ImageThings[ln-1]
+				rel.R.Things[i] = rel.R.Things[ln-1]
 			}
-			rel.R.ImageThings = rel.R.ImageThings[:ln-1]
+			rel.R.Things = rel.R.Things[:ln-1]
 			break
 		}
 	}

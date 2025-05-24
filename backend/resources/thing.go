@@ -64,7 +64,7 @@ func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string) 
 		CreatedAt:   thing.CreatedAt,
 		Owner:       UserFromModel(thing.R.Owner),
 		Lists:       filteredLists,
-		Images:      ReducedImagesFromModelSlice(thing.R.ThingImages),
+		Images:      ReducedImagesFromModelSlice(thing.R.Images),
 		Properties:  PropertiesFromModelSlice(thing.R.Properties),
 		Shares:      shares,
 		Actions: Actions{

@@ -13,7 +13,7 @@ func GetListUnchecked(ctx context.Context, exec boil.ContextExecutor, listId str
 		models.ListWhere.ID.EQ(listId),
 		qm.Load(models.ListRels.Owner),
 		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.Owner)),
-		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.ThingImages)),
+		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.Images)),
 		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.QuantityEntries)),
 		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.Properties)),
 		qm.Load(qm.Rels(models.ListRels.Shares, models.ShareRels.Owner)),

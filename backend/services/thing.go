@@ -90,7 +90,7 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 			return err
 		}
 		// TODO make sure the image belongs to the owner of the thing
-		err = thing.AddThingImages(ctx, tx, false, images...)
+		err = thing.AddImages(ctx, tx, false, images...)
 		if err != nil {
 			return err
 		}
@@ -148,7 +148,7 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 	err := utils.Tx(ctx, ts.db, func(tx *sql.Tx) error {
 		thing, err := models.Things(
 			qm.Load(models.ThingRels.Properties),
-			qm.Load(models.ThingRels.ThingImages),
+			qm.Load(models.ThingRels.Images),
 			qm.Load(models.ThingRels.QuantityEntries),
 			models.ThingWhere.ID.EQ(thingId),
 		).One(ctx, tx)
@@ -210,7 +210,7 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 			return err
 		}
 
-		err = thing.SetThingImages(ctx, tx, false, images...)
+		err = thing.SetImages(ctx, tx, false, images...)
 		if err != nil {
 			return err
 		}
@@ -301,7 +301,7 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 		qm.Load(models.ThingRels.Owner),
 		qm.Load(qm.Rels(models.ThingRels.Shares, models.ShareRels.Owner)),
 		qm.Load(qm.Rels(models.ThingRels.Shares, models.ShareRels.TargetUser)),
-		qm.Load(models.ThingRels.ThingImages),
+		qm.Load(models.ThingRels.Images),
 		searchCond,
 		sortCond,
 	)

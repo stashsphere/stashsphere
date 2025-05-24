@@ -43,14 +43,14 @@ func GetSharedImageIdsForUser(ctx context.Context, exec boil.ContextExecutor, us
 		return nil, err
 	}
 	things, err := models.Things(
-		qm.Load(qm.Rels(models.ThingRels.ThingImages)),
+		qm.Load(qm.Rels(models.ThingRels.Images)),
 		models.ThingWhere.ID.IN(thingIds)).All(ctx, exec)
 	if err != nil {
 		return nil, err
 	}
 	imageIds := make(map[string]bool)
 	for _, thing := range things {
-		for _, image := range thing.R.ThingImages {
+		for _, image := range thing.R.Images {
 			imageIds[image.ID] = true
 		}
 	}
@@ -66,7 +66,7 @@ func GetSharedImageIdsForUser(ctx context.Context, exec boil.ContextExecutor, us
 func DeleteImage(ctx context.Context, exec boil.ContextExecutor, userId string, imageId string) (*models.Image, error) {
 	image, err := models.Images(
 		models.ImageWhere.ID.EQ(imageId),
-		qm.Load(models.ImageRels.ImageThings),
+		qm.Load(models.ImageRels.Things),
 		qm.Load(models.ImageRels.Owner),
 	).One(ctx, exec)
 	if err != nil {
@@ -75,7 +75,7 @@ func DeleteImage(ctx context.Context, exec boil.ContextExecutor, userId string, 
 	if image.OwnerID != userId {
 		return nil, utils.EntityDoesNotBelongToUserError{}
 	}
-	if len(image.R.ImageThings) > 0 {
+	if len(image.R.Things) > 0 {
 		return nil, utils.EntityInUseError{}
 	}
 	_, err = image.Delete(ctx, exec)

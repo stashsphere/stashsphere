@@ -189,8 +189,8 @@ func (is *ImageService) ImageIndex(ctx context.Context, userId string, perPage u
 	}
 
 	images, err := models.Images(
-		qm.Load(models.ImageRels.ImageThings),
-		qm.Load(qm.Rels(models.ImageRels.ImageThings, models.ThingRels.Owner)),
+		qm.Load(models.ImageRels.Things),
+		qm.Load(qm.Rels(models.ImageRels.Things, models.ThingRels.Owner)),
 		qm.Load(models.ImageRels.Owner),
 		searchCond,
 		qm.OrderBy(models.ImageColumns.CreatedAt),
