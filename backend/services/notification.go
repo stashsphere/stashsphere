@@ -1,27 +1,37 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
+	"html/template"
 	"math"
 	"time"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/notifications"
+	"github.com/stashsphere/backend/notifications/templates"
 	"github.com/stashsphere/backend/utils"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-type NotificationService struct {
-	db *sql.DB
+type NotificationData struct {
+	FrontendUrl  string
+	InstanceName string
 }
 
-func NewNotificationService(db *sql.DB) *NotificationService {
-	return &NotificationService{db}
+type NotificationService struct {
+	db           *sql.DB
+	data         NotificationData
+	emailService EmailService
+}
+
+func NewNotificationService(db *sql.DB, data NotificationData, emailService EmailService) *NotificationService {
+	return &NotificationService{db, data, emailService}
 }
 
 type CreateNotification struct {
@@ -47,7 +57,6 @@ func (ns *NotificationService) CreateNotification(ctx context.Context, params Cr
 	if err != nil {
 		return nil, err
 	}
-	// TODO send out notification using mail/smtp
 	err = notification.Reload(ctx, ns.db)
 	if err != nil {
 		return nil, err
@@ -114,4 +123,64 @@ func (ns *NotificationService) AcknowledgeNotification(ctx context.Context, para
 	notification.AcknowledgedAt = null.NewTime(time.Now(), true)
 	_, err = notification.Update(ctx, ns.db, boil.Whitelist(models.NotificationColumns.AcknowledgedAt))
 	return err
+}
+
+type CreateFriendRequestNotificationParams struct {
+	ReceiverID    string
+	ReceiverName  string
+	ReceiverEmail string
+	RequestID     string
+	SenderID      string
+	SenderName    string
+}
+
+func (ns *NotificationService) CreateFriendRequest(ctx context.Context, params CreateFriendRequestNotificationParams) error {
+	_, err := ns.CreateNotification(ctx, CreateNotification{
+		RecipientId: params.ReceiverID,
+		Content: notifications.FriendRequest{
+			RequestId: params.RequestID,
+			SenderId:  params.SenderID,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	bodyTempl, err := template.ParseFS(templates.FS, "friend_request.body.txt")
+	if err != nil {
+		return err
+	}
+
+	subjectTempl, err := template.ParseFS(templates.FS, "friend_request.subject.txt")
+	if err != nil {
+		return err
+	}
+
+	type BodyData struct {
+		RecipientName string
+		FrontendUrl   string
+	}
+
+	type SubjectData struct {
+		InstanceName string
+	}
+
+	var body bytes.Buffer
+	err = bodyTempl.Execute(&body, BodyData{
+		RecipientName: params.ReceiverName,
+		FrontendUrl:   ns.data.FrontendUrl,
+	})
+	if err != nil {
+		return err
+	}
+
+	var subject bytes.Buffer
+	err = subjectTempl.Execute(&subject, SubjectData{
+		InstanceName: ns.data.InstanceName,
+	})
+	if err != nil {
+		return err
+	}
+
+	return ns.emailService.Deliver(params.ReceiverEmail, subject.String(), body.String())
 }

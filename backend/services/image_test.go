@@ -121,7 +121,12 @@ func TestImageAccessSharedThing(t *testing.T) {
 	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{}, "bob does not have access yet")
 
 	thingService := services.NewThingService(db, imageService)
-	notificationService := services.NewNotificationService(db)
+
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, emailService)
 	shareService := services.NewShareService(db, notificationService)
 
 	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)

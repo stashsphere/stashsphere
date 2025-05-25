@@ -1,0 +1,1 @@
+[{{.InstanceName}}] You have a new friend request

@@ -59,14 +59,7 @@ func (us *UserService) CreateUser(ctx context.Context, params CreateUserParams) 
 }
 
 func (us *UserService) FindUserByID(ctx context.Context, userId string) (*models.User, error) {
-	user, err := models.Users(models.UserWhere.ID.EQ(userId)).One(ctx, us.db)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, utils.NotFoundError{EntityName: "user"}
-		}
-		return nil, err
-	}
-	return user, nil
+	return operations.FindUserByID(ctx, us.db, userId)
 }
 
 func (us *UserService) UpdateUser(ctx context.Context, userId string, name string) (*models.User, error) {

@@ -1,31 +1,53 @@
 package config
 
-type StashsphereServeConfig struct {
-	User     string  `koanf:"database.user"`
-	Name     string  `koanf:"database.name"`
-	Host     string  `koanf:"database.host"`
-	Password *string `koanf:"database.password"`
-	Port     *uint16 `koanf:"database.port"`
-	SslMode  *string `koanf:"database.sslmode"`
+type StashSphereDatabaseConfig struct {
+	User     string  `koanf:"user"`
+	Name     string  `koanf:"name"`
+	Host     string  `koanf:"host"`
+	Password *string `koanf:"password"`
+	Port     *uint16 `koanf:"port"`
+	SslMode  *string `koanf:"sslmode"`
+}
+
+type StashSphereServeConfig struct {
+	Database StashSphereDatabaseConfig `koanf:"database"`
 
 	ListenAddress string `koanf:"listenAddress"`
 
-	PrivateKey     string `koanf:"auth.privateKey"`
-	ImagePath      string `koanf:"imagePath"`
-	ImageCachePath string `koanf:"imageCachePath"`
+	Auth struct {
+		PrivateKey string `koanf:"privateKey"`
+	} `koanf:"auth"`
 
-	InviteEnabled bool   `koanf:"invites.enabled"`
-	InviteCode    string `koanf:"invites.code"`
+	Image struct {
+		Path      string `koanf:"path"`
+		CachePath string `koanf:"cachePath"`
+	} `koanf:"image"`
 
-	AllowedDomains []string `koanf:"domains.allowed"`
-	ApiDomain      string   `koanf:"domains.api"`
+	Invites struct {
+		Enabled    bool   `koanf:"enabled"`
+		InviteCode string `koanf:"code"`
+	} `koanf:"invites"`
+
+	Domains struct {
+		AllowedDomains []string `koanf:"allowed"`
+		ApiDomain      string   `koanf:"api"`
+	} `koanf:"domains"`
+
+	FrontendUrl  string `koanf:"frontendUrl"`
+	InstanceName string `koanf:"instanceName"`
+
+	Email StashSphereMailConfig `koanf:"email"`
 }
 
 type StashSphereMigrateConfig struct {
-	User     string  `koanf:"database.user"`
-	Name     string  `koanf:"database.name"`
-	Host     string  `koanf:"database.host"`
-	Password *string `koanf:"database.password"`
-	Port     *uint16 `koanf:"database.port"`
-	SslMode  *string `koanf:"database.sslmode"`
+	Database StashSphereDatabaseConfig `koanf:"database"`
+}
+
+type StashSphereMailConfig struct {
+	Backend  string `koanf:"backend"`
+	FromAddr string `koanf:"fromAddr"`
+	User     string `koanf:"user"`
+	Password string `koanf:"password"`
+	Host     string `koanf:"host"`
+	Port     uint16 `koanf:"port"`
 }

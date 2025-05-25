@@ -80,7 +80,11 @@ func TestThingAccessShareThing(t *testing.T) {
 	})
 
 	userService := services.NewUserService(db, false, "")
-	notificationService := services.NewNotificationService(db)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, emailService)
 	shareService := services.NewShareService(db, notificationService)
 	thingService := services.NewThingService(db, is)
 

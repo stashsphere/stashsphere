@@ -29,26 +29,28 @@ var migrateCommand = &cobra.Command{
 
 		k := koanf.New(".")
 		k.Load(confmap.Provider(map[string]interface{}{
-			"database.user": "stashsphere",
-			"database.name": "stashsphere",
-			"database.host": "127.0.0.1",
+			"database": map[string]interface{}{
+				"user": "stashsphere",
+				"name": "stashsphere",
+				"host": "127.0.0.1",
+			},
 		}, "."), nil)
 
 		for _, configPath := range configPaths {
 			if err := k.Load(file.Provider(configPath), yaml.Parser()); err != nil {
 				log.Fatal().Msgf("error loading config: %v", err)
 			}
-			k.UnmarshalWithConf("", &config, koanf.UnmarshalConf{Tag: "koanf", FlatPaths: true})
+			k.UnmarshalWithConf("", &config, koanf.UnmarshalConf{Tag: "koanf", FlatPaths: false})
 		}
-		dbOptions := fmt.Sprintf("user=%s dbname=%s host=%s", config.User, config.Name, config.Host)
-		if config.Password != nil {
-			dbOptions = fmt.Sprintf("%s password=%s", dbOptions, *config.Password)
+		dbOptions := fmt.Sprintf("user=%s dbname=%s host=%s", config.Database.User, config.Database.Name, config.Database.Host)
+		if config.Database.Password != nil {
+			dbOptions = fmt.Sprintf("%s password=%s", dbOptions, *config.Database.Password)
 		}
-		if config.Port != nil {
-			dbOptions = fmt.Sprintf("%s port=%d", dbOptions, *config.Port)
+		if config.Database.Port != nil {
+			dbOptions = fmt.Sprintf("%s port=%d", dbOptions, *config.Database.Port)
 		}
-		if config.SslMode != nil {
-			dbOptions = fmt.Sprintf("%s sslmode=%s", dbOptions, *config.SslMode)
+		if config.Database.SslMode != nil {
+			dbOptions = fmt.Sprintf("%s sslmode=%s", dbOptions, *config.Database.SslMode)
 		}
 
 		db, err := sql.Open("postgres", dbOptions)
@@ -64,7 +66,7 @@ var migrateCommand = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		m, err := migrate.NewWithInstance("iofs", migrationDir, config.Name, driver)
+		m, err := migrate.NewWithInstance("iofs", migrationDir, config.Database.Name, driver)
 		if err != nil {
 			return err
 		}

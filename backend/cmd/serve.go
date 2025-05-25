@@ -57,7 +57,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return nil
 }
 
-func Serve(config config.StashsphereServeConfig, debug bool) error {
+func Serve(config config.StashSphereServeConfig, debug bool) error {
 	consoleOutput := zerolog.ConsoleWriter{Out: os.Stderr}
 	loggerOutput := consoleOutput
 	logger := zerolog.New(loggerOutput)
@@ -65,36 +65,36 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 
 	boil.DebugMode = debug
 
-	if config.PrivateKey == "" {
+	if config.Auth.PrivateKey == "" {
 		log.Warn().Msg("No private key provided, generating one. Cookies won't work after restart")
 		generatedKey, err := crypto.GenerateEd25519StringKey()
 		if err != nil {
 			return err
 		}
-		config.PrivateKey = generatedKey
+		config.Auth.PrivateKey = generatedKey
 	}
 
-	if config.InviteEnabled {
+	if config.Invites.Enabled {
 		log.Info().Msgf("Invite enabled and code required")
 	} else {
 		log.Info().Msgf("Invite disabled and no code required")
 	}
 
-	privateKey, err := crypto.LoadEd22519PrivateKeyFromString(config.PrivateKey)
+	privateKey, err := crypto.LoadEd22519PrivateKeyFromString(config.Auth.PrivateKey)
 	if err != nil {
 		log.Fatal().Msgf("error loading private key from config: %v", err)
 	}
 	publicKey := privateKey.Public().(ed25519.PublicKey)
 
-	dbOptions := fmt.Sprintf("user=%s dbname=%s host=%s", config.User, config.Name, config.Host)
-	if config.Password != nil {
-		dbOptions = fmt.Sprintf("%s password=%s", dbOptions, *config.Password)
+	dbOptions := fmt.Sprintf("user=%s dbname=%s host=%s", config.Database.User, config.Database.Name, config.Database.Host)
+	if config.Database.Password != nil {
+		dbOptions = fmt.Sprintf("%s password=%s", dbOptions, *config.Database.Password)
 	}
-	if config.Port != nil {
-		dbOptions = fmt.Sprintf("%s port=%d", dbOptions, *config.Port)
+	if config.Database.Port != nil {
+		dbOptions = fmt.Sprintf("%s port=%d", dbOptions, *config.Database.Port)
 	}
-	if config.SslMode != nil {
-		dbOptions = fmt.Sprintf("%s sslmode=%s", dbOptions, *config.SslMode)
+	if config.Database.SslMode != nil {
+		dbOptions = fmt.Sprintf("%s sslmode=%s", dbOptions, *config.Database.SslMode)
 	}
 
 	db, err := sql.Open("postgres", dbOptions)
@@ -137,14 +137,20 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 		}
 		return name
 	})
-	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, config.ApiDomain)
-	userService := services.NewUserService(db, config.InviteEnabled, config.InviteCode)
-	notificationService := services.NewNotificationService(db)
-	imageService, err := services.NewImageService(db, config.ImagePath)
+	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, config.Domains.ApiDomain)
+	userService := services.NewUserService(db, config.Invites.Enabled, config.Invites.InviteCode)
+
+	emailService := services.NewEmailService(config.Email)
+	notificationService := services.NewNotificationService(db,
+		services.NotificationData{
+			FrontendUrl:  config.FrontendUrl,
+			InstanceName: config.InstanceName,
+		}, emailService)
+	imageService, err := services.NewImageService(db, config.Image.Path)
 	if err != nil {
 		return err
 	}
-	cacheService, err := services.NewCacheService(config.ImageCachePath)
+	cacheService, err := services.NewCacheService(config.Image.CachePath)
 	if err != nil {
 		return err
 	}
@@ -161,7 +167,7 @@ func Serve(config config.StashsphereServeConfig, debug bool) error {
 	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     config.AllowedDomains,
+		AllowOrigins:     config.Domains.AllowedDomains,
 		AllowCredentials: true,
 	}))
 	e.Use(echojwt.WithConfig(echojwt.Config{
@@ -266,7 +272,7 @@ var serveCommand = &cobra.Command{
 		configPaths, _ := cmd.Flags().GetStringSlice("conf")
 		debug, _ := cmd.Flags().GetBool("debug")
 
-		var config config.StashsphereServeConfig
+		var config config.StashSphereServeConfig
 
 		stateDir := os.Getenv("STATE_DIRECTORY")
 		if stateDir == "" {
@@ -281,24 +287,36 @@ var serveCommand = &cobra.Command{
 
 		k := koanf.New(".")
 		k.Load(confmap.Provider(map[string]interface{}{
-			"database.user":   "stashsphere",
-			"database.name":   "stashsphere",
-			"database.host":   "127.0.0.1",
-			"listenAddress":   ":8081",
-			"auth.privateKey": "",
-			"imagePath":       imagePath,
-			"imageCachePath":  imageCachePath,
-			"invites.enabled": false,
-			"invites.code":    "",
-			"domains.allowed": []string{"http://localhost"},
-			"domains.own":     []string{"localhost"},
+			"database": map[string]interface{}{
+				"user": "stashsphere",
+				"name": "stashsphere",
+				"host": "127.0.0.1",
+			},
+			"listenAddress": ":8081",
+			"auth": map[string]interface{}{
+				"privateKey": "",
+			},
+			"image": map[string]interface{}{
+				"path":      imagePath,
+				"cachePath": imageCachePath,
+			},
+			"invites": map[string]interface{}{
+				"enabled": false,
+				"code":    "",
+			},
+			"domains": map[string]interface{}{
+				"allowed": []string{"http://localhost"},
+				"own":     []string{"localhost"},
+			},
+			"frontendUrl":  "http://localhost",
+			"instanceName": "stashsphereDev",
 		}, "."), nil)
 
 		for _, configPath := range configPaths {
 			if err := k.Load(file.Provider(configPath), yaml.Parser()); err != nil {
 				log.Fatal().Msgf("error loading config: %v", err)
 			}
-			k.UnmarshalWithConf("", &config, koanf.UnmarshalConf{Tag: "koanf", FlatPaths: true})
+			k.UnmarshalWithConf("", &config, koanf.UnmarshalConf{Tag: "koanf", FlatPaths: false})
 		}
 
 		return Serve(config, debug)

@@ -7,3 +7,5 @@ database:
 domains:
   allowed:
     - "http://localhost:5173"
+email:
+  backend: "stdout"

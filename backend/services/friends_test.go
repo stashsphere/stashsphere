@@ -19,8 +19,12 @@ func TestFriendRequestCreationReject(t *testing.T) {
 	t.Cleanup(tearDownFunc)
 
 	userService := services.NewUserService(db, false, "")
-	notifcationService := services.NewNotificationService(db)
-	friendService := services.NewFriendService(db, notifcationService)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, emailService)
+	friendService := services.NewFriendService(db, notificationService)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)
@@ -83,8 +87,12 @@ func TestFriendRequestCreationAccept(t *testing.T) {
 	t.Cleanup(tearDownFunc)
 
 	userService := services.NewUserService(db, false, "")
-	notifcationService := services.NewNotificationService(db)
-	friendService := services.NewFriendService(db, notifcationService)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, emailService)
+	friendService := services.NewFriendService(db, notificationService)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)

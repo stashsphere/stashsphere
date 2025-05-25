@@ -1,0 +1,4 @@
+Hi {{.RecipientName}},
+
+You have a new friend request.
+Go to {{.FrontendUrl}} to accept or decline it.
