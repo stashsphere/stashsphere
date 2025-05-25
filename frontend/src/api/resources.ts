@@ -152,22 +152,45 @@ export interface FriendShips {
   friendShips: FriendShip[];
 }
 
-export interface BaseNotification {
+export type BaseNotification = {
   id: string;
   createdAt: Date;
   acknowledged: boolean;
-}
+};
 
-export interface FriendRequestNotification extends BaseNotification {
+export type FriendRequestNotification = BaseNotification & {
   contentType: 'FRIEND_REQUEST';
   content: {
     senderId: string;
     requestId: string;
   };
-}
+};
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface StashsphereNotification extends FriendRequestNotification {}
+export type ListSharedNotification = BaseNotification & {
+  contentType: 'LIST_SHARED';
+  content: {
+    sharerId: string;
+    listId: string;
+  };
+};
+
+export type ThingSharedNotification = BaseNotification & {
+  contentType: 'THING_SHARED';
+  content: {
+    sharerId: string;
+    thingId: string;
+  };
+};
+
+export type UnknownNotification = BaseNotification & {
+  contentType: string;
+  content: unknown;
+};
+
+export type StashsphereNotification =
+  | FriendRequestNotification
+  | ListSharedNotification
+  | ThingSharedNotification;
 
 export interface PagedNotifications extends Paged {
   notifications: StashsphereNotification[];
