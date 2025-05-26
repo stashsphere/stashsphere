@@ -2,9 +2,9 @@ import { ChangeEvent, ReactNode, useContext, useEffect, useMemo, useRef, useStat
 import PropertyEditor from './property_editor';
 import { Property, ReducedImage, Image } from '../../api/resources';
 import { ConfigContext } from '../../context/config';
-import { DangerButton, PrimaryButton, SecondaryButton } from '../button';
-import { Icon } from '../shared';
-import { ImageBrowser } from '../image_browser';
+import { PrimaryButton, SecondaryButton } from '../button';
+import { Icon, Headline, Modal } from '../shared';
+import { ImageBrowserGrid } from './image_browser_grid';
 import QuantityEditor from './quantity_editor';
 import { urlForImage } from '../../api/image';
 
@@ -153,128 +153,152 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div>
-      <div className="mb-4">
-        <label htmlFor="name" className="block text-primary text-sm font-medium">
-          Name
-        </label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1 p-2 text-display border border-gray-300 rounded-sm"
-        />
-      </div>
+    <div className="flex flex-col gap-8">
+      <Headline type="h1">{name || 'New Thing'}</Headline>
 
-      <div className="mb-4">
-        <label htmlFor="description" className="block text-primary text-sm font-medium">
-          Description (visible to others)
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="mt-1 p-2 text-display border border-gray-300 rounded-sm w-1/2"
-        />
-      </div>
-
-      <div className="mb-4">
-        <label htmlFor="privateNote" className="block text-warning text-sm font-medium">
-          Private Note (visible to you only)
-        </label>
-        <textarea
-          id="privateNote"
-          name="privateNote"
-          value={privateNote}
-          onChange={(e) => setPrivateNote(e.target.value)}
-          className="mt-1 p-2 text-display border border-gray-300 rounded-sm w-1/2"
-        />
-      </div>
-
-      <h2 className="text-xl font-bold mb-4 text-secondary">Quantity</h2>
-      <div className="mb-4">
-        <QuantityEditor
-          quantity={quantity}
-          unit={quantityUnit}
-          onChange={(q, u) => {
-            setQuantity(q);
-            setQuantityUnit(u);
-          }}
-        />
-      </div>
-
-      <h2 className="text-xl font-bold mb-4 text-secondary">Images</h2>
-      <div className="mb-4">
-        <div className="flex flex-wrap gap-4">
-          {previewUrls.map((url, idx) => (
-            <div key={url}>
-              <div className="flex items-center gap-4 mb-2 flex-col">
-                <div className="relative w-96 h-96">
-                  <div className="absolute h-full w-full flex items-center justify-center">
-                    <img
-                      className={`max-w-full max-h-full object-contain -rotate-${images[idx].rotation}`}
-                      src={url}
-                      alt="Preview"
-                    />
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex-1 min-w-0">
+          <div className="mb-6">
+            <Headline type="h2">Images</Headline>
+            {images.length > 0 ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 mb-4">
+                {previewUrls.map((url, idx) => (
+                  <div key={url} className="relative group">
+                    <div className="aspect-square relative overflow-hidden rounded-sm border border-gray-300">
+                      <img
+                        className={`w-full h-full object-cover -rotate-${images[idx].rotation}`}
+                        src={url}
+                        alt="Preview"
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => rotateLeft(idx)}
+                          className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
+                        >
+                          <Icon icon="mdi--rotate-left" className="text-white text-xs" />
+                        </button>
+                        <button
+                          onClick={() => removeFile(idx)}
+                          className="p-1 bg-red-500/80 rounded-full hover:bg-red-500 transition-colors"
+                        >
+                          <Icon icon="mdi--trash" className="text-white text-xs" />
+                        </button>
+                        <button
+                          onClick={() => rotateRight(idx)}
+                          className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
+                        >
+                          <Icon icon="mdi--rotate-right" className="text-white text-xs" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-row gap-4">
-                  <SecondaryButton onClick={() => rotateLeft(idx)}>
-                    <Icon icon="mdi--rotate-left" />
-                  </SecondaryButton>
-
-                  <DangerButton onClick={() => removeFile(idx)}>
-                    <Icon icon="mdi--trash" />
-                    Remove
-                  </DangerButton>
-
-                  <SecondaryButton onClick={() => rotateRight(idx)}>
-                    <Icon icon="mdi--rotate-right" />
-                  </SecondaryButton>
-                </div>
+                ))}
               </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4">
+                <p className="text-gray-500">No images added yet</p>
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                onChange={onFileChange}
+                multiple
+                hidden
+              />
+              <PrimaryButton onClick={() => setShowImageBrowser(true)}>
+                Select from Gallery
+              </PrimaryButton>
+              <PrimaryButton onClick={() => inputRef.current?.click()}>
+                Upload from Device
+              </PrimaryButton>
             </div>
-          ))}
+          </div>
         </div>
-        {showImageBrowser && (
-          <>
-            <ImageBrowser onSelected={setImageBrowserImages} />
+
+        <div className="flex flex-col flex-1 min-w-0 gap-6">
+          <div>
+            <label htmlFor="name" className="block text-primary text-sm font-medium mb-1">
+              Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full p-2 text-display border border-gray-300 rounded-sm"
+            />
+          </div>
+
+          <div>
+            <Headline type="h2">Quantity</Headline>
+            <QuantityEditor
+              quantity={quantity}
+              unit={quantityUnit}
+              onChange={(q, u) => {
+                setQuantity(q);
+                setQuantityUnit(u);
+              }}
+            />
+          </div>
+
+          <PropertyEditor properties={properties} onUpdateProperties={setProperties} />
+
+          <div>
+            <Headline type="h2">Description</Headline>
+            <textarea
+              id="description"
+              name="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full p-2 text-display border border-gray-300 rounded-sm"
+              rows={4}
+              placeholder="Describe this thing..."
+            />
+          </div>
+
+          <div>
+            <Headline type="h2">Private Note</Headline>
+            <textarea
+              id="privateNote"
+              name="privateNote"
+              value={privateNote}
+              onChange={(e) => setPrivateNote(e.target.value)}
+              className="w-full p-2 text-display border border-gray-300 rounded-sm bg-warning/10"
+              rows={3}
+              placeholder="Private notes (visible to you only)..."
+            />
+          </div>
+
+          {children}
+        </div>
+      </div>
+
+      <Modal
+        isOpen={showImageBrowser}
+        onClose={() => setShowImageBrowser(false)}
+        title="Select Images from Gallery"
+        size="full"
+        footer={
+          <div className="flex gap-4 justify-end">
+            <SecondaryButton onClick={() => setShowImageBrowser(false)}>Cancel</SecondaryButton>
             <PrimaryButton
               onClick={() => {
                 selectImages();
                 setShowImageBrowser(false);
               }}
             >
-              Add selected images
-            </PrimaryButton>
-          </>
-        )}
-        {!showImageBrowser && (
-          <div className="flex gap-4">
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              onChange={onFileChange}
-              multiple
-              hidden
-            />
-            <PrimaryButton onClick={() => setShowImageBrowser(true)}>
-              Select from Images
-            </PrimaryButton>
-            <PrimaryButton onClick={() => inputRef.current?.click()}>
-              Choose from Filesystem
+              Add Selected Images
             </PrimaryButton>
           </div>
-        )}
-      </div>
-
-      <PropertyEditor properties={properties} onUpdateProperties={setProperties} />
-
-      {!showImageBrowser && children}
+        }
+      >
+        <ImageBrowserGrid onSelected={setImageBrowserImages} />
+      </Modal>
     </div>
   );
 };

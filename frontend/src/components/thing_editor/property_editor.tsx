@@ -99,16 +99,18 @@ const PropertyEditor: React.FC<Props> = ({ properties, onUpdateProperties }) => 
             type="number"
             value={prop.value}
             onChange={(e) => handleValueChange(index, e.target.value)}
-            className="mt-1 block w-full text-display border border-secondary shadow-xs focus:border-secondary"
+            className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
+            placeholder="Enter number"
           />
         );
       case 'string':
         return (
           <input
-            type="string"
+            type="text"
             value={prop.value}
             onChange={(e) => handleValueChange(index, e.target.value)}
-            className="mt-1 block w-full text-display border border-secondary shadow-xs focus:border-secondary"
+            className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
+            placeholder="Enter text"
           />
         );
       case 'datetime': {
@@ -118,7 +120,7 @@ const PropertyEditor: React.FC<Props> = ({ properties, onUpdateProperties }) => 
             type="date"
             value={formattedDate}
             onChange={(e) => handleValueChange(index, e.target.value)}
-            className="mt-1 block w-full text-display border border-secondary shadow-xs focus:border-secondary"
+            className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
           />
         );
       }
@@ -128,70 +130,65 @@ const PropertyEditor: React.FC<Props> = ({ properties, onUpdateProperties }) => 
   return (
     <>
       <h2 className="text-xl font-bold mb-4 text-secondary">Properties</h2>
-      <div className="p-4">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead>
-            <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-display uppercase tracking-wider"
-              >
-                Name
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-display uppercase tracking-wider"
-              >
-                Value
-              </th>
-              <th scope="col" className="relative px-6 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {localProperties.map((property, index) => (
-              <tr key={index}>
-                <td className="px-2 py-2 whitespace-nowrap">
+      <div className="overflow-x-auto">
+        <div className="space-y-3">
+          {localProperties.map((property, index) => (
+            <div
+              key={index}
+              className="grid grid-cols-1 sm:grid-cols-5 gap-2 p-3 border border-gray-200 rounded-sm"
+            >
+              <div className="sm:col-span-1">
+                <label className="block text-xs font-medium text-display mb-1">Name</label>
+                <input
+                  type="text"
+                  value={property.name}
+                  onChange={(e) => handleNameChange(index, e.target.value)}
+                  className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
+                  placeholder="Property name"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-display mb-1">Value</label>
+                {inputForPropertyType(property, index)}
+              </div>
+
+              <div className="sm:col-span-1">
+                <label className="block text-xs font-medium text-display mb-1">Type</label>
+                <select
+                  onChange={(e) => handleTypeChange(index, e.target.value)}
+                  value={property.type}
+                  className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
+                >
+                  <option value="string">Text</option>
+                  <option value="float">Number</option>
+                  <option value="datetime">Date</option>
+                </select>
+                {property.type === 'float' && (
                   <input
                     type="text"
-                    value={property.name}
-                    onChange={(e) => handleNameChange(index, e.target.value)}
-                    className="mt-1 block w-full text-display border border-secondary shadow-xs focus:border-secondary"
-                  />
-                </td>
-                <td className="px-2 py-2 whitespace-nowrap">
-                  {inputForPropertyType(property, index)}
-                </td>
-                <td className="px-4 text-display">
-                  <input
-                    type="text"
-                    value={property.type === 'float' ? property.unit : ''}
+                    value={property.unit || ''}
                     onChange={(e) => handleUnitChange(index, e.target.value)}
-                    disabled={property.type !== 'float'}
+                    placeholder="Unit"
+                    className="w-full mt-1 text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1 text-xs"
                   />
-                </td>
-                <td className="px-2 py-4 whitespace-nowrap text-display">
-                  <select
-                    onChange={(e) => handleTypeChange(index, e.target.value)}
-                    value={property.type}
-                  >
-                    <option value="string">String</option>
-                    <option value="float">Number</option>
-                    <option value="datetime">Datetime</option>
-                  </select>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => deleteProperty(index)}
-                    className="text-danger-500 hover:text-danger-600 hover:border hover:border-danger hover:mx-0 mx-px px-px"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <NeutralButton onClick={addProperty}>Add Property</NeutralButton>
+                )}
+              </div>
+
+              <div className="sm:col-span-1 flex items-end">
+                <button
+                  onClick={() => deleteProperty(index)}
+                  className="w-full sm:w-auto px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-sm transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4">
+          <NeutralButton onClick={addProperty}>Add Property</NeutralButton>
+        </div>
       </div>
     </>
   );

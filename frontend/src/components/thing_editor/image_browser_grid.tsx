@@ -1,15 +1,15 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { AxiosContext } from '../context/axios';
-import { PagedImages, Image } from '../api/resources';
-import { getImages } from '../api/image';
-import { ImageList } from './image_list';
-import { Pages } from './pages';
+import { AxiosContext } from '../../context/axios';
+import { PagedImages, Image } from '../../api/resources';
+import { getImages } from '../../api/image';
+import { ImageGrid } from './edit_image_grid';
+import { Pages } from '../pages';
 
-export interface ImageBrowserProps {
+export interface ImageBrowserGridProps {
   onSelected: (image: Image[]) => void;
 }
 
-export const ImageBrowser = ({ onSelected }: ImageBrowserProps) => {
+export const ImageBrowserGrid = ({ onSelected }: ImageBrowserGridProps) => {
   const axiosInstance = useContext(AxiosContext);
   const [currentPage, setCurrentPage] = useState(0);
   const [images, setImages] = useState<PagedImages | undefined>(undefined);
@@ -20,7 +20,7 @@ export const ImageBrowser = ({ onSelected }: ImageBrowserProps) => {
     if (axiosInstance === null) {
       return;
     }
-    getImages(axiosInstance, currentPage, 18)
+    getImages(axiosInstance, currentPage, 24)
       .then(setImages)
       .catch((reason) => {
         console.log(reason);
@@ -51,12 +51,12 @@ export const ImageBrowser = ({ onSelected }: ImageBrowserProps) => {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 min-h-0">
-        <ImageList images={images.images} selectedImageIds={selectedImageIds} onSelect={onSelect} />
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <ImageGrid images={images.images} selectedImageIds={selectedImageIds} onSelect={onSelect} />
       </div>
       {images.totalCount > 0 && (
-        <div className="mt-4 flex-shrink-0">
+        <div className="mt-3 flex-shrink-0">
           <Pages
             currentPage={currentPage}
             onPageChange={(n) => setCurrentPage(n)}
