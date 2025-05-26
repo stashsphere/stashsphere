@@ -3,7 +3,7 @@ import { Thing } from '../../api/resources';
 import { getThing } from '../../api/things';
 import { AxiosContext } from '../../context/axios';
 import { ThingImages } from './thing_images';
-import PropertyList from './property_list';
+import { PropertyList } from './property_list';
 import { Headline } from '../shared';
 import { Icon } from '../shared';
 

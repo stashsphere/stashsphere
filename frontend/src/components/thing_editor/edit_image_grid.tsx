@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Image } from '../../api/resources';
 import { AccentButton, DangerButton, PrimaryButton } from '../shared';
-import { ImageComponent } from '../image';
+import { ImageComponent } from '../shared';
 
 type InterActionProps = {
   onDelete?: (id: string) => void;

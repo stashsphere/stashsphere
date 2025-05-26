@@ -1,6 +1,6 @@
 import { useContext, useState } from 'react';
 import { createImage } from '../../api/image';
-import { ThingEditor, ThingEditorData } from '../../components/thing_editor/thing_editor';
+import { ThingEditor, ThingEditorData } from '../../components/thing_editor';
 import { AxiosContext } from '../../context/axios';
 import { createThing } from '../../api/things';
 import { useNavigate } from 'react-router';

@@ -1,5 +1,5 @@
 import { FormEvent, ReactNode, useEffect, useState } from 'react';
-import { Profile } from '../api/resources';
+import { Profile } from '../../api/resources';
 
 export type EditableProfile = {
   name: string;

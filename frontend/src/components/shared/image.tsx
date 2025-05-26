@@ -1,7 +1,7 @@
 import { useContext, useMemo } from 'react';
-import { Image, ReducedImage } from '../api/resources';
-import { ConfigContext } from '../context/config';
-import { urlForImage } from '../api/image';
+import { Image, ReducedImage } from '../../api/resources';
+import { ConfigContext } from '../../context/config';
+import { urlForImage } from '../../api/image';
 
 interface ImageComponentProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   defaultWidth: number;

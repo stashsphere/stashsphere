@@ -1,6 +1,6 @@
-import { Profile } from '../api/resources';
-import { PrimaryButton } from './shared';
-import { Labeled } from './labeled';
+import { Profile } from '../../api/resources';
+import { PrimaryButton } from '../shared';
+import { Labeled } from '../shared';
 
 type ProfileProps = {
   profile: Profile;

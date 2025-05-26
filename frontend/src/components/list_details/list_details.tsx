@@ -1,9 +1,9 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { List } from '../api/resources';
-import { AxiosContext } from '../context/axios';
-import { getList } from '../api/lists';
-import { DangerButton, SecondaryButton } from './shared';
-import ThingInfo from './thing_info';
+import { List } from '../../api/resources';
+import { AxiosContext } from '../../context/axios';
+import { getList } from '../../api/lists';
+import { DangerButton, SecondaryButton } from '../shared';
+import { ThingInfo } from '../shared';
 
 interface ListDetailsProps {
   id: string;

@@ -1,6 +1,6 @@
 import { FormEvent, ReactNode, useEffect, useState } from 'react';
 import { Thing } from '../api/resources';
-import ThingInfo from './thing_info';
+import { ThingInfo } from './shared';
 
 export type ListEditorData = {
   name: string;

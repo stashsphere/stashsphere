@@ -1,9 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import {
-  ThingEditor,
-  ThingEditorData,
-  ThingImage,
-} from '../../components/thing_editor/thing_editor';
+import { ThingEditor, ThingEditorData, ThingImage } from '../../components/thing_editor';
 import { AxiosContext } from '../../context/axios';
 import { useNavigate, useParams } from 'react-router';
 import { getThing, updateThing } from '../../api/things';

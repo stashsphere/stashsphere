@@ -12,4 +12,7 @@ export {
 } from './button';
 export { Headline } from './headline';
 export { Icon } from './icon';
+export { ImageComponent } from './image';
+export { Labeled } from './labeled';
 export { Modal } from './modal';
+export { ThingInfo } from './thing_info';

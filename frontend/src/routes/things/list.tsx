@@ -3,7 +3,7 @@ import { AxiosContext } from '../../context/axios';
 import { PagedThings } from '../../api/resources';
 import { getThings } from '../../api/things';
 import { Pages } from '../../components/pages';
-import ThingInfo from '../../components/thing_info';
+import { ThingInfo } from '../../components/shared';
 import { PrimaryButton } from '../../components/shared';
 
 export const Things = () => {

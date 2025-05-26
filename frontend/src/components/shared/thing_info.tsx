@@ -1,13 +1,13 @@
-import { Thing } from '../api/resources';
-import { Icon } from './shared';
-import PropertyList from './thing_details/property_list';
-import { ImageComponent } from './image';
+import { Thing } from '../../api/resources';
+import { Icon } from '.';
+import { PropertyList } from '../thing_details';
+import { ImageComponent } from '../shared';
 
 type ThingInfoProps = {
   thing: Thing;
 };
 
-const ThingInfo = ({ thing }: ThingInfoProps) => {
+export const ThingInfo = ({ thing }: ThingInfoProps) => {
   const firstImage = thing.images[0];
   const firstImageContent = firstImage ? (
     <ImageComponent
@@ -43,5 +43,3 @@ const ThingInfo = ({ thing }: ThingInfoProps) => {
     </div>
   );
 };
-
-export default ThingInfo;

@@ -1,6 +1,6 @@
 import { FormEvent, useContext, useMemo, useState } from 'react';
 import { List, Profile, Share, Thing, User } from '../api/resources';
-import ThingInfo from './thing_info';
+import { ThingInfo } from './shared';
 import { ListInfo } from './list_info';
 import { UserList } from './user_list';
 import { Icon } from './shared';

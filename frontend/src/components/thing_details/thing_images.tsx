@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ReducedImage } from '../../api/resources';
-import { ImageComponent } from '../image';
+import { ImageComponent } from '../shared';
 
 type ImageGalleryProps = {
   images: ReducedImage[];

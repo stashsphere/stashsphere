@@ -1,5 +1,5 @@
 import { ReducedImage, Image } from '../api/resources';
-import { ImageComponent } from './image';
+import { ImageComponent } from './shared';
 
 type ImageGridProps = {
   images: ReducedImage[] | Image[];

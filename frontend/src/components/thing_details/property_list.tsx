@@ -3,7 +3,7 @@ import { Property } from '../../api/resources';
 
 import PropertyComponent from './property';
 
-const PropertyList = ({
+export const PropertyList = ({
   properties,
   collapsable,
   keyWidth,
@@ -40,5 +40,3 @@ const PropertyList = ({
     </>
   );
 };
-
-export default PropertyList;
