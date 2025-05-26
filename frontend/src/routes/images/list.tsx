@@ -4,7 +4,7 @@ import { PagedImages } from '../../api/resources';
 import { deleteImage, getImages } from '../../api/image';
 import { Pages } from '../../components/pages';
 import { ImageList } from '../../components/image_list';
-import { PrimaryButton } from '../../components/button';
+import { PrimaryButton } from '../../components/shared';
 import { ImageUploader } from '../../components/image_uploader';
 
 export const Images = () => {

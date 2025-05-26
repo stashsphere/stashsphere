@@ -9,7 +9,7 @@ import {
 import { AxiosContext } from '../context/axios';
 import { getUser } from '../api/user';
 import { acknowledgeNotification } from '../api/notification';
-import { PrimaryButton } from './button';
+import { PrimaryButton } from './shared';
 import { Icon } from './shared';
 
 const FriendRequestNotificationComponent = ({

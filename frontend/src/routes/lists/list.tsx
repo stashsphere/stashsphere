@@ -3,7 +3,7 @@ import { AxiosContext } from '../../context/axios';
 import { getLists } from '../../api/lists';
 import { PagedLists } from '../../api/resources';
 import { Pages } from '../../components/pages';
-import { PrimaryButton } from '../../components/button';
+import { PrimaryButton } from '../../components/shared';
 import { ListInfo } from '../../components/list_info';
 
 export const Lists = () => {

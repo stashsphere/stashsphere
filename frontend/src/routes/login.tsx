@@ -2,7 +2,7 @@ import { FormEvent, useContext, useEffect, useState } from 'react';
 import { AxiosContext } from '../context/axios';
 import { useNavigate } from 'react-router';
 import { AuthContext } from '../context/auth';
-import { PrimaryButton } from '../components/button';
+import { PrimaryButton } from '../components/shared';
 
 export const Login = () => {
   const navigate = useNavigate();

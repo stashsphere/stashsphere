@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/auth';
 import { AxiosContext } from '../../context/axios';
 import { EditableProfile, ProfileEditor } from '../../components/profile_editor';
 import { patchProfile } from '../../api/profile';
-import { YellowButton } from '../../components/button';
+import { YellowButton } from '../../components/shared';
 
 export const EditProfile = () => {
   const axiosInstance = useContext(AxiosContext);

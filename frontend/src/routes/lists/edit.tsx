@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { AxiosContext } from '../../context/axios';
 import { getList, updateList } from '../../api/lists';
 import { ListEditor, ListEditorData } from '../../components/list_editor';
-import { GrayButton, YellowButton } from '../../components/button';
+import { GrayButton, YellowButton } from '../../components/shared';
 import { Pages } from '../../components/pages';
 import { getThings } from '../../api/things';
 import { AuthContext } from '../../context/auth';

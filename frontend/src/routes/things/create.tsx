@@ -4,7 +4,7 @@ import { ThingEditor, ThingEditorData } from '../../components/thing_editor/thin
 import { AxiosContext } from '../../context/axios';
 import { createThing } from '../../api/things';
 import { useNavigate } from 'react-router';
-import { PrimaryButton } from '../../components/button';
+import { PrimaryButton } from '../../components/shared';
 
 export const CreateThing = () => {
   const axiosInstance = useContext(AxiosContext);

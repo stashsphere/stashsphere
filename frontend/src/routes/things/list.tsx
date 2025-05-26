@@ -4,7 +4,7 @@ import { PagedThings } from '../../api/resources';
 import { getThings } from '../../api/things';
 import { Pages } from '../../components/pages';
 import ThingInfo from '../../components/thing_info';
-import { PrimaryButton } from '../../components/button';
+import { PrimaryButton } from '../../components/shared';
 
 export const Things = () => {
   const axiosInstance = useContext(AxiosContext);

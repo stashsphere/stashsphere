@@ -2,7 +2,7 @@ import { ChangeEvent, ReactNode, useContext, useEffect, useMemo, useRef, useStat
 import PropertyEditor from './property_editor';
 import { Property, ReducedImage, Image } from '../../api/resources';
 import { ConfigContext } from '../../context/config';
-import { PrimaryButton, SecondaryButton } from '../button';
+import { PrimaryButton, SecondaryButton } from '../shared';
 import { Icon, Headline, Modal } from '../shared';
 import { ImageBrowserGrid } from './image_browser_grid';
 import QuantityEditor from './quantity_editor';

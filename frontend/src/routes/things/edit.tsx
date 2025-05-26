@@ -9,7 +9,7 @@ import { useNavigate, useParams } from 'react-router';
 import { getThing, updateThing } from '../../api/things';
 import { Thing } from '../../api/resources';
 import { createImage, modifyImage } from '../../api/image';
-import { GrayButton, PrimaryButton } from '../../components/button';
+import { GrayButton, PrimaryButton } from '../../components/shared';
 
 export const EditThing = () => {
   const [thing, setThing] = useState<null | Thing>(null);

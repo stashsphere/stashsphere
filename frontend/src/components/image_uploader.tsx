@@ -1,5 +1,5 @@
 import { ChangeEvent, useContext, useMemo, useRef, useState } from 'react';
-import { DangerButton, PrimaryButton } from './button';
+import { DangerButton, PrimaryButton } from './shared';
 import { Icon } from './shared';
 import { createImage } from '../api/image';
 import { AxiosContext } from '../context/axios';

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Masonry } from 'masonic';
 import { Image } from '../api/resources';
-import { AccentButton, DangerButton, PrimaryButton } from './button';
+import { AccentButton, DangerButton, PrimaryButton } from './shared';
 import { ImageComponent } from './image';
 
 type InterActionProps = {

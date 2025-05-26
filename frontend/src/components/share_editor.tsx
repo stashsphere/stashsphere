@@ -4,7 +4,7 @@ import ThingInfo from './thing_info';
 import { ListInfo } from './list_info';
 import { UserList } from './user_list';
 import { Icon } from './shared';
-import { DangerButton, PrimaryButton, SecondaryButton } from './button';
+import { DangerButton, PrimaryButton, SecondaryButton } from './shared';
 import { AxiosContext } from '../context/axios';
 import { deleteShare } from '../api/share';
 

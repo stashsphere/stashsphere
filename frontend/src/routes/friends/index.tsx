@@ -10,7 +10,7 @@ import {
 import { FriendRequest, FriendShip, User } from '../../api/resources';
 import { AuthContext } from '../../context/auth';
 import { UserList } from '../../components/user_list';
-import { PrimaryButton, SecondaryButton } from '../../components/button';
+import { PrimaryButton, SecondaryButton } from '../../components/shared';
 import { Icon } from '../../components/shared';
 import { getAllUsers } from '../../api/user';
 
