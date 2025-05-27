@@ -1,0 +1,4 @@
+Hi {{.TargetUserName}},
+
+{{.SharerName}} has shared a thing with you.
+Head to {{.FrontendUrl}} to view it.

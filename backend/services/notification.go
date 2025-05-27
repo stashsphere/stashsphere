@@ -126,20 +126,20 @@ func (ns *NotificationService) AcknowledgeNotification(ctx context.Context, para
 }
 
 type CreateFriendRequestNotificationParams struct {
-	ReceiverID    string
+	ReceiverId    string
 	ReceiverName  string
 	ReceiverEmail string
-	RequestID     string
-	SenderID      string
+	RequestId     string
+	SenderId      string
 	SenderName    string
 }
 
 func (ns *NotificationService) CreateFriendRequest(ctx context.Context, params CreateFriendRequestNotificationParams) error {
 	_, err := ns.CreateNotification(ctx, CreateNotification{
-		RecipientId: params.ReceiverID,
+		RecipientId: params.ReceiverId,
 		Content: notifications.FriendRequest{
-			RequestId: params.RequestID,
-			SenderId:  params.SenderID,
+			RequestId: params.RequestId,
+			SenderId:  params.SenderId,
 		},
 	})
 	if err != nil {
@@ -183,4 +183,189 @@ func (ns *NotificationService) CreateFriendRequest(ctx context.Context, params C
 	}
 
 	return ns.emailService.Deliver(params.ReceiverEmail, subject.String(), body.String())
+}
+
+type CreateFriendRequestReactionParams struct {
+	RequestId    string
+	ReceiverId   string
+	SenderEmail  string
+	ReceiverName string
+	Accepted     bool
+	SenderName   string
+}
+
+func (ns *NotificationService) CreateFriendRequestReaction(ctx context.Context, params CreateFriendRequestReactionParams) error {
+	_, err := ns.CreateNotification(ctx, CreateNotification{
+		RecipientId: params.ReceiverId,
+		Content: notifications.FriendRequestReaction{
+			RequestId: params.RequestId,
+			Accepted:  params.Accepted,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	bodyTempl, err := template.ParseFS(templates.FS, "friend_request_reaction.body.txt")
+	if err != nil {
+		return err
+	}
+
+	subjectTempl, err := template.ParseFS(templates.FS, "friend_request_reaction.subject.txt")
+	if err != nil {
+		return err
+	}
+
+	type BodyData struct {
+		Accepted      bool
+		RecipientName string
+		SenderName    string
+	}
+
+	type SubjectData struct {
+		Accepted     bool
+		InstanceName string
+	}
+
+	var body bytes.Buffer
+	err = bodyTempl.Execute(&body, BodyData{
+		RecipientName: params.ReceiverName,
+		SenderName:    params.SenderName,
+		Accepted:      params.Accepted,
+	})
+	if err != nil {
+		return err
+	}
+
+	var subject bytes.Buffer
+	err = subjectTempl.Execute(&subject, SubjectData{
+		InstanceName: ns.data.InstanceName,
+		Accepted:     params.Accepted,
+	})
+	if err != nil {
+		return err
+	}
+	return ns.emailService.Deliver(params.SenderEmail, subject.String(), body.String())
+}
+
+type ThingSharedParams struct {
+	ThingId         string
+	SharerName      string
+	SharedId        string
+	TargetUserId    string
+	TargetUserName  string
+	TargetUserEmail string
+}
+
+func (ns *NotificationService) ThingShared(ctx context.Context, params ThingSharedParams) error {
+	_, err := ns.CreateNotification(ctx, CreateNotification{
+		RecipientId: params.TargetUserId,
+		Content: notifications.ThingShared{
+			ThingId:  params.ThingId,
+			SharerId: params.SharedId,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	bodyTempl, err := template.ParseFS(templates.FS, "thing_shared.body.txt")
+	if err != nil {
+		return err
+	}
+
+	subjectTempl, err := template.ParseFS(templates.FS, "thing_shared.subject.txt")
+	if err != nil {
+		return err
+	}
+
+	type BodyData struct {
+		TargetUserName string
+		SharerName     string
+		FrontendUrl    string
+	}
+
+	type SubjectData struct {
+		InstanceName string
+	}
+
+	var body bytes.Buffer
+	err = bodyTempl.Execute(&body, BodyData{
+		TargetUserName: params.TargetUserName,
+		SharerName:     params.SharerName,
+		FrontendUrl:    ns.data.FrontendUrl,
+	})
+	if err != nil {
+		return err
+	}
+
+	var subject bytes.Buffer
+	err = subjectTempl.Execute(&subject, SubjectData{
+		InstanceName: ns.data.InstanceName,
+	})
+	if err != nil {
+		return err
+	}
+	return ns.emailService.Deliver(params.TargetUserEmail, subject.String(), body.String())
+}
+
+type ListSharedParams struct {
+	ListId          string
+	SharerName      string
+	SharedId        string
+	TargetUserId    string
+	TargetUserName  string
+	TargetUserEmail string
+}
+
+func (ns *NotificationService) ListShared(ctx context.Context, params ListSharedParams) error {
+	_, err := ns.CreateNotification(ctx, CreateNotification{
+		RecipientId: params.TargetUserId,
+		Content: notifications.ListShared{
+			ListId:   params.ListId,
+			SharerId: params.SharedId,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	bodyTempl, err := template.ParseFS(templates.FS, "thing_shared.body.txt")
+	if err != nil {
+		return err
+	}
+
+	subjectTempl, err := template.ParseFS(templates.FS, "thing_shared.subject.txt")
+	if err != nil {
+		return err
+	}
+
+	type BodyData struct {
+		TargetUserName string
+		SharerName     string
+		FrontendUrl    string
+	}
+
+	type SubjectData struct {
+		InstanceName string
+	}
+
+	var body bytes.Buffer
+	err = bodyTempl.Execute(&body, BodyData{
+		TargetUserName: params.TargetUserName,
+		SharerName:     params.SharerName,
+		FrontendUrl:    ns.data.FrontendUrl,
+	})
+	if err != nil {
+		return err
+	}
+
+	var subject bytes.Buffer
+	err = subjectTempl.Execute(&subject, SubjectData{
+		InstanceName: ns.data.InstanceName,
+	})
+	if err != nil {
+		return err
+	}
+	return ns.emailService.Deliver(params.TargetUserEmail, subject.String(), body.String())
 }

@@ -9,7 +9,6 @@ import (
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/stashsphere/backend/models"
-	"github.com/stashsphere/backend/notifications"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/utils"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -81,12 +80,12 @@ func (fs *FriendService) CreateFriendRequest(ctx context.Context, params CreateF
 
 	err = fs.ns.CreateFriendRequest(ctx,
 		CreateFriendRequestNotificationParams{
-			ReceiverID:    outerRequest.ReceiverID,
-			SenderID:      outerRequest.SenderID,
+			ReceiverId:    outerRequest.ReceiverID,
+			SenderId:      outerRequest.SenderID,
 			ReceiverName:  receiver.Name,
 			ReceiverEmail: receiver.Email,
 			SenderName:    sender.Name,
-			RequestID:     outerRequest.ID,
+			RequestId:     outerRequest.ID,
 		})
 	if err != nil {
 		log.Error().Msgf("Could not create notification: %v", err)
@@ -211,12 +210,21 @@ func (fs *FriendService) ReactFriendRequest(ctx context.Context, params ReactFri
 	if err != nil {
 		return nil, err
 	}
-	_, err = fs.ns.CreateNotification(ctx, CreateNotification{
-		RecipientId: outerRequest.ReceiverID,
-		Content: notifications.FriendRequestReaction{
-			RequestId: outerRequest.ID,
-			Accepted:  params.Accept,
-		},
+	receiver, err := operations.FindUserByID(ctx, fs.db, outerRequest.ReceiverID)
+	if err != nil {
+		return nil, err
+	}
+	sender, err := operations.FindUserByID(ctx, fs.db, outerRequest.SenderID)
+	if err != nil {
+		return nil, err
+	}
+	err = fs.ns.CreateFriendRequestReaction(ctx, CreateFriendRequestReactionParams{
+		RequestId:    outerRequest.ID,
+		ReceiverId:   outerRequest.ReceiverID,
+		Accepted:     params.Accept,
+		SenderEmail:  receiver.Email,
+		ReceiverName: receiver.Name,
+		SenderName:   sender.Name,
 	})
 	if err != nil {
 		log.Error().Msgf("Could not create notification: %v", err)

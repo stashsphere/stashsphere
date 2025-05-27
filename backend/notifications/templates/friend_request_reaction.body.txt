@@ -1,0 +1,7 @@
+Hi {{.SenderName}},
+
+{{ if .Accepted }}
+Your friend request was accepted by {{.RecipientName}}.
+{{ else }}
+Your friend request was rejected by {{.RecipientName}}.
+{{ end }}

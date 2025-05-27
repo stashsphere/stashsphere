@@ -1,0 +1,5 @@
+{{ if .Accepted }}
+[{{.InstanceName}}] Your friend request was accepted
+{{ else }}
+[{{.InstanceName}}] Your friend request was accepted
+{{ end }}

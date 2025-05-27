@@ -8,7 +8,6 @@ import (
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/stashsphere/backend/models"
-	"github.com/stashsphere/backend/notifications"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/utils"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -68,12 +67,24 @@ func (ss *ShareService) CreateThingShare(ctx context.Context, params CreateThing
 	if err != nil {
 		return nil, err
 	}
-	_, err = ss.ns.CreateNotification(ctx, CreateNotification{
-		RecipientId: outerShare.TargetUserID,
-		Content: notifications.ThingShared{
-			ThingId:  params.ThingId,
-			SharerId: params.OwnerId,
-		},
+
+	sharer, err := operations.FindUserByID(ctx, ss.db, params.OwnerId)
+	if err != nil {
+		return nil, err
+	}
+
+	targetUser, err := operations.FindUserByID(ctx, ss.db, params.TargetUserId)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ss.ns.ThingShared(ctx, ThingSharedParams{
+		ThingId:         params.ThingId,
+		SharerName:      sharer.Name,
+		SharedId:        sharer.ID,
+		TargetUserId:    params.TargetUserId,
+		TargetUserName:  targetUser.Name,
+		TargetUserEmail: targetUser.Email,
 	})
 	if err != nil {
 		log.Error().Msgf("Could not create notification: %v", err)
@@ -122,13 +133,25 @@ func (ss *ShareService) CreateListShare(ctx context.Context, params CreateListSh
 	if err != nil {
 		return nil, err
 	}
-	_, err = ss.ns.CreateNotification(ctx, CreateNotification{
-		RecipientId: outerShare.TargetUserID,
-		Content: notifications.ListShared{
-			ListId:   params.ListId,
-			SharerId: params.OwnerId,
-		},
+	sharer, err := operations.FindUserByID(ctx, ss.db, params.OwnerId)
+	if err != nil {
+		return nil, err
+	}
+
+	targetUser, err := operations.FindUserByID(ctx, ss.db, params.TargetUserId)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ss.ns.ListShared(ctx, ListSharedParams{
+		ListId:          params.ListId,
+		SharerName:      sharer.Name,
+		SharedId:        sharer.ID,
+		TargetUserId:    params.TargetUserId,
+		TargetUserName:  targetUser.Name,
+		TargetUserEmail: targetUser.Email,
 	})
+
 	if err != nil {
 		log.Error().Msgf("Could not create notification: %v", err)
 	}
