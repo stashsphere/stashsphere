@@ -330,12 +330,12 @@ func (ns *NotificationService) ListShared(ctx context.Context, params ListShared
 		return err
 	}
 
-	bodyTempl, err := template.ParseFS(templates.FS, "thing_shared.body.txt")
+	bodyTempl, err := template.ParseFS(templates.FS, "list_shared.body.txt")
 	if err != nil {
 		return err
 	}
 
-	subjectTempl, err := template.ParseFS(templates.FS, "thing_shared.subject.txt")
+	subjectTempl, err := template.ParseFS(templates.FS, "list_shared.subject.txt")
 	if err != nil {
 		return err
 	}
