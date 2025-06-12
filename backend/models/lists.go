@@ -23,51 +23,93 @@ import (
 
 // List is an object representing the database table.
 type List struct {
-	ID        string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Name      string    `boil:"name" json:"name" toml:"name" yaml:"name"`
-	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	OwnerID   string    `boil:"owner_id" json:"owner_id" toml:"owner_id" yaml:"owner_id"`
+	ID           string       `boil:"id" json:"id" toml:"id" yaml:"id"`
+	Name         string       `boil:"name" json:"name" toml:"name" yaml:"name"`
+	CreatedAt    time.Time    `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	OwnerID      string       `boil:"owner_id" json:"owner_id" toml:"owner_id" yaml:"owner_id"`
+	SharingState SharingState `boil:"sharing_state" json:"sharing_state" toml:"sharing_state" yaml:"sharing_state"`
 
 	R *listR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L listL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var ListColumns = struct {
-	ID        string
-	Name      string
-	CreatedAt string
-	OwnerID   string
+	ID           string
+	Name         string
+	CreatedAt    string
+	OwnerID      string
+	SharingState string
 }{
-	ID:        "id",
-	Name:      "name",
-	CreatedAt: "created_at",
-	OwnerID:   "owner_id",
+	ID:           "id",
+	Name:         "name",
+	CreatedAt:    "created_at",
+	OwnerID:      "owner_id",
+	SharingState: "sharing_state",
 }
 
 var ListTableColumns = struct {
-	ID        string
-	Name      string
-	CreatedAt string
-	OwnerID   string
+	ID           string
+	Name         string
+	CreatedAt    string
+	OwnerID      string
+	SharingState string
 }{
-	ID:        "lists.id",
-	Name:      "lists.name",
-	CreatedAt: "lists.created_at",
-	OwnerID:   "lists.owner_id",
+	ID:           "lists.id",
+	Name:         "lists.name",
+	CreatedAt:    "lists.created_at",
+	OwnerID:      "lists.owner_id",
+	SharingState: "lists.sharing_state",
 }
 
 // Generated where
 
+type whereHelperSharingState struct{ field string }
+
+func (w whereHelperSharingState) EQ(x SharingState) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelperSharingState) NEQ(x SharingState) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelperSharingState) LT(x SharingState) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelperSharingState) LTE(x SharingState) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelperSharingState) GT(x SharingState) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelperSharingState) GTE(x SharingState) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+func (w whereHelperSharingState) IN(slice []SharingState) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelperSharingState) NIN(slice []SharingState) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
+
 var ListWhere = struct {
-	ID        whereHelperstring
-	Name      whereHelperstring
-	CreatedAt whereHelpertime_Time
-	OwnerID   whereHelperstring
+	ID           whereHelperstring
+	Name         whereHelperstring
+	CreatedAt    whereHelpertime_Time
+	OwnerID      whereHelperstring
+	SharingState whereHelperSharingState
 }{
-	ID:        whereHelperstring{field: "\"lists\".\"id\""},
-	Name:      whereHelperstring{field: "\"lists\".\"name\""},
-	CreatedAt: whereHelpertime_Time{field: "\"lists\".\"created_at\""},
-	OwnerID:   whereHelperstring{field: "\"lists\".\"owner_id\""},
+	ID:           whereHelperstring{field: "\"lists\".\"id\""},
+	Name:         whereHelperstring{field: "\"lists\".\"name\""},
+	CreatedAt:    whereHelpertime_Time{field: "\"lists\".\"created_at\""},
+	OwnerID:      whereHelperstring{field: "\"lists\".\"owner_id\""},
+	SharingState: whereHelperSharingState{field: "\"lists\".\"sharing_state\""},
 }
 
 // ListRels is where relationship names are stored.
@@ -118,9 +160,9 @@ func (r *listR) GetShares() ShareSlice {
 type listL struct{}
 
 var (
-	listAllColumns            = []string{"id", "name", "created_at", "owner_id"}
+	listAllColumns            = []string{"id", "name", "created_at", "owner_id", "sharing_state"}
 	listColumnsWithoutDefault = []string{"id", "name", "owner_id"}
-	listColumnsWithDefault    = []string{"created_at"}
+	listColumnsWithDefault    = []string{"created_at", "sharing_state"}
 	listPrimaryKeyColumns     = []string{"id"}
 	listGeneratedColumns      = []string{}
 )
@@ -646,7 +688,7 @@ func (listL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular bo
 	}
 
 	query := NewQuery(
-		qm.Select("\"things\".\"id\", \"things\".\"name\", \"things\".\"created_at\", \"things\".\"owner_id\", \"things\".\"description\", \"things\".\"private_note\", \"things\".\"quantity_unit\", \"a\".\"list_id\""),
+		qm.Select("\"things\".\"id\", \"things\".\"name\", \"things\".\"created_at\", \"things\".\"owner_id\", \"things\".\"description\", \"things\".\"private_note\", \"things\".\"quantity_unit\", \"things\".\"sharing_state\", \"a\".\"list_id\""),
 		qm.From("\"things\""),
 		qm.InnerJoin("\"lists_things\" as \"a\" on \"things\".\"id\" = \"a\".\"thing_id\""),
 		qm.WhereIn("\"a\".\"list_id\" in ?", argsSlice...),
@@ -667,7 +709,7 @@ func (listL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular bo
 		one := new(Thing)
 		var localJoinCol string
 
-		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &one.Description, &one.PrivateNote, &one.QuantityUnit, &localJoinCol)
+		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &one.Description, &one.PrivateNote, &one.QuantityUnit, &one.SharingState, &localJoinCol)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan eager loaded results for things")
 		}

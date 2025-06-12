@@ -24,9 +24,10 @@ func NewListService(db *sql.DB, ns *NotificationService) *ListService {
 }
 
 type CreateListParams struct {
-	Name     string
-	ThingIds []string
-	OwnerId  string
+	Name         string
+	ThingIds     []string
+	OwnerId      string
+	SharingState string
 }
 
 func (ls *ListService) CreateList(ctx context.Context, params CreateListParams) (*models.List, error) {
@@ -37,10 +38,19 @@ func (ls *ListService) CreateList(ctx context.Context, params CreateListParams) 
 			return err
 		}
 
+		sharingState := models.SharingStatePrivate
+		switch params.SharingState {
+		case "friends":
+			sharingState = models.SharingStateFriends
+		case "friends-of-friends":
+			sharingState = models.SharingStateFriendsOfFriends
+		}
+
 		list := models.List{
-			ID:      listID,
-			Name:    params.Name,
-			OwnerID: params.OwnerId,
+			ID:           listID,
+			Name:         params.Name,
+			OwnerID:      params.OwnerId,
+			SharingState: sharingState,
 		}
 
 		err = list.Insert(ctx, tx, boil.Infer())
@@ -71,8 +81,9 @@ func (ls *ListService) CreateList(ctx context.Context, params CreateListParams) 
 }
 
 type UpdateListParams struct {
-	Name     string
-	ThingIds []string
+	Name         string
+	ThingIds     []string
+	SharingState string
 }
 
 func (ls *ListService) UpdateList(ctx context.Context, listId string, userId string, params UpdateListParams) (*models.List, error) {
@@ -90,7 +101,17 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 			return utils.EntityDoesNotBelongToUserError{}
 		}
 
+		sharingState := models.SharingStatePrivate
+		switch params.SharingState {
+		case "friends":
+			sharingState = models.SharingStateFriends
+		case "friends-of-friends":
+			sharingState = models.SharingStateFriendsOfFriends
+		}
+
 		list.Name = params.Name
+		list.SharingState = sharingState
+
 		_, err = list.Update(ctx, tx, boil.Infer())
 		if err != nil {
 			return err
@@ -154,27 +175,18 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 		return 0, 0, nil, err
 	}
 
-	type ListIdRow struct {
-		ListId string `boil:"list_id"`
-	}
-	var sharedListIdRows []ListIdRow
-	sharedListIds := []interface{}{}
-	err = models.NewQuery(
-		qm.Distinct("list_id"),
-		qm.From("shares_lists"),
-		qm.InnerJoin("shares on share_id = id"),
-		qm.Where("target_user_id=?", userId),
-	).Bind(ctx, tx, &sharedListIdRows)
+	sharedListIds, err := operations.GetSharedListIdsForUser(ctx, tx, userId)
 	if err != nil {
 		return 0, 0, nil, err
 	}
-	for _, listIdRow := range sharedListIdRows {
-		sharedListIds = append(sharedListIds, listIdRow.ListId)
+	interfaceIds := make([]interface{}, len(sharedListIds))
+	for i, s := range sharedListIds {
+		interfaceIds[i] = s
 	}
 
 	searchCond := qm.Expr(
 		models.ListWhere.OwnerID.EQ(userId),
-		qm.OrIn("id in ?", sharedListIds...),
+		qm.OrIn("id in ?", interfaceIds...),
 	)
 
 	listCount, err := models.Lists(searchCond).Count(ctx, tx)

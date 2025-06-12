@@ -2,10 +2,12 @@ package services_test
 
 import (
 	"context"
+	"database/sql"
 	"os"
 	"testing"
 
 	"github.com/stashsphere/backend/factories"
+	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/services"
 	testcommon "github.com/stashsphere/backend/test_common"
@@ -158,5 +160,96 @@ func TestThingQuantity(t *testing.T) {
 
 	assert.Equal(t, updatedThing.QuantityUnit, "meters")
 	assert.Equal(t, operations.SumQuantity(updatedThing), int64(1337))
+}
 
+func createFriendShip(t *testing.T, db *sql.DB, userId1 string, userId2 string) {
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, emailService)
+	friendService := services.NewFriendService(db, notificationService)
+
+	request, err := friendService.CreateFriendRequest(context.Background(), services.CreateFriendRequestParams{
+		UserId:     userId1,
+		ReceiverId: userId2,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, request)
+	_, err = friendService.ReactFriendRequest(context.Background(), services.ReactFriendRequestParams{
+		FriendRequestId: request.ID,
+		UserId:          userId2,
+		Accept:          true,
+	})
+	assert.NoError(t, err)
+}
+
+func TestSharingState(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(tearDownFunc)
+
+	is, err := services.NewTmpImageService(db)
+	assert.Nil(t, err)
+	t.Cleanup(func() {
+		os.Remove(is.StorePath())
+	})
+
+	userService := services.NewUserService(db, false, "")
+	thingService := services.NewThingService(db, is)
+
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	bob, err := userService.CreateUser(context.Background(), *bobParams)
+	assert.NoError(t, err)
+
+	charlieParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	charlie, err := userService.CreateUser(context.Background(), *charlieParams)
+	assert.NoError(t, err)
+
+	// bob is a friend of alice
+	createFriendShip(t, db, alice.ID, bob.ID)
+	// charlie is a friend of bob, but not of alice
+	createFriendShip(t, db, charlie.ID, bob.ID)
+
+	privateThingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	privateThingParams.OwnerId = alice.ID
+	privateThing, err := thingService.CreateThing(context.Background(), *privateThingParams)
+	assert.NoError(t, err)
+
+	friendThingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	friendThingParams.OwnerId = alice.ID
+	friendThingParams.SharingState = models.SharingStateFriends.String()
+
+	friendThing, err := thingService.CreateThing(context.Background(), *friendThingParams)
+	assert.NoError(t, err)
+
+	friendsOfFriendsThingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	friendsOfFriendsThingParams.OwnerId = alice.ID
+	friendsOfFriendsThingParams.SharingState = models.SharingStateFriendsOfFriends.String()
+
+	friendsOfFriendsThing, err := thingService.CreateThing(context.Background(), *friendsOfFriendsThingParams)
+	assert.NoError(t, err)
+
+	_, err = thingService.GetThing(context.Background(), privateThing.ID, bob.ID)
+	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{})
+	_, err = thingService.GetThing(context.Background(), privateThing.ID, charlie.ID)
+	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{})
+
+	res, err := thingService.GetThing(context.Background(), friendThing.ID, bob.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	_, err = thingService.GetThing(context.Background(), friendThing.ID, charlie.ID)
+	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{})
+
+	res, err = thingService.GetThing(context.Background(), friendsOfFriendsThing.ID, bob.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	res, err = thingService.GetThing(context.Background(), friendsOfFriendsThing.ID, charlie.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
 }

@@ -21,15 +21,17 @@ func NewListHandler(list_service *services.ListService) *ListHandler {
 }
 
 type NewListParams struct {
-	Name     string   `json:"name" validate:"gt=0"`
-	ThingIds []string `json:"thing_ids" validate:"required"`
+	Name         string   `json:"name" validate:"gt=0"`
+	ThingIds     []string `json:"thing_ids" validate:"required"`
+	SharingState string   `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
 }
 
 func NewListParamsToCreateListParams(param NewListParams, ownerId string) services.CreateListParams {
 	return services.CreateListParams{
-		Name:     param.Name,
-		ThingIds: param.ThingIds,
-		OwnerId:  ownerId,
+		Name:         param.Name,
+		ThingIds:     param.ThingIds,
+		OwnerId:      ownerId,
+		SharingState: param.SharingState,
 	}
 }
 
@@ -121,14 +123,16 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 }
 
 type UpdateListParams struct {
-	Name     string   `json:"name" validate:"gt=0"`
-	ThingIds []string `json:"thing_ids" validate:"required"`
+	Name         string   `json:"name" validate:"gt=0"`
+	ThingIds     []string `json:"thing_ids" validate:"required"`
+	SharingState string   `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
 }
 
 func UpdateListParamsToUpdateListParams(p UpdateListParams) services.UpdateListParams {
 	return services.UpdateListParams{
-		Name:     p.Name,
-		ThingIds: p.ThingIds,
+		Name:         p.Name,
+		ThingIds:     p.ThingIds,
+		SharingState: p.SharingState,
 	}
 }
 

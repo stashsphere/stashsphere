@@ -5,6 +5,7 @@ import (
 
 	"github.com/stashsphere/backend/models"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
@@ -24,32 +25,135 @@ func GetThingUnchecked(ctx context.Context, exec boil.ContextExecutor, thingId s
 	return thing, nil
 }
 
-func GetSharedThingIdsForUser(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
-	shares, err := models.Shares(
-		qm.Load(qm.Rels(models.ShareRels.Things)),
-		qm.Load(qm.Rels(models.ShareRels.Lists, models.ListRels.Things)),
-		models.ShareWhere.TargetUserID.EQ(userId)).All(ctx, exec)
+// second order of sharing
+func getFriendOfFriendThings(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
+	sharedThingIds := make([]string, 0)
+	type IdRow struct {
+		Id string `boil:"id"`
+	}
+	var idRows []IdRow
+	err := queries.Raw(
+		`SELECT DISTINCT id from things where sharing_state='friends-of-friends' and owner_id in (
+		SELECT 
+		CASE WHEN friend1_id=$1 THEN friend2_id ELSE friend1_id END AS other_id
+		FROM friendships
+		WHERE friend1_id=$1 OR friend2_id=$1)`, userId,
+	).Bind(ctx, exec, &idRows)
 	if err != nil {
 		return nil, err
 	}
-	thingIds := make(map[string]bool)
-	for _, share := range shares {
-		for _, thing := range share.R.Things {
-			thingIds[thing.ID] = true
+	for _, idRow := range idRows {
+		sharedThingIds = append(sharedThingIds, idRow.Id)
+	}
+	return sharedThingIds, nil
+}
+
+// first order of sharing
+func getFriendThings(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
+	sharedThingIds := make([]string, 0)
+	type IdRow struct {
+		Id string `boil:"id"`
+	}
+	var idRows []IdRow
+	err := queries.Raw(
+		`SELECT DISTINCT id from things where (sharing_state='friends' or sharing_state='friends-of-friends') and owner_id in (
+		SELECT 
+		CASE WHEN friend1_id=$1 THEN friend2_id ELSE friend1_id END AS other_id
+		FROM friendships
+		WHERE friend1_id=$1 OR friend2_id=$1)`, userId,
+	).Bind(ctx, exec, &idRows)
+	if err != nil {
+		return nil, err
+	}
+	for _, idRow := range idRows {
+		sharedThingIds = append(sharedThingIds, idRow.Id)
+	}
+	return sharedThingIds, nil
+}
+
+func GetSharedThingIdsForUser(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
+	sharedThingIds := make([]string, 0)
+
+	friendThingIds, err := getFriendThings(ctx, exec, userId)
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range friendThingIds {
+		sharedThingIds = append(sharedThingIds, id)
+	}
+
+	friendIds, err := GetFriendIds(ctx, exec, userId)
+	if err != nil {
+		return nil, err
+	}
+	// get all things that are shared by the friend of the friend
+	for _, friendId := range friendIds {
+		friendOfFriendThings, err := getFriendOfFriendThings(ctx, exec, friendId)
+		if err != nil {
+			return nil, err
 		}
-		for _, list := range share.R.Lists {
-			for _, thing := range list.R.Things {
-				thingIds[thing.ID] = true
-			}
+		for _, id := range friendOfFriendThings {
+			sharedThingIds = append(sharedThingIds, id)
 		}
 	}
-	res := make([]string, len(thingIds))
-	i := 0
-	for key, _ := range thingIds {
-		res[i] = key
-		i++
+
+	type ThingIdRow struct {
+		ThingId string `boil:"thing_id"`
 	}
-	return res, nil
+	var sharedThingIdRows []ThingIdRow
+	// SELECT DISTINCT thing_id from shares_things JOIN shares ON share_id = id WHERE target_user_id=?;
+	err = models.NewQuery(
+		qm.Distinct("thing_id"),
+		qm.From("shares_things"),
+		qm.InnerJoin("shares on share_id = id"),
+		qm.Where("target_user_id=?", userId),
+	).Bind(ctx, exec, &sharedThingIdRows)
+	if err != nil {
+		return nil, err
+	}
+	for _, thingIdRow := range sharedThingIdRows {
+		sharedThingIds = append(sharedThingIds, thingIdRow.ThingId)
+	}
+
+	//SELECT DISTINCT lt.thing_id FROM public.lists_things lt
+	//JOIN public.shares_lists sl ON lt.list_id = sl.list_id
+	//JOIN public.shares s ON sl.share_id = s.id
+	//WHERE s.target_user_id = '?';
+	err = models.NewQuery(
+		qm.Distinct("thing_id"),
+		qm.From("lists_things lt"),
+		qm.InnerJoin("shares_lists sl on lt.list_id = sl.list_id"),
+		qm.InnerJoin("shares s on sl.share_id = s.id"),
+		qm.Where("s.target_user_id=?", userId),
+	).Bind(ctx, exec, &sharedThingIdRows)
+	if err != nil {
+		return nil, err
+	}
+	for _, thingIdRow := range sharedThingIdRows {
+		sharedThingIds = append(sharedThingIds, thingIdRow.ThingId)
+	}
+
+	// fetch all shared lists
+	listIds, err := GetSharedListIdsForUser(ctx, exec, userId)
+	if err != nil {
+		return nil, err
+	}
+	args := make([]interface{}, len(listIds))
+	for i, id := range listIds {
+		args[i] = id
+	}
+	err = models.NewQuery(
+		qm.Distinct("thing_id"),
+		qm.From("lists_things lt"),
+		qm.WhereIn("lt.list_id in ?", args...),
+	).Bind(ctx, exec, &sharedThingIdRows)
+	if err != nil {
+		return nil, err
+	}
+	for _, thingIdRow := range sharedThingIdRows {
+		sharedThingIds = append(sharedThingIds, thingIdRow.ThingId)
+	}
+	return sharedThingIds, nil
 }
 
 func SumQuantity(thing *models.Thing) int64 {

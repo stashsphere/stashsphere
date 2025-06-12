@@ -635,7 +635,7 @@ func (imageL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular b
 	}
 
 	query := NewQuery(
-		qm.Select("\"things\".\"id\", \"things\".\"name\", \"things\".\"created_at\", \"things\".\"owner_id\", \"things\".\"description\", \"things\".\"private_note\", \"things\".\"quantity_unit\", \"a\".\"image_id\""),
+		qm.Select("\"things\".\"id\", \"things\".\"name\", \"things\".\"created_at\", \"things\".\"owner_id\", \"things\".\"description\", \"things\".\"private_note\", \"things\".\"quantity_unit\", \"things\".\"sharing_state\", \"a\".\"image_id\""),
 		qm.From("\"things\""),
 		qm.InnerJoin("\"images_things\" as \"a\" on \"things\".\"id\" = \"a\".\"thing_id\""),
 		qm.WhereIn("\"a\".\"image_id\" in ?", argsSlice...),
@@ -656,7 +656,7 @@ func (imageL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular b
 		one := new(Thing)
 		var localJoinCol string
 
-		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &one.Description, &one.PrivateNote, &one.QuantityUnit, &localJoinCol)
+		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &one.Description, &one.PrivateNote, &one.QuantityUnit, &one.SharingState, &localJoinCol)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan eager loaded results for things")
 		}

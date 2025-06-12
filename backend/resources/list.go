@@ -7,13 +7,14 @@ import (
 )
 
 type List struct {
-	ID        string         `json:"id"`
-	Name      string         `json:"name"`
-	CreatedAt time.Time      `json:"createdAt"`
-	Owner     User           `json:"owner"`
-	Things    []Thing        `json:"things"`
-	Actions   Actions        `json:"actions"`
-	Shares    []ReducedShare `json:"shares"`
+	ID           string         `json:"id"`
+	Name         string         `json:"name"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	Owner        User           `json:"owner"`
+	Things       []Thing        `json:"things"`
+	Actions      Actions        `json:"actions"`
+	Shares       []ReducedShare `json:"shares"`
+	SharingState string         `json:"sharingState"`
 }
 
 // requires an eager loaded list with things
@@ -30,12 +31,13 @@ func ListFromModel(list *models.List, userId string, sharedListIds []string) Lis
 	canShare := list.OwnerID == userId
 	canDelete := list.OwnerID == userId
 	return List{
-		ID:        list.ID,
-		Name:      list.Name,
-		CreatedAt: list.CreatedAt,
-		Owner:     UserFromModel(list.R.Owner),
-		Things:    thingResources,
-		Shares:    shares,
+		ID:           list.ID,
+		Name:         list.Name,
+		CreatedAt:    list.CreatedAt,
+		Owner:        UserFromModel(list.R.Owner),
+		Things:       thingResources,
+		Shares:       shares,
+		SharingState: list.SharingState.String(),
 		Actions: Actions{
 			CanEdit:   canEdit,
 			CanDelete: canDelete,

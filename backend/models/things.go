@@ -23,13 +23,14 @@ import (
 
 // Thing is an object representing the database table.
 type Thing struct {
-	ID           string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Name         string    `boil:"name" json:"name" toml:"name" yaml:"name"`
-	CreatedAt    time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	OwnerID      string    `boil:"owner_id" json:"owner_id" toml:"owner_id" yaml:"owner_id"`
-	Description  string    `boil:"description" json:"description" toml:"description" yaml:"description"`
-	PrivateNote  string    `boil:"private_note" json:"private_note" toml:"private_note" yaml:"private_note"`
-	QuantityUnit string    `boil:"quantity_unit" json:"quantity_unit" toml:"quantity_unit" yaml:"quantity_unit"`
+	ID           string       `boil:"id" json:"id" toml:"id" yaml:"id"`
+	Name         string       `boil:"name" json:"name" toml:"name" yaml:"name"`
+	CreatedAt    time.Time    `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	OwnerID      string       `boil:"owner_id" json:"owner_id" toml:"owner_id" yaml:"owner_id"`
+	Description  string       `boil:"description" json:"description" toml:"description" yaml:"description"`
+	PrivateNote  string       `boil:"private_note" json:"private_note" toml:"private_note" yaml:"private_note"`
+	QuantityUnit string       `boil:"quantity_unit" json:"quantity_unit" toml:"quantity_unit" yaml:"quantity_unit"`
+	SharingState SharingState `boil:"sharing_state" json:"sharing_state" toml:"sharing_state" yaml:"sharing_state"`
 
 	R *thingR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L thingL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -43,6 +44,7 @@ var ThingColumns = struct {
 	Description  string
 	PrivateNote  string
 	QuantityUnit string
+	SharingState string
 }{
 	ID:           "id",
 	Name:         "name",
@@ -51,6 +53,7 @@ var ThingColumns = struct {
 	Description:  "description",
 	PrivateNote:  "private_note",
 	QuantityUnit: "quantity_unit",
+	SharingState: "sharing_state",
 }
 
 var ThingTableColumns = struct {
@@ -61,6 +64,7 @@ var ThingTableColumns = struct {
 	Description  string
 	PrivateNote  string
 	QuantityUnit string
+	SharingState string
 }{
 	ID:           "things.id",
 	Name:         "things.name",
@@ -69,6 +73,7 @@ var ThingTableColumns = struct {
 	Description:  "things.description",
 	PrivateNote:  "things.private_note",
 	QuantityUnit: "things.quantity_unit",
+	SharingState: "things.sharing_state",
 }
 
 // Generated where
@@ -81,6 +86,7 @@ var ThingWhere = struct {
 	Description  whereHelperstring
 	PrivateNote  whereHelperstring
 	QuantityUnit whereHelperstring
+	SharingState whereHelperSharingState
 }{
 	ID:           whereHelperstring{field: "\"things\".\"id\""},
 	Name:         whereHelperstring{field: "\"things\".\"name\""},
@@ -89,6 +95,7 @@ var ThingWhere = struct {
 	Description:  whereHelperstring{field: "\"things\".\"description\""},
 	PrivateNote:  whereHelperstring{field: "\"things\".\"private_note\""},
 	QuantityUnit: whereHelperstring{field: "\"things\".\"quantity_unit\""},
+	SharingState: whereHelperSharingState{field: "\"things\".\"sharing_state\""},
 }
 
 // ThingRels is where relationship names are stored.
@@ -169,9 +176,9 @@ func (r *thingR) GetShares() ShareSlice {
 type thingL struct{}
 
 var (
-	thingAllColumns            = []string{"id", "name", "created_at", "owner_id", "description", "private_note", "quantity_unit"}
+	thingAllColumns            = []string{"id", "name", "created_at", "owner_id", "description", "private_note", "quantity_unit", "sharing_state"}
 	thingColumnsWithoutDefault = []string{"id", "name", "owner_id"}
-	thingColumnsWithDefault    = []string{"created_at", "description", "private_note", "quantity_unit"}
+	thingColumnsWithDefault    = []string{"created_at", "description", "private_note", "quantity_unit", "sharing_state"}
 	thingPrimaryKeyColumns     = []string{"id"}
 	thingGeneratedColumns      = []string{}
 )
@@ -870,7 +877,7 @@ func (thingL) LoadLists(ctx context.Context, e boil.ContextExecutor, singular bo
 	}
 
 	query := NewQuery(
-		qm.Select("\"lists\".\"id\", \"lists\".\"name\", \"lists\".\"created_at\", \"lists\".\"owner_id\", \"a\".\"thing_id\""),
+		qm.Select("\"lists\".\"id\", \"lists\".\"name\", \"lists\".\"created_at\", \"lists\".\"owner_id\", \"lists\".\"sharing_state\", \"a\".\"thing_id\""),
 		qm.From("\"lists\""),
 		qm.InnerJoin("\"lists_things\" as \"a\" on \"lists\".\"id\" = \"a\".\"list_id\""),
 		qm.WhereIn("\"a\".\"thing_id\" in ?", argsSlice...),
@@ -891,7 +898,7 @@ func (thingL) LoadLists(ctx context.Context, e boil.ContextExecutor, singular bo
 		one := new(List)
 		var localJoinCol string
 
-		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &localJoinCol)
+		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &one.SharingState, &localJoinCol)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan eager loaded results for lists")
 		}

@@ -787,7 +787,7 @@ func (shareL) LoadLists(ctx context.Context, e boil.ContextExecutor, singular bo
 	}
 
 	query := NewQuery(
-		qm.Select("\"lists\".\"id\", \"lists\".\"name\", \"lists\".\"created_at\", \"lists\".\"owner_id\", \"a\".\"share_id\""),
+		qm.Select("\"lists\".\"id\", \"lists\".\"name\", \"lists\".\"created_at\", \"lists\".\"owner_id\", \"lists\".\"sharing_state\", \"a\".\"share_id\""),
 		qm.From("\"lists\""),
 		qm.InnerJoin("\"shares_lists\" as \"a\" on \"lists\".\"id\" = \"a\".\"list_id\""),
 		qm.WhereIn("\"a\".\"share_id\" in ?", argsSlice...),
@@ -808,7 +808,7 @@ func (shareL) LoadLists(ctx context.Context, e boil.ContextExecutor, singular bo
 		one := new(List)
 		var localJoinCol string
 
-		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &localJoinCol)
+		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &one.SharingState, &localJoinCol)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan eager loaded results for lists")
 		}
@@ -917,7 +917,7 @@ func (shareL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular b
 	}
 
 	query := NewQuery(
-		qm.Select("\"things\".\"id\", \"things\".\"name\", \"things\".\"created_at\", \"things\".\"owner_id\", \"things\".\"description\", \"things\".\"private_note\", \"things\".\"quantity_unit\", \"a\".\"share_id\""),
+		qm.Select("\"things\".\"id\", \"things\".\"name\", \"things\".\"created_at\", \"things\".\"owner_id\", \"things\".\"description\", \"things\".\"private_note\", \"things\".\"quantity_unit\", \"things\".\"sharing_state\", \"a\".\"share_id\""),
 		qm.From("\"things\""),
 		qm.InnerJoin("\"shares_things\" as \"a\" on \"things\".\"id\" = \"a\".\"thing_id\""),
 		qm.WhereIn("\"a\".\"share_id\" in ?", argsSlice...),
@@ -938,7 +938,7 @@ func (shareL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular b
 		one := new(Thing)
 		var localJoinCol string
 
-		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &one.Description, &one.PrivateNote, &one.QuantityUnit, &localJoinCol)
+		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &one.Description, &one.PrivateNote, &one.QuantityUnit, &one.SharingState, &localJoinCol)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan eager loaded results for things")
 		}

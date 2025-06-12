@@ -32,6 +32,7 @@ type CreateThingParams struct {
 	ImagesIds    []string
 	Quantity     uint64
 	QuantityUnit string
+	SharingState string
 }
 
 func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParams) (*models.Thing, error) {
@@ -52,6 +53,14 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 			return err
 		}
 
+		sharingState := models.SharingStatePrivate
+		switch params.SharingState {
+		case "friends":
+			sharingState = models.SharingStateFriends
+		case "friends-of-friends":
+			sharingState = models.SharingStateFriendsOfFriends
+		}
+
 		thing := &models.Thing{
 			ID:           thingID,
 			Name:         params.Name,
@@ -59,6 +68,7 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 			PrivateNote:  params.PrivateNote,
 			OwnerID:      params.OwnerId,
 			QuantityUnit: params.QuantityUnit,
+			SharingState: sharingState,
 		}
 
 		err = thing.Insert(ctx, tx, boil.Infer())
@@ -141,6 +151,7 @@ type UpdateThingParams struct {
 	ImagesIds    []string
 	Quantity     uint64
 	QuantityUnit string
+	SharingState string
 }
 
 func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId string, params UpdateThingParams) (*models.Thing, error) {
@@ -162,10 +173,20 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 			return utils.EntityDoesNotBelongToUserError{}
 		}
 
+		sharingState := models.SharingStatePrivate
+		switch params.SharingState {
+		case "friends":
+			sharingState = models.SharingStateFriends
+		case "friends-of-friends":
+			sharingState = models.SharingStateFriendsOfFriends
+		}
+
 		thing.PrivateNote = params.PrivateNote
 		thing.Name = params.Name
 		thing.Description = params.Description
 		thing.QuantityUnit = params.QuantityUnit
+		thing.SharingState = sharingState
+
 		_, err = thing.Update(ctx, tx, boil.Infer())
 		if err != nil {
 			return err
@@ -240,45 +261,18 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 		return 0, 0, nil, err
 	}
 
-	type ThingIdRow struct {
-		ThingId string `boil:"thing_id"`
-	}
-	var sharedThingIdRows []ThingIdRow
-	sharedThingIds := []interface{}{}
-	// SELECT DISTINCT thing_id from shares_things JOIN shares ON share_id = id WHERE target_user_id=?;
-	err = models.NewQuery(
-		qm.Distinct("thing_id"),
-		qm.From("shares_things"),
-		qm.InnerJoin("shares on share_id = id"),
-		qm.Where("target_user_id=?", userId),
-	).Bind(ctx, tx, &sharedThingIdRows)
+	sharedThingIds, err := operations.GetSharedThingIdsForUser(ctx, tx, userId)
 	if err != nil {
 		return 0, 0, nil, err
 	}
-	for _, thingIdRow := range sharedThingIdRows {
-		sharedThingIds = append(sharedThingIds, thingIdRow.ThingId)
-	}
-	//SELECT DISTINCT lt.thing_id FROM public.lists_things lt
-	//JOIN public.shares_lists sl ON lt.list_id = sl.list_id
-	//JOIN public.shares s ON sl.share_id = s.id
-	//WHERE s.target_user_id = '?';
-	err = models.NewQuery(
-		qm.Distinct("thing_id"),
-		qm.From("lists_things lt"),
-		qm.InnerJoin("shares_lists sl on lt.list_id = sl.list_id"),
-		qm.InnerJoin("shares s on sl.share_id = s.id"),
-		qm.Where("s.target_user_id=?", userId),
-	).Bind(ctx, tx, &sharedThingIdRows)
-	if err != nil {
-		return 0, 0, nil, err
-	}
-	for _, thingIdRow := range sharedThingIdRows {
-		sharedThingIds = append(sharedThingIds, thingIdRow.ThingId)
+	interfaceIds := make([]interface{}, len(sharedThingIds))
+	for i, s := range sharedThingIds {
+		interfaceIds[i] = s
 	}
 
 	searchCond := qm.Expr(
 		models.ThingWhere.OwnerID.EQ(userId),
-		qm.OrIn("id in ?", sharedThingIds...),
+		qm.OrIn("id in ?", interfaceIds...),
 	)
 
 	thingCount, err := models.Things(searchCond).Count(ctx, tx)

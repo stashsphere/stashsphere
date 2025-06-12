@@ -95,6 +95,50 @@ func (e FriendRequestState) Ordinal() int {
 	}
 }
 
+type SharingState string
+
+// Enum values for SharingState
+const (
+	SharingStatePrivate          SharingState = "private"
+	SharingStateFriends          SharingState = "friends"
+	SharingStateFriendsOfFriends SharingState = "friends-of-friends"
+)
+
+func AllSharingState() []SharingState {
+	return []SharingState{
+		SharingStatePrivate,
+		SharingStateFriends,
+		SharingStateFriendsOfFriends,
+	}
+}
+
+func (e SharingState) IsValid() error {
+	switch e {
+	case SharingStatePrivate, SharingStateFriends, SharingStateFriendsOfFriends:
+		return nil
+	default:
+		return errors.New("enum is not valid")
+	}
+}
+
+func (e SharingState) String() string {
+	return string(e)
+}
+
+func (e SharingState) Ordinal() int {
+	switch e {
+	case SharingStatePrivate:
+		return 0
+	case SharingStateFriends:
+		return 1
+	case SharingStateFriendsOfFriends:
+		return 2
+
+	default:
+		panic(errors.New("enum is not valid"))
+	}
+}
+
 type PropertyType string
 
 // Enum values for PropertyType
