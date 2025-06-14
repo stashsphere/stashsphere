@@ -45,7 +45,7 @@ export const EditList = () => {
     }
     const params = {
       name: data.name,
-      thing_ids: data.selectedThingIDs,
+      thingIds: data.selectedThingIDs,
       sharingState: data.sharingState,
     };
     const list = await updateList(axiosInstance, listId, params);
