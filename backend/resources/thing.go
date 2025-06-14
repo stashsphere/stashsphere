@@ -18,7 +18,7 @@ type Thing struct {
 	Images       []ReducedImage `json:"images"`
 	Properties   []interface{}  `json:"properties"`
 	Shares       []ReducedShare `json:"shares"`
-	SharingState string         `json:"sharingState"`
+	SharingState *string        `json:"sharingState"`
 	Actions      Actions        `json:"actions"`
 	Quantity     int64          `json:"quantity"`
 	QuantityUnit string         `json:"quantityUnit"`
@@ -53,8 +53,11 @@ func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string) 
 	canDelete := thing.OwnerID == userId
 
 	var privateNote *string
+	var sharingState *string
+	sharingStateString := thing.SharingState.String()
 	if thing.OwnerID == userId {
 		privateNote = &thing.PrivateNote
+		sharingState = &sharingStateString
 	}
 
 	return &Thing{
@@ -68,7 +71,7 @@ func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string) 
 		Images:       ReducedImagesFromModelSlice(thing.R.Images),
 		Properties:   PropertiesFromModelSlice(thing.R.Properties),
 		Shares:       shares,
-		SharingState: thing.SharingState.String(),
+		SharingState: sharingState,
 		Actions: Actions{
 			CanEdit:   canEdit,
 			CanDelete: canDelete,

@@ -14,7 +14,7 @@ type List struct {
 	Things       []Thing        `json:"things"`
 	Actions      Actions        `json:"actions"`
 	Shares       []ReducedShare `json:"shares"`
-	SharingState string         `json:"sharingState"`
+	SharingState *string        `json:"sharingState"`
 }
 
 // requires an eager loaded list with things
@@ -30,6 +30,13 @@ func ListFromModel(list *models.List, userId string, sharedListIds []string) Lis
 	canEdit := list.OwnerID == userId
 	canShare := list.OwnerID == userId
 	canDelete := list.OwnerID == userId
+
+	sharingStateString := list.SharingState.String()
+	var sharingState *string
+	if list.OwnerID == userId {
+		sharingState = &sharingStateString
+	}
+
 	return List{
 		ID:           list.ID,
 		Name:         list.Name,
@@ -37,7 +44,7 @@ func ListFromModel(list *models.List, userId string, sharedListIds []string) Lis
 		Owner:        UserFromModel(list.R.Owner),
 		Things:       thingResources,
 		Shares:       shares,
-		SharingState: list.SharingState.String(),
+		SharingState: sharingState,
 		Actions: Actions{
 			CanEdit:   canEdit,
 			CanDelete: canDelete,
