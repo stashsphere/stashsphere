@@ -1,5 +1,5 @@
 import { Axios } from 'axios';
-import { List, PagedLists } from './resources';
+import { List, PagedLists, SharingState } from './resources';
 
 export const getLists = async (axios: Axios, currentPage: number) => {
   const response = await axios.get(`/lists?page=${currentPage}`, {
@@ -34,6 +34,7 @@ export const getList = async (axios: Axios, id: string) => {
 export interface CreateListParams {
   name: string;
   thing_ids: string[];
+  sharingState: SharingState;
 }
 
 export const createList = async (axios: Axios, params: CreateListParams) => {
@@ -50,6 +51,7 @@ export const createList = async (axios: Axios, params: CreateListParams) => {
 export interface UpdateListParams {
   name: string;
   thing_ids: string[];
+  sharingState: SharingState;
 }
 
 export const updateList = async (axios: Axios, id: string, params: UpdateListParams) => {
@@ -61,4 +63,13 @@ export const updateList = async (axios: Axios, id: string, params: UpdateListPar
 
   const thing = response.data as List;
   return thing;
+};
+
+export const updateListParamsFromList = (list: List): UpdateListParams => {
+  const params = {
+    name: list.name,
+    thing_ids: list.things.map((t) => t.id),
+    sharingState: list.sharingState,
+  };
+  return params;
 };

@@ -2,8 +2,8 @@ import { useNavigate, useParams } from 'react-router';
 import { ShareEditor } from '../../components/share_editor';
 import { useContext, useEffect, useState } from 'react';
 import { AxiosContext } from '../../context/axios';
-import { getList } from '../../api/lists';
-import { Profile, List, User } from '../../api/resources';
+import { getList, updateList, updateListParamsFromList } from '../../api/lists';
+import { Profile, List, User, SharingState } from '../../api/resources';
 import { AuthContext } from '../../context/auth';
 import { shareObject } from '../../api/share';
 import { getAllUsers } from '../../api/user';
@@ -51,6 +51,18 @@ export const ShareList = () => {
     navigate(`/lists/${listId}`);
   };
 
+  const onUpdateSharingState = async (newState: SharingState) => {
+    if (!axiosInstance || list === null) {
+      return;
+    }
+    const params = updateListParamsFromList(list);
+    await updateList(axiosInstance, list.id, {
+      ...params,
+      sharingState: newState,
+    });
+    navigate(`/lists/${listId}`);
+  };
+
   return (
     <ShareEditor
       type={'list'}
@@ -59,6 +71,7 @@ export const ShareList = () => {
       userProfile={profile}
       onSubmit={onShare}
       onMutate={() => setMutateKey(mutateKey + 1)}
+      onChangeSharingState={onUpdateSharingState}
     />
   );
 };

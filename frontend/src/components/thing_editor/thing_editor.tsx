@@ -1,6 +1,6 @@
 import { ChangeEvent, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import PropertyEditor from './property_editor';
-import { Property, ReducedImage, Image } from '../../api/resources';
+import { Property, ReducedImage, Image, SharingState } from '../../api/resources';
 import { ConfigContext } from '../../context/config';
 import { PrimaryButton, SecondaryButton } from '../shared';
 import { Icon, Headline, Modal } from '../shared';
@@ -16,6 +16,7 @@ export type ThingEditorData = {
   properties: Property[];
   quantity: number;
   quantityUnit: string;
+  sharingState: SharingState;
 };
 
 type ThingEditorProps = {
@@ -46,6 +47,7 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
   const [imageBrowserImages, setImageBrowserImages] = useState<Image[]>([]);
   const [quantity, setQuantity] = useState(0);
   const [quantityUnit, setQuantityUnit] = useState('');
+  const [sharingState, setSharingState] = useState<SharingState>('private');
 
   const config = useContext(ConfigContext);
 
@@ -60,6 +62,7 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
     setProperties(thing.properties);
     setQuantity(thing.quantity);
     setQuantityUnit(thing.quantityUnit);
+    setSharingState(thing.sharingState);
   }, [thing]);
 
   useEffect(() => {
@@ -71,9 +74,20 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
       privateNote,
       quantity,
       quantityUnit,
+      sharingState,
     };
     onChange(data);
-  }, [onChange, name, images, properties, description, privateNote, quantity, quantityUnit]);
+  }, [
+    onChange,
+    name,
+    images,
+    properties,
+    description,
+    privateNote,
+    quantity,
+    quantityUnit,
+    sharingState,
+  ]);
 
   const imageUrl = useMemo(
     () => (image: ReducedImage) => {

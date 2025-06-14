@@ -1,5 +1,5 @@
 import { Axios } from 'axios';
-import { PagedThings, Thing } from './resources';
+import { PagedThings, SharingState, Thing } from './resources';
 
 export const getThings = async (axios: Axios, currentPage: number) => {
   const response = await axios.get(`/things?page=${currentPage}`, {
@@ -54,6 +54,7 @@ export interface CreateThingParams {
   properties: CreatePropertyParam[];
   quantity: number;
   quantityUnit: string;
+  sharingState: SharingState;
 }
 
 export const createThing = async (axios: Axios, params: CreateThingParams): Promise<Thing> => {
@@ -78,4 +79,18 @@ export const updateThing = async (axios: Axios, id: string, params: UpdateThingP
 
   const thing = response.data as Thing;
   return thing;
+};
+
+export const updateThingParamsFromThing = (thing: Thing): UpdateThingParams => {
+  const params = {
+    name: thing.name,
+    privateNote: thing.privateNote || '',
+    description: thing.description,
+    imagesIds: thing.images.map((x) => x.id),
+    properties: thing.properties,
+    quantity: thing.quantity,
+    quantityUnit: thing.quantityUnit,
+    sharingState: thing.sharingState,
+  };
+  return params;
 };

@@ -6,6 +6,7 @@ import { ThingImages } from './thing_images';
 import { PropertyList } from './property_list';
 import { Headline } from '../shared';
 import { Icon } from '../shared';
+import { SharingStateComponent } from '../shared/sharing_state';
 
 interface ThingDetailsProps {
   id: string;
@@ -15,8 +16,12 @@ const ThingActions = ({ thing }: { thing: Thing }) => {
   return (
     <div className="flex flex-row gap-2 justify-between items-center">
       <div className="flex flex-row justify-start gap-2">
+        <div className="flex flex-row text-display">
+          {thing.sharingState != 'private' && 'Visible to'}
+          <SharingStateComponent state={thing.sharingState} />
+        </div>
         <div className="text-display">
-          Shared with:
+          Directly shared with
           <span className="rounded-sm bg-secondary-200 text-onprimary mx-1 px-1">
             {thing.shares.length}
           </span>

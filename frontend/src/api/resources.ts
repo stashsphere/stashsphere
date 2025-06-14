@@ -36,6 +36,7 @@ export type ThingActions = {
 };
 
 export type Property = PropertyString | PropertyFloat | PropertyDatetime;
+export type SharingState = 'private' | 'friends' | 'friends-of-friends';
 
 export interface Thing {
   id: string;
@@ -51,6 +52,7 @@ export interface Thing {
   quantity: number;
   quantityUnit: string;
   shares: Share[];
+  sharingState: SharingState;
 }
 
 export interface ReducedThing {
@@ -107,6 +109,7 @@ export interface List {
   things: Thing[];
   actions: ThingActions;
   shares: Share[];
+  sharingState: SharingState;
 }
 
 export interface PagedLists extends Paged {

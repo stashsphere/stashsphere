@@ -1,6 +1,6 @@
-import { FormEvent, useContext, useMemo, useState } from 'react';
-import { List, Profile, Share, Thing, User } from '../api/resources';
 import { ThingInfo } from './shared';
+import { FormEvent, useContext, useEffect, useMemo, useState } from 'react';
+import { List, Profile, Share, SharingState, Thing, User } from '../api/resources';
 import { ListInfo } from './list_info';
 import { UserList } from './user_list';
 import { Icon } from './shared';
@@ -55,6 +55,7 @@ type ShareEditorProps = {
   // the profile of the currently logged in user
   userProfile: Profile;
   onSubmit(targetUser: User): void;
+  onChangeSharingState(newState: SharingState): void;
   onMutate(): void;
 } & (
   | {
@@ -70,6 +71,8 @@ type ShareEditorProps = {
 export const ShareEditor = (props: ShareEditorProps) => {
   const [targetUser, setTargetUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sharingState, setSharingState] = useState<SharingState>('private');
+  const [initialSharingState, setInitialSharingState] = useState<SharingState>('private');
 
   const searchableUsers = useMemo(() => {
     return props.users.filter((user) => user.id !== props.userProfile.id);
@@ -83,7 +86,7 @@ export const ShareEditor = (props: ShareEditorProps) => {
     );
   }, [searchableUsers, searchTerm]);
 
-  const ObjectComponent = (() => {
+  const ObjectComponent = useMemo(() => {
     switch (props.type) {
       case 'thing': {
         return <ThingInfo thing={props.thing}></ThingInfo>;
@@ -92,11 +95,29 @@ export const ShareEditor = (props: ShareEditorProps) => {
         return <ListInfo list={props.list}></ListInfo>;
       }
     }
-  })();
+  }, [props]);
+
+  useEffect(() => {
+    switch (props.type) {
+      case 'thing':
+        setSharingState(props.thing.sharingState);
+        setInitialSharingState(props.thing.sharingState);
+        break;
+      case 'list':
+        setSharingState(props.list.sharingState);
+        setInitialSharingState(props.list.sharingState);
+        break;
+    }
+  }, [props]);
+
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (targetUser === null) return;
     props.onSubmit(targetUser);
+  };
+
+  const onUpdateSharingState = () => {
+    props.onChangeSharingState(sharingState);
   };
 
   const existingShares = (() => {
@@ -118,7 +139,23 @@ export const ShareEditor = (props: ShareEditorProps) => {
           {ObjectComponent}
         </div>
         <div className="p-2">
-          <h2 className="text-xl text-accent">Shared to</h2>
+          <h2 className="text-xl text-accent">General Setting</h2>
+          <select
+            className="text-display"
+            value={sharingState}
+            onChange={(e) => setSharingState(e.target.value as SharingState)}
+          >
+            <option value="private">Private</option>
+            <option value="friends">Friends</option>
+            <option value="friends-of-friends">Friends of Friends</option>
+          </select>
+          <PrimaryButton
+            disabled={sharingState === initialSharingState}
+            onClick={onUpdateSharingState}
+          >
+            Update
+          </PrimaryButton>
+          <h2 className="text-xl text-accent">Individual Shares</h2>
           <ul>
             {existingShares.map((x) => (
               <ShareDeleter key={x.id} share={x} onDelete={() => props.onMutate()} />

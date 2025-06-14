@@ -46,6 +46,7 @@ export const EditList = () => {
     const params = {
       name: data.name,
       thing_ids: data.selectedThingIDs,
+      sharingState: data.sharingState,
     };
     const list = await updateList(axiosInstance, listId, params);
     navigate(`/lists/${list.id}`);
@@ -54,6 +55,7 @@ export const EditList = () => {
   const data = {
     name: list?.name || '',
     selectedThingIDs: list?.things.map((thing) => thing.id) || [],
+    sharingState: list?.sharingState || 'private',
   };
 
   // TODO: Move to backend

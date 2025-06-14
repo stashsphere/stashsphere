@@ -38,6 +38,7 @@ export const CreateThing = () => {
       properties: editedData.properties,
       quantity: editedData.quantity,
       quantityUnit: editedData.quantityUnit,
+      sharingState: editedData.sharingState,
     };
 
     const thing = await createThing(axiosInstance, params);

@@ -1,10 +1,11 @@
 import { FormEvent, ReactNode, useEffect, useState } from 'react';
-import { Thing } from '../api/resources';
 import { ThingInfo } from './shared';
+import { SharingState, Thing } from '../api/resources';
 
 export type ListEditorData = {
   name: string;
   selectedThingIDs: string[];
+  sharingState: SharingState;
 };
 
 type ListEditorProps = {
@@ -17,6 +18,7 @@ type ListEditorProps = {
 export const ListEditor = ({ children, list, onChange, selectableThings }: ListEditorProps) => {
   const [name, setName] = useState('');
   const [selectedThingIDs, setSelectedThingIDs] = useState<string[]>([]);
+  const [sharingState, setSharingState] = useState<SharingState>('private');
 
   useEffect(() => {
     if (!list) {
@@ -24,6 +26,7 @@ export const ListEditor = ({ children, list, onChange, selectableThings }: ListE
     }
     setName(list.name);
     setSelectedThingIDs(list.selectedThingIDs);
+    setSharingState(list.sharingState);
   }, [list]);
 
   const onSubmit = (event: FormEvent) => {
@@ -31,6 +34,7 @@ export const ListEditor = ({ children, list, onChange, selectableThings }: ListE
     const data = {
       name,
       selectedThingIDs,
+      sharingState,
     };
     onChange(data);
   };

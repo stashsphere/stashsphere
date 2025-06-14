@@ -52,6 +52,7 @@ export const EditThing = () => {
       properties: editedData.properties,
       quantity: editedData.quantity,
       quantityUnit: editedData.quantityUnit,
+      sharingState: editedData.sharingState,
     };
     const thing = await updateThing(axiosInstance, thingId, params);
     console.log('Updated', thing);
@@ -70,6 +71,7 @@ export const EditThing = () => {
       description: thing?.description || '',
       quantity: thing?.quantity || 0,
       quantityUnit: thing?.quantityUnit || '',
+      sharingState: thing?.sharingState || 'private',
     };
   }, [thing]);
 
