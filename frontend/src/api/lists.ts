@@ -33,7 +33,7 @@ export const getList = async (axios: Axios, id: string) => {
 
 export interface CreateListParams {
   name: string;
-  thing_ids: string[];
+  thingsIds: string[];
   sharingState: SharingState;
 }
 
@@ -50,7 +50,7 @@ export const createList = async (axios: Axios, params: CreateListParams) => {
 
 export interface UpdateListParams {
   name: string;
-  thing_ids: string[];
+  thingIds: string[];
   sharingState: SharingState;
 }
 
@@ -68,7 +68,7 @@ export const updateList = async (axios: Axios, id: string, params: UpdateListPar
 export const updateListParamsFromList = (list: List): UpdateListParams => {
   const params = {
     name: list.name,
-    thing_ids: list.things.map((t) => t.id),
+    thingIds: list.things.map((t) => t.id),
     sharingState: list.sharingState,
   };
   return params;
