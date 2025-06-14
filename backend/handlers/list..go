@@ -22,7 +22,7 @@ func NewListHandler(list_service *services.ListService) *ListHandler {
 
 type NewListParams struct {
 	Name         string   `json:"name" validate:"gt=0"`
-	ThingIds     []string `json:"thing_ids" validate:"required"`
+	ThingIds     []string `json:"thingIds" validate:"required"`
 	SharingState string   `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
 }
 
@@ -124,7 +124,7 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 
 type UpdateListParams struct {
 	Name         string   `json:"name" validate:"gt=0"`
-	ThingIds     []string `json:"thing_ids" validate:"required"`
+	ThingIds     []string `json:"thingIds" validate:"required"`
 	SharingState string   `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
 }
 
