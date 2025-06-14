@@ -69,7 +69,7 @@ export const updateListParamsFromList = (list: List): UpdateListParams => {
   const params = {
     name: list.name,
     thingIds: list.things.map((t) => t.id),
-    sharingState: list.sharingState,
+    sharingState: list.sharingState || 'private',
   };
   return params;
 };

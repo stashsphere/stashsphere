@@ -100,12 +100,12 @@ export const ShareEditor = (props: ShareEditorProps) => {
   useEffect(() => {
     switch (props.type) {
       case 'thing':
-        setSharingState(props.thing.sharingState);
-        setInitialSharingState(props.thing.sharingState);
+        setSharingState(props.thing.sharingState || 'private');
+        setInitialSharingState(props.thing.sharingState || 'private');
         break;
       case 'list':
-        setSharingState(props.list.sharingState);
-        setInitialSharingState(props.list.sharingState);
+        setSharingState(props.list.sharingState || 'private');
+        setInitialSharingState(props.list.sharingState || 'private');
         break;
     }
   }, [props]);

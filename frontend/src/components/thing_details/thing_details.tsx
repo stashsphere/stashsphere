@@ -16,25 +16,29 @@ const ThingActions = ({ thing }: { thing: Thing }) => {
   return (
     <div className="flex flex-row gap-2 justify-between items-center">
       <div className="flex flex-row justify-start gap-2">
-        <div className="flex flex-row text-display">
-          {thing.sharingState != 'private' && 'Visible to'}
-          <SharingStateComponent state={thing.sharingState} />
-        </div>
-        <div className="text-display">
-          Directly shared with
-          <span className="rounded-sm bg-secondary-200 text-onprimary mx-1 px-1">
-            {thing.shares.length}
-          </span>
-        </div>
+        {thing.sharingState !== null && (
+          <div className="flex flex-row text-display">
+            {thing.sharingState != 'private' && 'Visible to'}
+            <SharingStateComponent state={thing.sharingState} />
+          </div>
+        )}
         {thing.actions.canShare && (
-          <a href={`/things/${thing.id}/share`}>
-            <Icon
-              icon="mdi--offer"
-              size="medium"
-              className="text-onneutral"
-              tooltip="Share this thing"
-            />
-          </a>
+          <>
+            <div className="text-display">
+              Directly shared with
+              <span className="rounded-sm bg-secondary-200 text-onprimary mx-1 px-1">
+                {thing.shares.length}
+              </span>
+            </div>
+            <a href={`/things/${thing.id}/share`}>
+              <Icon
+                icon="mdi--offer"
+                size="medium"
+                className="text-onneutral"
+                tooltip="Share this thing"
+              />
+            </a>
+          </>
         )}
       </div>
       <div className="flex flex-row gap-2 justify-end">

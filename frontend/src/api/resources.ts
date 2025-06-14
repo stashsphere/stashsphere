@@ -52,7 +52,7 @@ export interface Thing {
   quantity: number;
   quantityUnit: string;
   shares: Share[];
-  sharingState: SharingState;
+  sharingState: SharingState | null;
 }
 
 export interface ReducedThing {
@@ -109,7 +109,7 @@ export interface List {
   things: Thing[];
   actions: ThingActions;
   shares: Share[];
-  sharingState: SharingState;
+  sharingState: SharingState | null;
 }
 
 export interface PagedLists extends Paged {

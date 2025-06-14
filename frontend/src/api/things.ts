@@ -90,7 +90,7 @@ export const updateThingParamsFromThing = (thing: Thing): UpdateThingParams => {
     properties: thing.properties,
     quantity: thing.quantity,
     quantityUnit: thing.quantityUnit,
-    sharingState: thing.sharingState,
+    sharingState: thing.sharingState || 'private',
   };
   return params;
 };
