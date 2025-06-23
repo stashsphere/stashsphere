@@ -30,6 +30,7 @@ import { Images } from './routes/images/list';
 import { SearchContext } from './context/search';
 import { ShowFriends } from './routes/friends';
 import { ShowNotifications } from './routes/notifications';
+import { ShowUser } from './routes/users/show';
 
 export const App = () => {
   const [config, setConfig] = useState<Config | null>(null);
@@ -208,7 +209,6 @@ export const App = () => {
                     </RequireAuth>
                   }
                 />
-
                 <Route
                   path="/search"
                   element={
@@ -222,6 +222,14 @@ export const App = () => {
                   element={
                     <RequireAuth>
                       <ShowNotifications />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/users/:userId"
+                  element={
+                    <RequireAuth>
+                      <ShowUser />
                     </RequireAuth>
                   }
                 />

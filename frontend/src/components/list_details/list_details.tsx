@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { List } from '../../api/resources';
 import { AxiosContext } from '../../context/axios';
 import { getList } from '../../api/lists';
-import { Icon } from '../shared';
+import { Headline, Icon } from '../shared';
 import { ThingInfo } from '../shared';
 import { SharingStateComponent } from '../shared/sharing_state';
 
@@ -83,7 +83,14 @@ export const ListDetails = (props: ListDetailsProps) => {
       <>
         <div className="flex flex-row justify-between mb-4">
           <h1 className="text-2xl text-accent">{list.name}</h1>
-          <ListActions list={list} />
+        </div>
+        <ListActions list={list} />
+        <div>
+          <Headline type="h2">Owner</Headline>
+          <p className="text-display text-l">
+            <Icon icon="mdi--user" />
+            {list.owner.name}
+          </p>
         </div>
         <div className="flex flex-row gap-4 mt-4 flex-wrap justify-center">
           {list.things.map((thing) => (

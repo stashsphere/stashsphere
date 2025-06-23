@@ -35,8 +35,8 @@ const FriendShipEntry = ({
     <>
       <div className="flex flex-row gap-4">
         <div className="text-display">
-          <Icon icon="mdi--user" />
-          {friendShip.friend.name}
+          <Icon icon="mdi--user" />{' '}
+          <a href={`/users/${friendShip.friend.id}`}>{friendShip.friend.name}</a>
         </div>
         {!unfriend && <SecondaryButton onClick={() => setUnfriend(true)}>Unfriend</SecondaryButton>}
         {unfriend && (

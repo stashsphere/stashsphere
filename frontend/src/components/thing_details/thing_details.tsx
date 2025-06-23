@@ -91,6 +91,13 @@ export const ThingDetails = (props: ThingDetailsProps) => {
           <div className="flex flex-col flex-1 gap-6">
             <ThingActions thing={thing} />
             <div>
+              <Headline type="h2">Owner</Headline>
+              <p className="text-display text-l">
+                <Icon icon="mdi--user" />{' '}
+                <a href={`/users/${thing.owner.id}`}>{thing.owner.name}</a>
+              </p>
+            </div>
+            <div>
               <Headline type="h2">Quantity</Headline>
               <p className="text-display text-l">
                 {thing.quantity} {thing.quantityUnit}
