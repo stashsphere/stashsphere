@@ -49,7 +49,7 @@ type Image struct {
 }
 
 func ImageFromModel(image *models.Image, userId string) Image {
-	canDelete := userId == image.OwnerID && len(image.R.Things) == 0
+	canDelete := userId == image.OwnerID && len(image.R.Things) == 0 && len(image.R.Profiles) == 0
 
 	return Image{
 		ID:        image.ID,

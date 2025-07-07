@@ -68,6 +68,7 @@ func DeleteImage(ctx context.Context, exec boil.ContextExecutor, userId string, 
 		models.ImageWhere.ID.EQ(imageId),
 		qm.Load(models.ImageRels.Things),
 		qm.Load(models.ImageRels.Owner),
+		qm.Load(models.ImageRels.Profiles),
 	).One(ctx, exec)
 	if err != nil {
 		return nil, err
@@ -76,6 +77,9 @@ func DeleteImage(ctx context.Context, exec boil.ContextExecutor, userId string, 
 		return nil, utils.EntityDoesNotBelongToUserError{}
 	}
 	if len(image.R.Things) > 0 {
+		return nil, utils.EntityInUseError{}
+	}
+	if len(image.R.Profiles) > 0 {
 		return nil, utils.EntityInUseError{}
 	}
 	_, err = image.Delete(ctx, exec)
