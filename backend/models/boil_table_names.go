@@ -11,6 +11,7 @@ var TableNames = struct {
 	Lists           string
 	ListsThings     string
 	Notifications   string
+	Profiles        string
 	Properties      string
 	QuantityEntries string
 	Shares          string
@@ -26,6 +27,7 @@ var TableNames = struct {
 	Lists:           "lists",
 	ListsThings:     "lists_things",
 	Notifications:   "notifications",
+	Profiles:        "profiles",
 	Properties:      "properties",
 	QuantityEntries: "quantity_entries",
 	Shares:          "shares",

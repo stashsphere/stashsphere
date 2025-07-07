@@ -34,7 +34,19 @@ func (ph *ProfileHandler) ProfileHandlerGet(c echo.Context) error {
 }
 
 type ProfileUpdateParams struct {
-	Name string `json:"name"`
+	Name        string  `json:"name"`
+	FullName    string  `json:"fullName"`
+	Information string  `json:"information"`
+	ImageId     *string `json:"imageId"`
+}
+
+func (p *ProfileUpdateParams) ToUpdateUserParams() services.UpdateUserParams {
+	return services.UpdateUserParams{
+		Name:        p.Name,
+		FullName:    p.FullName,
+		Information: p.Information,
+		ImageId:     p.ImageId,
+	}
 }
 
 func (ph *ProfileHandler) ProfileHandlerPatch(c echo.Context) error {
@@ -49,7 +61,9 @@ func (ph *ProfileHandler) ProfileHandlerPatch(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	user, err := ph.userService.UpdateUser(c.Request().Context(), authCtx.User.ID, params.Name)
+	serviceParams := params.ToUpdateUserParams()
+	serviceParams.UserId = authCtx.User.ID
+	user, err := ph.userService.UpdateUser(c.Request().Context(), serviceParams)
 	if err != nil {
 		return err
 	}

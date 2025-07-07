@@ -145,7 +145,9 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 }
 
 func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string) (*os.File, *models.Image, error) {
-	image, err := models.Images(models.ImageWhere.Hash.EQ(hash)).One(ctx, is.db)
+	image, err := models.Images(models.ImageWhere.Hash.EQ(hash),
+		qm.Load(models.ImageRels.Profiles),
+	).One(ctx, is.db)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil, utils.NotFoundError{EntityName: "Image"}
@@ -163,6 +165,10 @@ func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string
 			}
 		}
 		if userId == image.OwnerID {
+			return true
+		}
+		// it's used as a profile picture
+		if len(image.R.Profiles) > 0 {
 			return true
 		}
 		return false

@@ -6,9 +6,12 @@ import (
 )
 
 type Profile struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	FullName    *string       `json:"fullName"`
+	Information *string       `json:"information"`
+	Email       string        `json:"email"`
+	Image       *ReducedImage `json:"image"`
 }
 
 func ProfileFromUserContext(ctx *middleware.UserContext) Profile {
@@ -20,10 +23,25 @@ func ProfileFromUserContext(ctx *middleware.UserContext) Profile {
 }
 
 func ProfileFromModel(user *models.User) Profile {
+	var image *ReducedImage
+	var information *string
+	var fullName *string
+	if user.R.Profile != nil {
+		if user.R.Profile.R.Image != nil {
+			reduced := ReducedImageFromModel(user.R.Profile.R.Image)
+			image = &reduced
+		}
+		fullName = &user.R.Profile.FullName
+		information = &user.R.Profile.Information
+	}
+
 	return Profile{
-		ID:    user.ID,
-		Name:  user.Name,
-		Email: user.Email,
+		ID:          user.ID,
+		Name:        user.Name,
+		Email:       user.Email,
+		Image:       image,
+		FullName:    fullName,
+		Information: information,
 	}
 }
 

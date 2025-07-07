@@ -3,13 +3,14 @@ package services
 import (
 	"context"
 	"database/sql"
-	"errors"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/utils"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 type UserService struct {
@@ -59,27 +60,83 @@ func (us *UserService) CreateUser(ctx context.Context, params CreateUserParams) 
 }
 
 func (us *UserService) FindUserByID(ctx context.Context, userId string) (*models.User, error) {
-	return operations.FindUserByID(ctx, us.db, userId)
+	return operations.FindUserWithProfileByID(ctx, us.db, userId)
 }
 
-func (us *UserService) UpdateUser(ctx context.Context, userId string, name string) (*models.User, error) {
-	user, err := models.Users(models.UserWhere.ID.EQ(userId)).One(ctx, us.db)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, utils.NotFoundError{EntityName: "user"}
+type UpdateUserParams struct {
+	UserId      string
+	Name        string
+	FullName    string
+	Information string
+	ImageId     *string
+}
+
+func (us *UserService) UpdateUser(ctx context.Context, params UpdateUserParams) (*models.User, error) {
+	err := utils.Tx(ctx, us.db, func(tx *sql.Tx) error {
+		user, err := operations.FindUserWithProfileByID(ctx, tx, params.UserId)
+		if err != nil {
+			return err
 		}
-		return nil, err
-	}
-	user.Name = name
-	_, err = user.Update(ctx, us.db, boil.Infer())
+		user.Name = params.Name
+		_, err = user.Update(ctx, tx, boil.Infer())
+		if err != nil {
+			return err
+		}
+		var profile *models.Profile
+		var insertProfile bool
+		if user.R.Profile != nil {
+			profile = user.R.Profile
+			insertProfile = false
+		} else {
+			profileId, err := gonanoid.New()
+			if err != nil {
+				return err
+			}
+			profile = &models.Profile{
+				ID: profileId,
+			}
+			insertProfile = true
+		}
+		profile.FullName = params.FullName
+		profile.Information = params.Information
+		if params.ImageId != nil {
+			res, err := operations.ImageBelongsToUser(ctx, tx, params.UserId, *params.ImageId)
+			if err != nil {
+				return err
+			}
+			if !res {
+				return utils.EntityDoesNotBelongToUserError{}
+			}
+			profile.ImageID = null.NewString(*params.ImageId, true)
+		} else {
+			profile.ImageID = null.NewString("", false)
+		}
+		if insertProfile {
+			err = user.SetProfile(ctx, tx, insertProfile, profile)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err := profile.Update(ctx, tx, boil.Infer())
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+
+	return us.FindUserByID(ctx, params.UserId)
 }
 
 func (us *UserService) GetAllUsers(ctx context.Context) (models.UserSlice, error) {
-	users, err := models.Users().All(ctx, us.db)
+	users, err := models.Users(qm.Load(models.UserRels.Profile),
+		qm.Load(qm.Rels(models.UserRels.Profile, models.ProfileRels.Image)),
+		qm.Load(qm.Rels(models.UserRels.Profile, models.ProfileRels.Image, models.ImageRels.Owner)),
+	).All(ctx, us.db)
 	if err != nil {
 		return nil, err
 	}

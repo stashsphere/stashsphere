@@ -86,17 +86,20 @@ var ImageWhere = struct {
 
 // ImageRels is where relationship names are stored.
 var ImageRels = struct {
-	Owner  string
-	Things string
+	Owner    string
+	Things   string
+	Profiles string
 }{
-	Owner:  "Owner",
-	Things: "Things",
+	Owner:    "Owner",
+	Things:   "Things",
+	Profiles: "Profiles",
 }
 
 // imageR is where relationships are stored.
 type imageR struct {
-	Owner  *User      `boil:"Owner" json:"Owner" toml:"Owner" yaml:"Owner"`
-	Things ThingSlice `boil:"Things" json:"Things" toml:"Things" yaml:"Things"`
+	Owner    *User        `boil:"Owner" json:"Owner" toml:"Owner" yaml:"Owner"`
+	Things   ThingSlice   `boil:"Things" json:"Things" toml:"Things" yaml:"Things"`
+	Profiles ProfileSlice `boil:"Profiles" json:"Profiles" toml:"Profiles" yaml:"Profiles"`
 }
 
 // NewStruct creates a new relationship struct
@@ -116,6 +119,13 @@ func (r *imageR) GetThings() ThingSlice {
 		return nil
 	}
 	return r.Things
+}
+
+func (r *imageR) GetProfiles() ProfileSlice {
+	if r == nil {
+		return nil
+	}
+	return r.Profiles
 }
 
 // imageL is where Load methods for each relationship are stored.
@@ -460,6 +470,20 @@ func (o *Image) Things(mods ...qm.QueryMod) thingQuery {
 	return Things(queryMods...)
 }
 
+// Profiles retrieves all the profile's Profiles with an executor.
+func (o *Image) Profiles(mods ...qm.QueryMod) profileQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"profiles\".\"image_id\"=?", o.ID),
+	)
+
+	return Profiles(queryMods...)
+}
+
 // LoadOwner allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
 func (imageL) LoadOwner(ctx context.Context, e boil.ContextExecutor, singular bool, maybeImage interface{}, mods queries.Applicator) error {
@@ -710,6 +734,119 @@ func (imageL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular b
 	return nil
 }
 
+// LoadProfiles allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (imageL) LoadProfiles(ctx context.Context, e boil.ContextExecutor, singular bool, maybeImage interface{}, mods queries.Applicator) error {
+	var slice []*Image
+	var object *Image
+
+	if singular {
+		var ok bool
+		object, ok = maybeImage.(*Image)
+		if !ok {
+			object = new(Image)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeImage)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeImage))
+			}
+		}
+	} else {
+		s, ok := maybeImage.(*[]*Image)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeImage)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeImage))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &imageR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &imageR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`profiles`),
+		qm.WhereIn(`profiles.image_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load profiles")
+	}
+
+	var resultSlice []*Profile
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice profiles")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on profiles")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for profiles")
+	}
+
+	if len(profileAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Profiles = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &profileR{}
+			}
+			foreign.R.Image = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.ImageID) {
+				local.R.Profiles = append(local.R.Profiles, foreign)
+				if foreign.R == nil {
+					foreign.R = &profileR{}
+				}
+				foreign.R.Image = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetOwner of the image to the related item.
 // Sets o.R.Owner to related.
 // Adds o to related.R.OwnerImages.
@@ -900,6 +1037,133 @@ func removeThingsFromImagesSlice(o *Image, related []*Thing) {
 			break
 		}
 	}
+}
+
+// AddProfiles adds the given related objects to the existing relationships
+// of the image, optionally inserting them as new records.
+// Appends related to o.R.Profiles.
+// Sets related.R.Image appropriately.
+func (o *Image) AddProfiles(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Profile) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.ImageID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"profiles\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"image_id"}),
+				strmangle.WhereClause("\"", "\"", 2, profilePrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.ImageID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &imageR{
+			Profiles: related,
+		}
+	} else {
+		o.R.Profiles = append(o.R.Profiles, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &profileR{
+				Image: o,
+			}
+		} else {
+			rel.R.Image = o
+		}
+	}
+	return nil
+}
+
+// SetProfiles removes all previously related items of the
+// image replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Image's Profiles accordingly.
+// Replaces o.R.Profiles with related.
+// Sets related.R.Image's Profiles accordingly.
+func (o *Image) SetProfiles(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Profile) error {
+	query := "update \"profiles\" set \"image_id\" = null where \"image_id\" = $1"
+	values := []interface{}{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.Profiles {
+			queries.SetScanner(&rel.ImageID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.Image = nil
+		}
+		o.R.Profiles = nil
+	}
+
+	return o.AddProfiles(ctx, exec, insert, related...)
+}
+
+// RemoveProfiles relationships from objects passed in.
+// Removes related items from R.Profiles (uses pointer comparison, removal does not keep order)
+// Sets related.R.Image.
+func (o *Image) RemoveProfiles(ctx context.Context, exec boil.ContextExecutor, related ...*Profile) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.ImageID, nil)
+		if rel.R != nil {
+			rel.R.Image = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("image_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.Profiles {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.Profiles)
+			if ln > 1 && i < ln-1 {
+				o.R.Profiles[i] = o.R.Profiles[ln-1]
+			}
+			o.R.Profiles = o.R.Profiles[:ln-1]
+			break
+		}
+	}
+
+	return nil
 }
 
 // Images retrieves all the records using an executor.

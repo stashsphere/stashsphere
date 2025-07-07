@@ -72,6 +72,7 @@ var UserWhere = struct {
 
 // UserRels is where relationship names are stored.
 var UserRels = struct {
+	Profile                string
 	ReceiverFriendRequests string
 	SenderFriendRequests   string
 	Friend1Friendships     string
@@ -83,6 +84,7 @@ var UserRels = struct {
 	TargetUserShares       string
 	OwnerThings            string
 }{
+	Profile:                "Profile",
 	ReceiverFriendRequests: "ReceiverFriendRequests",
 	SenderFriendRequests:   "SenderFriendRequests",
 	Friend1Friendships:     "Friend1Friendships",
@@ -97,6 +99,7 @@ var UserRels = struct {
 
 // userR is where relationships are stored.
 type userR struct {
+	Profile                *Profile           `boil:"Profile" json:"Profile" toml:"Profile" yaml:"Profile"`
 	ReceiverFriendRequests FriendRequestSlice `boil:"ReceiverFriendRequests" json:"ReceiverFriendRequests" toml:"ReceiverFriendRequests" yaml:"ReceiverFriendRequests"`
 	SenderFriendRequests   FriendRequestSlice `boil:"SenderFriendRequests" json:"SenderFriendRequests" toml:"SenderFriendRequests" yaml:"SenderFriendRequests"`
 	Friend1Friendships     FriendshipSlice    `boil:"Friend1Friendships" json:"Friend1Friendships" toml:"Friend1Friendships" yaml:"Friend1Friendships"`
@@ -112,6 +115,13 @@ type userR struct {
 // NewStruct creates a new relationship struct
 func (*userR) NewStruct() *userR {
 	return &userR{}
+}
+
+func (r *userR) GetProfile() *Profile {
+	if r == nil {
+		return nil
+	}
+	return r.Profile
 }
 
 func (r *userR) GetReceiverFriendRequests() FriendRequestSlice {
@@ -500,6 +510,17 @@ func (q userQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool,
 	return count > 0, nil
 }
 
+// Profile pointed to by the foreign key.
+func (o *User) Profile(mods ...qm.QueryMod) profileQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"user_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Profiles(queryMods...)
+}
+
 // ReceiverFriendRequests retrieves all the friend_request's FriendRequests with an executor via receiver_id column.
 func (o *User) ReceiverFriendRequests(mods ...qm.QueryMod) friendRequestQuery {
 	var queryMods []qm.QueryMod
@@ -638,6 +659,123 @@ func (o *User) OwnerThings(mods ...qm.QueryMod) thingQuery {
 	)
 
 	return Things(queryMods...)
+}
+
+// LoadProfile allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-1 relationship.
+func (userL) LoadProfile(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`profiles`),
+		qm.WhereIn(`profiles.user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Profile")
+	}
+
+	var resultSlice []*Profile
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Profile")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for profiles")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for profiles")
+	}
+
+	if len(profileAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.Profile = foreign
+		if foreign.R == nil {
+			foreign.R = &profileR{}
+		}
+		foreign.R.User = object
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if queries.Equal(local.ID, foreign.UserID) {
+				local.R.Profile = foreign
+				if foreign.R == nil {
+					foreign.R = &profileR{}
+				}
+				foreign.R.User = local
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadReceiverFriendRequests allows an eager lookup of values, cached into the
@@ -1766,6 +1904,80 @@ func (userL) LoadOwnerThings(ctx context.Context, e boil.ContextExecutor, singul
 			}
 		}
 	}
+
+	return nil
+}
+
+// SetProfile of the user to the related item.
+// Sets o.R.Profile to related.
+// Adds o to related.R.User.
+func (o *User) SetProfile(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Profile) error {
+	var err error
+
+	if insert {
+		queries.Assign(&related.UserID, o.ID)
+
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	} else {
+		updateQuery := fmt.Sprintf(
+			"UPDATE \"profiles\" SET %s WHERE %s",
+			strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
+			strmangle.WhereClause("\"", "\"", 2, profilePrimaryKeyColumns),
+		)
+		values := []interface{}{o.ID, related.ID}
+
+		if boil.IsDebug(ctx) {
+			writer := boil.DebugWriterFrom(ctx)
+			fmt.Fprintln(writer, updateQuery)
+			fmt.Fprintln(writer, values)
+		}
+		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+			return errors.Wrap(err, "failed to update foreign table")
+		}
+
+		queries.Assign(&related.UserID, o.ID)
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			Profile: related,
+		}
+	} else {
+		o.R.Profile = related
+	}
+
+	if related.R == nil {
+		related.R = &profileR{
+			User: o,
+		}
+	} else {
+		related.R.User = o
+	}
+	return nil
+}
+
+// RemoveProfile relationship.
+// Sets o.R.Profile to nil.
+// Removes o from all passed in related items' relationships struct.
+func (o *User) RemoveProfile(ctx context.Context, exec boil.ContextExecutor, related *Profile) error {
+	var err error
+
+	queries.SetScanner(&related.UserID, nil)
+	if _, err = related.Update(ctx, exec, boil.Whitelist("user_id")); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	if o.R != nil {
+		o.R.Profile = nil
+	}
+
+	if related == nil || related.R == nil {
+		return nil
+	}
+
+	related.R.User = nil
 
 	return nil
 }

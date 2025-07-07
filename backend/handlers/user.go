@@ -30,7 +30,7 @@ func (ph *UserHandler) Index(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.UsersFromModelSlice(users))
+	return c.JSON(http.StatusOK, resources.UserProfilesFromModelSlice(users))
 }
 
 func (ph *UserHandler) Get(c echo.Context) error {
@@ -46,5 +46,5 @@ func (ph *UserHandler) Get(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.UserFromModel(user))
+	return c.JSON(http.StatusOK, resources.UserProfileFromModel(user))
 }
