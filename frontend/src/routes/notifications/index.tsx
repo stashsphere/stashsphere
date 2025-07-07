@@ -12,6 +12,7 @@ export const ShowNotifications = () => {
 
   const [notifications, setNotifications] = useState<PagedNotifications | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(0);
+  const [mutateKey, setMutateKey] = useState(0);
 
   useEffect(() => {
     if (axiosInstance === null) {
@@ -25,7 +26,11 @@ export const ShowNotifications = () => {
       .catch((reason) => {
         console.log(reason);
       });
-  }, [axiosInstance, authContext, currentPage]);
+  }, [axiosInstance, authContext, currentPage, mutateKey]);
+
+  const mutate = () => {
+    setMutateKey(mutateKey + 1);
+  };
 
   if (!notifications) {
     return <p>Loading...</p>;
@@ -34,7 +39,9 @@ export const ShowNotifications = () => {
     <>
       {notifications.totalCount === 0
         ? 'No notifications'
-        : notifications.notifications.map((v) => <NotificationItem notification={v} key={v.id} />)}
+        : notifications.notifications.map((v) => (
+            <NotificationItem onAcknowledge={() => mutate()} notification={v} key={v.id} />
+          ))}
       {notifications.notifications.length > 0 && (
         <Pages
           currentPage={currentPage}

@@ -95,17 +95,27 @@ const ThingSharedNotificationComponent = ({
 };
 
 const UnknownNotificationComponent = ({ notification }: { notification: UnknownNotification }) => {
-  return <span>Unknown notification: {JSON.stringify(notification)}</span>;
+  return (
+    <span className="overflow-auto">Unknown notification: {JSON.stringify(notification)}</span>
+  );
 };
 
-export const NotificationItem = ({ notification }: { notification: StashsphereNotification }) => {
+export const NotificationItem = ({
+  notification,
+  onAcknowledge,
+}: {
+  notification: StashsphereNotification;
+  onAcknowledge: () => void;
+}) => {
   const axiosInstance = useContext(AxiosContext);
 
-  const onAcknowledge = () => {
+  const acknowledge = () => {
     if (axiosInstance === null) {
       return;
     }
-    acknowledgeNotification(axiosInstance, notification.id);
+    acknowledgeNotification(axiosInstance, notification.id).then(() => {
+      onAcknowledge();
+    });
   };
 
   const body = useMemo(() => {
@@ -127,8 +137,9 @@ export const NotificationItem = ({ notification }: { notification: StashsphereNo
       {body}
       {!notification.acknowledged && (
         <PrimaryButton
+          className="w-14 h-14 flex-none"
           onClick={() => {
-            onAcknowledge();
+            acknowledge();
           }}
         >
           <Icon icon="mdi--check" />
