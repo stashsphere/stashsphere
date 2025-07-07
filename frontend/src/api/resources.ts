@@ -3,6 +3,14 @@ export interface User {
   name: string;
 }
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  fullName: string;
+  information: string;
+  image: ReducedImage | null;
+}
+
 export interface ReducedList {
   id: string;
   name: string;
@@ -125,6 +133,9 @@ export interface Profile {
   id: string;
   name: string;
   email: string;
+  fullName: string;
+  information: string;
+  image: ReducedImage | null;
 }
 
 export interface Share {

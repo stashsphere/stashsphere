@@ -311,7 +311,7 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
           </div>
         }
       >
-        <ImageBrowserGrid onSelected={setImageBrowserImages} />
+        <ImageBrowserGrid onSelected={setImageBrowserImages} multiple={true} />
       </Modal>
     </div>
   );

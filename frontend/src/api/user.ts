@@ -1,5 +1,5 @@
 import { Axios } from 'axios';
-import { User } from './resources';
+import { UserProfile } from './resources';
 
 export const getAllUsers = async (axios: Axios) => {
   const response = await axios.get('/users', {
@@ -11,7 +11,7 @@ export const getAllUsers = async (axios: Axios) => {
   if (response.status !== 200) {
     throw `Go error ${response}`;
   }
-  return response.data as User[];
+  return response.data as UserProfile[];
 };
 
 export const getUser = async (axios: Axios, userId: string) => {
@@ -24,5 +24,5 @@ export const getUser = async (axios: Axios, userId: string) => {
   if (response.status !== 200) {
     throw `Go error ${response}`;
   }
-  return response.data as User;
+  return response.data as UserProfile;
 };

@@ -7,9 +7,10 @@ import { Pages } from '../pages';
 
 export interface ImageBrowserGridProps {
   onSelected: (image: Image[]) => void;
+  multiple?: boolean;
 }
 
-export const ImageBrowserGrid = ({ onSelected }: ImageBrowserGridProps) => {
+export const ImageBrowserGrid = ({ onSelected, multiple }: ImageBrowserGridProps) => {
   const axiosInstance = useContext(AxiosContext);
   const [currentPage, setCurrentPage] = useState(0);
   const [images, setImages] = useState<PagedImages | undefined>(undefined);
@@ -43,7 +44,12 @@ export const ImageBrowserGrid = ({ onSelected }: ImageBrowserGridProps) => {
     const newSelectedImages = selected
       ? [...selectedImages, selectedImage]
       : selectedImages.filter((e) => e.id !== id);
-    setSelectedImages(newSelectedImages);
+
+    if (!multiple) {
+      setSelectedImages([selectedImage]);
+    } else {
+      setSelectedImages(newSelectedImages);
+    }
   };
 
   if (!images) {

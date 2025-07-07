@@ -14,8 +14,11 @@ export const getProfile = async (axios: Axios) => {
   return response.data as Profile;
 };
 
-type ProfileUpdateParams = {
+export type ProfileUpdateParams = {
   name: string;
+  fullName: string;
+  information: string;
+  imageId: string | null;
 };
 
 export const patchProfile = async (axios: Axios, params: ProfileUpdateParams) => {

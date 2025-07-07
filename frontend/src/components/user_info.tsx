@@ -1,9 +1,24 @@
-import { User } from '../api/resources';
+import { UserProfile } from '../api/resources';
+import { Headline, Icon, ImageComponent } from './shared';
 
-export const UserInfo = ({ user }: { user: User }) => {
+export const UserInfo = ({ profile }: { profile: UserProfile }) => {
   return (
     <div>
-      <h1 className="text-2xl text-accent">{user.name}</h1>
+      {profile.image ? (
+        <ImageComponent
+          image={profile.image}
+          defaultWidth={256}
+          className="w-[256px] h-[256px] mb-4 rounded-sm object-contain"
+          alt={`Profile picture of ${profile.name}`}
+        />
+      ) : (
+        <Icon size="256px" icon={'mdi--user'}></Icon>
+      )}
+
+      <Headline type="h1">{profile.fullName}</Headline>
+      <Headline type="h2">{profile.name}</Headline>
+
+      <p className="text-display">{profile.information}</p>
     </div>
   );
 };

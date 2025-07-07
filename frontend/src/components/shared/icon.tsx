@@ -1,6 +1,6 @@
 type IconProps = {
   icon: string;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | '96px' | '256px';
   className?: string;
   tooltip?: string;
 };
@@ -21,6 +21,14 @@ export const Icon = ({ icon, className, tooltip, size }: IconProps) => {
     case 'large':
       style['height'] = '32px';
       style['width'] = '32px';
+      break;
+    case '96px':
+      style['height'] = '96px';
+      style['width'] = '96px';
+      break;
+    case '256px':
+      style['height'] = '256px';
+      style['width'] = '256px';
       break;
   }
 
