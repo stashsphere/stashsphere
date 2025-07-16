@@ -225,6 +225,7 @@ func (fs *FriendService) ReactFriendRequest(ctx context.Context, params ReactFri
 		SenderEmail:  receiver.Email,
 		ReceiverName: receiver.Name,
 		SenderName:   sender.Name,
+		SenderId:     sender.ID,
 	})
 	if err != nil {
 		log.Error().Msgf("Could not create notification: %v", err)

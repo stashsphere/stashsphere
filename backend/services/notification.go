@@ -188,6 +188,7 @@ func (ns *NotificationService) CreateFriendRequest(ctx context.Context, params C
 type CreateFriendRequestReactionParams struct {
 	RequestId    string
 	ReceiverId   string
+	SenderId     string
 	SenderEmail  string
 	ReceiverName string
 	Accepted     bool
@@ -197,6 +198,17 @@ type CreateFriendRequestReactionParams struct {
 func (ns *NotificationService) CreateFriendRequestReaction(ctx context.Context, params CreateFriendRequestReactionParams) error {
 	_, err := ns.CreateNotification(ctx, CreateNotification{
 		RecipientId: params.ReceiverId,
+		Content: notifications.FriendRequestReaction{
+			RequestId: params.RequestId,
+			Accepted:  params.Accepted,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = ns.CreateNotification(ctx, CreateNotification{
+		RecipientId: params.SenderId,
 		Content: notifications.FriendRequestReaction{
 			RequestId: params.RequestId,
 			Accepted:  params.Accepted,
