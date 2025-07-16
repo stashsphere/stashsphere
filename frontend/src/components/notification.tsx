@@ -5,33 +5,88 @@ import {
   ListSharedNotification,
   UnknownNotification,
   ThingSharedNotification,
+  FriendRequest,
+  FriendRequestReactionNotification,
 } from '../api/resources';
 import { AxiosContext } from '../context/axios';
-import { getUser } from '../api/user';
 import { acknowledgeNotification } from '../api/notification';
 import { PrimaryButton } from './shared';
 import { Icon } from './shared';
+import { UserNameAndUserId } from './shared/user';
+import { getFriendRequests } from '../api/friend';
+import { AuthContext } from '../context/auth';
 
 const FriendRequestNotificationComponent = ({
   notification,
 }: {
   notification: FriendRequestNotification;
 }) => {
-  const axiosInstance = useContext(AxiosContext);
-  const [requester, setRequester] = useState('');
+  const fontColor = notification.acknowledged ? 'text-display-light' : 'text-display';
+  return (
+    <div className="flex flex-row items-center gap-1">
+      <UserNameAndUserId
+        userId={notification.content.senderId}
+        textColor={fontColor}
+        imageBorderColor="border-display"
+      />
+      <div className={fontColor}>wants to be your friend.</div>
+    </div>
+  );
+};
 
-  useEffect(() => {
-    if (axiosInstance === null) {
-      return;
-    }
-    getUser(axiosInstance, notification.content.senderId).then((v) => {
-      setRequester(v.name);
-    });
-  }, [axiosInstance, notification]);
-
+const FriendRequestReactionNotificationComponent = ({
+  notification,
+}: {
+  notification: FriendRequestReactionNotification;
+}) => {
   const fontColor = notification.acknowledged ? 'text-display-light' : 'text-display';
 
-  return <span className={fontColor}>{requester} wants to be your friend.</span>;
+  const authContext = useContext(AuthContext);
+  const axiosInstance = useContext(AxiosContext);
+  const [friendRequest, setFriendRequest] = useState<FriendRequest | undefined>(undefined);
+
+  useEffect(() => {
+    if (!axiosInstance) {
+      return;
+    }
+    getFriendRequests(axiosInstance).then((v) =>
+      setFriendRequest(
+        v.received.concat(v.sent).find((r) => r.id === notification.content.requestId)
+      )
+    );
+  }, [axiosInstance, notification]);
+
+  if (!friendRequest || !authContext) {
+    return <div>Loading</div>;
+  }
+
+  if (friendRequest.receiver.id === authContext.profile?.id) {
+    return (
+      <div className="flex flex-row items-center gap-1">
+        <UserNameAndUserId
+          userId={friendRequest.sender.id}
+          textColor={fontColor}
+          imageBorderColor="border-display"
+        />
+        <div className={fontColor}>
+          You have {notification.content.accepted ? 'accepted' : 'rejected'} the friend request.
+        </div>
+      </div>
+    );
+  } else {
+    return (
+      <div className="flex flex-row items-center gap-1">
+        <UserNameAndUserId
+          userId={friendRequest.sender.id}
+          textColor={fontColor}
+          imageBorderColor="border-display"
+        />
+        <div className={fontColor}>
+          has {notification.content.accepted ? 'accepted' : 'rejected'} your friend request.
+        </div>
+      </div>
+    );
+  }
 };
 
 const ListSharedNotificationComponent = ({
@@ -39,28 +94,23 @@ const ListSharedNotificationComponent = ({
 }: {
   notification: ListSharedNotification;
 }) => {
-  const axiosInstance = useContext(AxiosContext);
-  const [sharer, setSharer] = useState('');
-
-  useEffect(() => {
-    if (axiosInstance === null) {
-      return;
-    }
-    getUser(axiosInstance, notification.content.sharerId).then((v) => {
-      setSharer(v.name);
-    });
-  }, [axiosInstance, notification]);
-
   const fontColor = notification.acknowledged ? 'text-display-light' : 'text-display';
 
   return (
-    <span className={fontColor}>
-      {sharer} shared a{' '}
-      <a className="text-accent" href={`/lists/${notification.content.listId}`}>
-        list
-      </a>{' '}
-      with you.
-    </span>
+    <div className="flex flex-row items-center gap-1">
+      <UserNameAndUserId
+        userId={notification.content.sharerId}
+        textColor={fontColor}
+        imageBorderColor="border-display"
+      />
+      <div className={fontColor}>
+        shared a{' '}
+        <a className="text-accent" href={`/lists/${notification.content.listId}`}>
+          list
+        </a>{' '}
+        with you.
+      </div>
+    </div>
   );
 };
 
@@ -69,34 +119,31 @@ const ThingSharedNotificationComponent = ({
 }: {
   notification: ThingSharedNotification;
 }) => {
-  const axiosInstance = useContext(AxiosContext);
-  const [sharer, setSharer] = useState('');
-
-  useEffect(() => {
-    if (axiosInstance === null) {
-      return;
-    }
-    getUser(axiosInstance, notification.content.sharerId).then((v) => {
-      setSharer(v.name);
-    });
-  }, [axiosInstance, notification]);
-
   const fontColor = notification.acknowledged ? 'text-display-light' : 'text-display';
 
   return (
-    <span className={fontColor}>
-      {sharer} shared a{' '}
-      <a className="text-accent" href={`/things/${notification.content.thingId}`}>
-        thing
-      </a>{' '}
-      with you.
-    </span>
+    <div className="flex flex-row items-center gap-1">
+      <UserNameAndUserId
+        userId={notification.content.sharerId}
+        textColor={fontColor}
+        imageBorderColor="border-display"
+      />
+      <div className={fontColor}>
+        shared a{' '}
+        <a className="text-accent" href={`/things/${notification.content.thingId}`}>
+          thing
+        </a>{' '}
+        with you.
+      </div>
+    </div>
   );
 };
 
 const UnknownNotificationComponent = ({ notification }: { notification: UnknownNotification }) => {
   return (
-    <span className="overflow-auto">Unknown notification: {JSON.stringify(notification)}</span>
+    <span className="overflow-auto text-display">
+      Unknown notification: {JSON.stringify(notification)}
+    </span>
   );
 };
 
@@ -119,6 +166,7 @@ export const NotificationItem = ({
   };
 
   const body = useMemo(() => {
+    console.log(notification);
     switch (notification.contentType) {
       case 'FRIEND_REQUEST':
         return <FriendRequestNotificationComponent notification={notification} />;
@@ -126,6 +174,8 @@ export const NotificationItem = ({
         return <ListSharedNotificationComponent notification={notification} />;
       case 'THING_SHARED':
         return <ThingSharedNotificationComponent notification={notification} />;
+      case 'FRIEND_REQUEST_REACTION':
+        return <FriendRequestReactionNotificationComponent notification={notification} />;
       default:
         return <UnknownNotificationComponent notification={notification} />;
     }

@@ -180,6 +180,14 @@ export type FriendRequestNotification = BaseNotification & {
   };
 };
 
+export type FriendRequestReactionNotification = BaseNotification & {
+  contentType: 'FRIEND_REQUEST_REACTION';
+  content: {
+    accepted: boolean;
+    requestId: string;
+  };
+};
+
 export type ListSharedNotification = BaseNotification & {
   contentType: 'LIST_SHARED';
   content: {
@@ -204,7 +212,8 @@ export type UnknownNotification = BaseNotification & {
 export type StashsphereNotification =
   | FriendRequestNotification
   | ListSharedNotification
-  | ThingSharedNotification;
+  | ThingSharedNotification
+  | FriendRequestReactionNotification;
 
 export interface PagedNotifications extends Paged {
   notifications: StashsphereNotification[];
