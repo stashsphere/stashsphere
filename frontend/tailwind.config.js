@@ -137,6 +137,7 @@ export default {
         highlight: globalColors.accent[500],
         danger: globalColors.danger[500],
         'danger-hover': globalColors.danger[600],
+        display: globalColors.text.primary,
       },
       textColor: {
         onprimary: colors.white,

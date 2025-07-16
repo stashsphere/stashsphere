@@ -3,9 +3,11 @@ import { NavLink, useNavigate } from 'react-router';
 import stashsphereLogo from '../assets/stashsphere.svg';
 import { Icon } from './shared';
 import { SearchContext } from '../context/search';
+import { Profile } from '../api/resources';
+import { UserNameAndProfile } from './shared/user';
 
 type HeaderProps = {
-  userName: string | null;
+  profile: Profile | null;
   hasUnacknowledgedNotifications: boolean;
 };
 
@@ -59,10 +61,10 @@ const NotificationItem = ({ hasUnacknowledged }: { hasUnacknowledged: boolean })
 };
 
 const HeaderLoggedIn = ({
-  userName,
+  profile,
   hasUnacknowledgedNotifications,
 }: {
-  userName: string;
+  profile: Profile;
   hasUnacknowledgedNotifications: boolean;
 }) => {
   const [query, setQuery] = useState('');
@@ -113,10 +115,11 @@ const HeaderLoggedIn = ({
           <div className="hidden md:block border-2 mx-2 border-highlight self-stretch"></div>
           <div className="hidden md:flex items-center space-x-1">
             <NavItem to="/user/profile" onCLick={toggleMobileMenu}>
-              <span className="text-highlight">
-                <Icon icon="mdi--user" className="mr-2" />
-                {userName}
-              </span>
+              <UserNameAndProfile
+                profile={profile}
+                imageBorderColor="border-highlight"
+                textColor="text-highlight"
+              />
             </NavItem>
             <NavItem to="/notifications">
               <NotificationItem hasUnacknowledged={hasUnacknowledgedNotifications} />
@@ -143,7 +146,7 @@ const HeaderLoggedIn = ({
               <div className="border-t-2 my-2 border-highlight"></div>
               <NavItem to="/user/profile" onCLick={toggleMobileMenu}>
                 <Icon icon="mdi--user" className="mr-2" />
-                {userName}
+                {profile.name}
               </NavItem>
               <NavItem to="/user/logout" onCLick={toggleMobileMenu}>
                 Logout
@@ -173,10 +176,10 @@ const HeaderLoggedOut = () => {
   );
 };
 
-export const Header = ({ userName, hasUnacknowledgedNotifications }: HeaderProps) => {
-  return userName !== null ? (
+export const Header = ({ profile, hasUnacknowledgedNotifications }: HeaderProps) => {
+  return profile !== null ? (
     <HeaderLoggedIn
-      userName={userName}
+      profile={profile}
       hasUnacknowledgedNotifications={hasUnacknowledgedNotifications}
     />
   ) : (

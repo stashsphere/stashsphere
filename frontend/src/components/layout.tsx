@@ -30,7 +30,7 @@ export const Layout = () => {
   return (
     <>
       <Header
-        userName={authContext.profile !== null ? authContext.profile.name : null}
+        profile={authContext.profile}
         hasUnacknowledgedNotifications={hasUnacknowledgedNotifications}
       />
       <div className="bg-content md:p-2">

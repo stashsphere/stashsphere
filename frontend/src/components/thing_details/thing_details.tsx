@@ -7,6 +7,7 @@ import { PropertyList } from './property_list';
 import { Headline } from '../shared';
 import { Icon } from '../shared';
 import { SharingStateComponent } from '../shared/sharing_state';
+import { UserNameAndUserId } from '../shared/user';
 
 interface ThingDetailsProps {
   id: string;
@@ -92,10 +93,14 @@ export const ThingDetails = (props: ThingDetailsProps) => {
             <ThingActions thing={thing} />
             <div>
               <Headline type="h2">Owner</Headline>
-              <p className="text-display text-l">
-                <Icon icon="mdi--user" />{' '}
-                <a href={`/users/${thing.owner.id}`}>{thing.owner.name}</a>
-              </p>
+
+              <a href={`/users/${thing.owner.id}`}>
+                <UserNameAndUserId
+                  userId={thing.owner.id}
+                  textColor="text-display"
+                  imageBorderColor="border-display"
+                />
+              </a>
             </div>
             <div>
               <Headline type="h2">Quantity</Headline>

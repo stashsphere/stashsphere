@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { List } from '../api/resources';
 import ImageGrid from './image_grid';
 import { Icon } from './shared';
+import { UserNameAndUserId } from './shared/user';
 
 type ListInfoProps = {
   list: List;
@@ -30,10 +31,12 @@ export const ListInfo = ({ list }: ListInfoProps) => {
       <div className="w-80">
         <a href={`/lists/${list.id}`}>
           <h2 className="text-display text-xl mb-2">{list.name}</h2>
-          <div className="flex flex-row gap-2">
-            <h2 className="text-display">
-              <Icon icon="mdi--user" /> {list.owner.name}
-            </h2>
+          <div className="flex flex-row gap-2 items-center">
+            <UserNameAndUserId
+              userId={list.owner.id}
+              textColor="text-display"
+              imageBorderColor="border-display"
+            />
             <h2 className="text-display">
               <Icon icon="mdi--animation" /> {thingCount}
             </h2>

@@ -5,6 +5,7 @@ import { getList } from '../../api/lists';
 import { Headline, Icon } from '../shared';
 import { ThingInfo } from '../shared';
 import { SharingStateComponent } from '../shared/sharing_state';
+import { UserNameAndUserId } from '../shared/user';
 
 interface ListDetailsProps {
   id: string;
@@ -87,10 +88,11 @@ export const ListDetails = (props: ListDetailsProps) => {
         <ListActions list={list} />
         <div>
           <Headline type="h2">Owner</Headline>
-          <p className="text-display text-l">
-            <Icon icon="mdi--user" />
-            {list.owner.name}
-          </p>
+          <UserNameAndUserId
+            userId={list.owner.id}
+            imageBorderColor="border-display"
+            textColor="text-display"
+          />
         </div>
         <div className="flex flex-row gap-4 mt-4 flex-wrap justify-center">
           {list.things.map((thing) => (

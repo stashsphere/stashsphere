@@ -2,6 +2,7 @@ import { Thing } from '../../api/resources';
 import { Icon } from '.';
 import { PropertyList } from '../thing_details';
 import { ImageComponent } from '../shared';
+import { UserNameAndUserId } from './user';
 
 type ThingInfoProps = {
   thing: Thing;
@@ -29,10 +30,12 @@ export const ThingInfo = ({ thing }: ThingInfoProps) => {
       <div className="w-80">
         <a href={`/things/${thing.id}`}>
           <h2 className="text-display text-xl mb-2">{thing.name}</h2>
-          <div className="flex flex-row gap-2">
-            <h2 className="text-display">
-              <Icon icon="mdi--user" /> {thing.owner.name}
-            </h2>
+          <div className="flex flex-row gap-2 items-center">
+            <UserNameAndUserId
+              userId={thing.owner.id}
+              textColor="text-display"
+              imageBorderColor="border-display"
+            />
             <h2 className="text-display">
               <Icon icon="mdi--animation" /> {thing.quantity} {thing.quantityUnit}
             </h2>
