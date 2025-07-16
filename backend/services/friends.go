@@ -249,6 +249,7 @@ func (fs *FriendService) Unfriend(ctx context.Context, userId string, friendId s
 		friendShip, err := models.Friendships(
 			qm.Expr(models.FriendshipWhere.Friend1ID.EQ(userId),
 				qm.Or2(models.FriendshipWhere.Friend2ID.EQ(userId))),
+			qm.Load(models.FriendshipRels.FriendRequest),
 		).One(ctx, fs.db)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
