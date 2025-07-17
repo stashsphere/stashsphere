@@ -54,10 +54,10 @@ func UserProfileFromModel(user *models.User) UserProfile {
 	}
 }
 
-func UserProfilesFromModelSlice(mUsers models.UserSlice) []User {
-	users := make([]User, len(mUsers))
+func UserProfilesFromModelSlice(mUsers models.UserSlice) []UserProfile {
+	users := make([]UserProfile, len(mUsers))
 	for i, user := range mUsers {
-		users[i] = UserFromModel(user)
+		users[i] = UserProfileFromModel(user)
 	}
 	return users
 }
