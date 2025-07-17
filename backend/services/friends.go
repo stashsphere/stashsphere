@@ -261,10 +261,6 @@ func (fs *FriendService) Unfriend(ctx context.Context, userId string, friendId s
 		if err != nil {
 			return err
 		}
-		_, err = friendShip.R.FriendRequest.Delete(ctx, fs.db)
-		if err != nil {
-			return err
-		}
 		return nil
 	})
 	return err
