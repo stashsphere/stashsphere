@@ -1,12 +1,13 @@
 import { ThingInfo } from './shared';
 import { FormEvent, useContext, useEffect, useMemo, useState } from 'react';
-import { List, Profile, Share, SharingState, Thing, User } from '../api/resources';
+import { List, Profile, Share, SharingState, Thing, User, UserProfile } from '../api/resources';
 import { ListInfo } from './list_info';
 import { UserList } from './user_list';
 import { Icon } from './shared';
 import { DangerButton, PrimaryButton, SecondaryButton } from './shared';
 import { AxiosContext } from '../context/axios';
 import { deleteShare } from '../api/share';
+import { UserNameAndProfile } from './shared/user';
 
 type ShareDeleterProps = {
   share: Share;
@@ -51,7 +52,7 @@ const ShareDeleter = ({ share, onDelete }: ShareDeleterProps) => {
 };
 
 type ShareEditorProps = {
-  users: User[];
+  users: UserProfile[];
   // the profile of the currently logged in user
   userProfile: Profile;
   onSubmit(targetUser: User): void;
@@ -69,7 +70,7 @@ type ShareEditorProps = {
 );
 
 export const ShareEditor = (props: ShareEditorProps) => {
-  const [targetUser, setTargetUser] = useState<User | null>(null);
+  const [targetUser, setTargetUser] = useState<UserProfile | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sharingState, setSharingState] = useState<SharingState>('private');
   const [initialSharingState, setInitialSharingState] = useState<SharingState>('private');
@@ -179,19 +180,22 @@ export const ShareEditor = (props: ShareEditorProps) => {
               className="block w-full py-2.5 text-gray-700 placeholder-gray-400/70 bg-white border border-gray-200 rounded-lg pl-11 pr-5 rtl:pr-11 rtl:pl-5 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-300 focus:ring-blue-300 focus:outline-hidden focus:ring-3 focus:ring-opacity-40"
             ></input>
           </div>
-          <UserList users={selectableUsers} hintText="Share to this user" onClick={setTargetUser} />
+          <UserList
+            users={selectableUsers}
+            hintText="Share to this user"
+            onClick={(userId) =>
+              setTargetUser(selectableUsers.find((s) => s.id === userId) || null)
+            }
+          />
         </>
       ) : (
         <>
           <div className="flex items-center p-3 mt-2 text-sm text-gray-600 dark:text-gray-300 border border-green-500 mb-2">
-            <div className="w-16 h-16">
-              <Icon icon="mdi--image-off-outline" />
-            </div>
-            <div className="mx-1">
-              <h1 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                {targetUser.name}
-              </h1>
-            </div>
+            <UserNameAndProfile
+              profile={targetUser}
+              textColor="text-display"
+              imageBorderColor="border-display"
+            />
             <div className="grow"></div>
             <div className="w-16 h-16" onClick={() => setTargetUser(null)}>
               <Icon icon="mdi--close" />
