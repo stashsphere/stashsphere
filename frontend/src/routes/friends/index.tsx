@@ -7,12 +7,12 @@ import {
   reactToFriendRequest,
   sendFriendRequest,
 } from '../../api/friend';
-import { FriendRequest, FriendShip, User } from '../../api/resources';
+import { FriendRequest, FriendShip, User, UserProfile } from '../../api/resources';
 import { AuthContext } from '../../context/auth';
 import { UserList } from '../../components/user_list';
-import { PrimaryButton, SecondaryButton } from '../../components/shared';
-import { Icon } from '../../components/shared';
+import { Headline, PrimaryButton, SecondaryButton } from '../../components/shared';
 import { getAllUsers } from '../../api/user';
+import { UserNameAndUserId } from '../../components/shared/user';
 
 const FriendShipEntry = ({
   friendShip,
@@ -34,10 +34,13 @@ const FriendShipEntry = ({
   return (
     <>
       <div className="flex flex-row gap-4">
-        <div className="text-display">
-          <Icon icon="mdi--user" />{' '}
-          <a href={`/users/${friendShip.friend.id}`}>{friendShip.friend.name}</a>
-        </div>
+        <a href={`/users/${friendShip.friend.id}`}>
+          <UserNameAndUserId
+            userId={friendShip.friend.id}
+            imageBorderColor="border-display"
+            textColor="text-display"
+          />
+        </a>
         {!unfriend && <SecondaryButton onClick={() => setUnfriend(true)}>Unfriend</SecondaryButton>}
         {unfriend && (
           <div className="grid grid-cols-2 gap-2 max-w-sm">
@@ -64,11 +67,12 @@ const SentFriendRequestEntry = ({ request }: { request: FriendRequest }) => {
 
   return (
     <>
-      <div>
-        <div className="text-display">
-          <Icon icon="mdi--user" />
-          {request.receiver.name}
-        </div>
+      <div className="flex flex-row items-center gap-2">
+        <UserNameAndUserId
+          userId={request.receiver.id}
+          textColor="text-display"
+          imageBorderColor="border-display"
+        />
         {state}
       </div>
     </>
@@ -95,8 +99,12 @@ const ReceivedFriendRequestEntry = ({
 
   return (
     <>
-      <div className="flex flex-col">
-        <span className="text-display">From: {request.sender.name}</span>
+      <div className="flex flex-row gap-2">
+        <UserNameAndUserId
+          userId={request.sender.id}
+          textColor="text-display"
+          imageBorderColor="border-display"
+        />
         <div className="grid grid-cols-2 gap-2 max-w-sm">
           <PrimaryButton onClick={() => reactFriendRequest(true)}>Accept</PrimaryButton>
           <SecondaryButton onClick={() => reactFriendRequest(false)}>Reject</SecondaryButton>
@@ -149,8 +157,8 @@ export const ShowFriends = () => {
   const [sentFriendRequests, setSentFriendRequests] = useState<FriendRequest[]>([]);
   const [receivedFriendRequests, setReceivedFriendRequests] = useState<FriendRequest[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
-  const [targetUser, setTargetUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [targetUser, setTargetUser] = useState<UserProfile | null>(null);
   const [mutateKey, setMutateKey] = useState(0);
 
   const userProfile = authContext.profile;
@@ -204,19 +212,19 @@ export const ShowFriends = () => {
     <>
       <div className="flex flex-col max-w-3xl">
         <div>
-          <h2 className="text-xl text-primary">Friend Requests</h2>
+          <Headline type="h2">Friend Requests</Headline>
           <input
             onChange={(e) => setSearchTerm(e.target.value)}
             value={searchTerm}
             type="text"
             placeholder="Search for names and email addresses"
-            className="mt-1 p-2 text-display border border-gray-300 rounded-sm w-full"
+            className="mt-1 p-2 text-display focus:outline-none border border-gray-300 rounded-sm w-full"
           />
           {targetUser === null ? (
             <UserList
               users={selectableUsers}
               hintText="Send friend request"
-              onClick={setTargetUser}
+              onClick={(id) => setTargetUser(selectableUsers.find((u) => u.id === id) || null)}
             />
           ) : (
             <SendFriendRequestComponent
@@ -229,17 +237,19 @@ export const ShowFriends = () => {
               }}
             />
           )}
-          {receivedFriendRequests
-            .filter((r) => r.state === 'pending')
-            .map((r) => (
-              <ReceivedFriendRequestEntry request={r} onReacted={updateState} />
+          <div className="flex flex-col gap-2 mt-2">
+            {receivedFriendRequests
+              .filter((r) => r.state === 'pending')
+              .map((r) => (
+                <ReceivedFriendRequestEntry request={r} onReacted={updateState} key={r.id} />
+              ))}
+            {sentFriendRequests.map((r) => (
+              <SentFriendRequestEntry request={r} key={r.id} />
             ))}
-          {sentFriendRequests.map((r) => (
-            <SentFriendRequestEntry request={r} />
-          ))}
+          </div>
         </div>
         <div>
-          <h2 className="text-xl text-primary">Friends</h2>
+          <Headline type="h2">Friends</Headline>
           <div className="flex flex-row">
             {friendShips.length > 0 &&
               friendShips.map((friendShip) => (
