@@ -2,8 +2,25 @@
 
 @config '../tailwind.config.js';
 
+@font-face {
+  font-family: 'Goldman';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/assets/Goldman-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Goldman';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/assets/Goldman-Heavy.woff2') format('woff2');
+}
+
 @theme {
   --input-background-color-default: var(--color-white);
+  --font-goldman: 'Goldman', sans-serif;
 }
 
 /*

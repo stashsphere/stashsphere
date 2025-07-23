@@ -1,6 +1,6 @@
 import { KeyboardEvent, ReactNode, useContext, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
-import stashsphereLogo from '../assets/stashsphere.svg';
+import stashsphereLogo from '../assets/stashsphere-logo-256.png';
 import { Icon } from './shared';
 import { SearchContext } from '../context/search';
 import { Profile } from '../api/resources';
@@ -45,9 +45,9 @@ const NameAndLogo = () => {
   return (
     <div className="flex">
       <div className="flex items-center">
-        <img src={stashsphereLogo} alt="StashSphere" className="h-10" />
+        <img src={stashsphereLogo} alt="StashSphere" className="h-12" />
       </div>
-      <span className="py-4 px-2 text-onprimary font-semibold">stashsphere</span>
+      <span className="py-4 px-2 text-onprimary font-goldman font-bold text-xl">stashsphere</span>
     </div>
   );
 };
