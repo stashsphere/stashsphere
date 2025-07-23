@@ -3,7 +3,7 @@ import { ShareEditor } from '../../components/share_editor';
 import { useContext, useEffect, useState } from 'react';
 import { AxiosContext } from '../../context/axios';
 import { getThing, updateThing, updateThingParamsFromThing } from '../../api/things';
-import { SharingState, Thing, User } from '../../api/resources';
+import { SharingState, Thing, User, UserProfile } from '../../api/resources';
 import { AuthContext } from '../../context/auth';
 import { shareObject } from '../../api/share';
 import { getAllUsers } from '../../api/user';
@@ -18,7 +18,7 @@ export const ShareThing = () => {
   const authContext = useContext(AuthContext);
   const profile = authContext.profile;
 
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
 
   useEffect(() => {
     if (!axiosInstance || thingId === undefined) {
