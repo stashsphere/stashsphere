@@ -222,7 +222,7 @@ func (fs *FriendService) ReactFriendRequest(ctx context.Context, params ReactFri
 		RequestId:    outerRequest.ID,
 		ReceiverId:   outerRequest.ReceiverID,
 		Accepted:     params.Accept,
-		SenderEmail:  receiver.Email,
+		SenderEmail:  sender.Email,
 		ReceiverName: receiver.Name,
 		SenderName:   sender.Name,
 		SenderId:     sender.ID,
