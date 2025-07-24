@@ -64,7 +64,7 @@ const FriendRequestReactionNotificationComponent = ({
     return (
       <div className="flex flex-row items-center gap-1">
         <UserNameAndUserId
-          userId={friendRequest.sender.id}
+          userId={friendRequest.receiver.id}
           textColor={fontColor}
           imageBorderColor="border-display"
         />
@@ -77,7 +77,7 @@ const FriendRequestReactionNotificationComponent = ({
     return (
       <div className="flex flex-row items-center gap-1">
         <UserNameAndUserId
-          userId={friendRequest.sender.id}
+          userId={friendRequest.receiver.id}
           textColor={fontColor}
           imageBorderColor="border-display"
         />
