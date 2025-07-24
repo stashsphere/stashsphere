@@ -24,7 +24,7 @@ export const CreateList = () => {
     }
     const list = await createList(axiosInstance, {
       name: data.name,
-      thingsIds: data.selectedThingIDs,
+      thingIds: data.selectedThingIDs,
       sharingState: data.sharingState,
     });
     console.log('Created', list);

@@ -33,7 +33,7 @@ export const getList = async (axios: Axios, id: string) => {
 
 export interface CreateListParams {
   name: string;
-  thingsIds: string[];
+  thingIds: string[];
   sharingState: SharingState;
 }
 
