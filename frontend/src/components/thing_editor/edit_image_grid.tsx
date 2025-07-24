@@ -35,7 +35,11 @@ export const ImageGridTile = ({
   return (
     <div className="relative group bg-white rounded-sm overflow-hidden border border-gray-200 hover:border-gray-300 transition-colors">
       <div className="aspect-square">
-        <ImageComponent defaultWidth={150} image={image} className="w-full h-full object-cover" />
+        <ImageComponent
+          defaultWidth={150}
+          image={image}
+          className="w-full h-full object-scale-down"
+        />
       </div>
 
       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-1">
