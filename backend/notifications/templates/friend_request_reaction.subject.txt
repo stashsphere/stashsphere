@@ -1,5 +1,5 @@
-{{ if .Accepted }}
+{{- if .Accepted -}}
 [{{.InstanceName}}] Your friend request was accepted
-{{ else }}
+{{- else -}}
 [{{.InstanceName}}] Your friend request was accepted
-{{ end }}
+{{- end -}}
