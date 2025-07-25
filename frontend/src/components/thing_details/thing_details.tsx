@@ -30,19 +30,22 @@ const ThingActions = ({ thing }: { thing: Thing }) => {
               <span className="rounded-sm bg-secondary-200 text-onprimary mx-1 px-1">
                 {thing.shares.length}
               </span>
+              {thing.shares.length === 1 ? 'user' : 'users'}
             </div>
-            <a href={`/things/${thing.id}/share`}>
-              <Icon
-                icon="mdi--offer"
-                size="medium"
-                className="text-onneutral"
-                tooltip="Share this thing"
-              />
-            </a>
           </>
         )}
       </div>
       <div className="flex flex-row gap-2 justify-end">
+        {thing.actions.canShare && (
+          <a href={`/things/${thing.id}/share`}>
+            <Icon
+              icon="mdi--offer"
+              size="medium"
+              className="text-onneutral"
+              tooltip="Share this thing"
+            />
+          </a>
+        )}
         {thing.actions.canEdit && (
           <a href={`/things/${thing.id}/edit`}>
             <Icon
