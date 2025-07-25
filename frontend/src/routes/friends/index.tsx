@@ -33,7 +33,7 @@ const FriendShipEntry = ({
 
   return (
     <>
-      <div className="flex flex-row gap-4">
+      <div className="flex flex-row gap-4 items-center justify-between">
         <a href={`/users/${friendShip.friend.id}`}>
           <UserNameAndUserId
             userId={friendShip.friend.id}
@@ -67,7 +67,7 @@ const SentFriendRequestEntry = ({ request }: { request: FriendRequest }) => {
 
   return (
     <>
-      <div className="flex flex-row items-center gap-2">
+      <div className="flex flex-row items-center gap-2 justify-between">
         <UserNameAndUserId
           userId={request.receiver.id}
           textColor="text-display"
@@ -248,9 +248,9 @@ export const ShowFriends = () => {
             ))}
           </div>
         </div>
-        <div>
+        <div className="mt-4">
           <Headline type="h2">Friends</Headline>
-          <div className="flex flex-row">
+          <div className="flex flex-col gap-2">
             {friendShips.length > 0 &&
               friendShips.map((friendShip) => (
                 <FriendShipEntry friendShip={friendShip} onDelete={updateState} />
