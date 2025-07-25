@@ -25,7 +25,7 @@ const ListActions = ({ list }: { list: List }) => {
           <>
             <div className="text-display">
               Directly shared with
-              <span className="rounded-sm bg-secondary-201 text-onprimary mx-1 px-1">
+              <span className="rounded-sm bg-secondary-200 text-onprimary mx-1 px-1">
                 {list.shares.length}
               </span>
             </div>
