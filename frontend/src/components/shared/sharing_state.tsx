@@ -14,7 +14,7 @@ export const SharingStateComponent = ({ state }: { state: SharingState }) => {
   })();
 
   return (
-    <div className="rounded-sm bg-secondary-200 text-onprimary mx-1 px-1 flex flex-row">
+    <div className="rounded-sm bg-secondary-200 text-onprimary mx-1 px-1 flex flex-row items-center">
       <Icon icon={icon} />
       {rendered}
     </div>
