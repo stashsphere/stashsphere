@@ -253,3 +253,36 @@ func TestSharingState(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 }
+
+func TestDeletion(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+
+	t.Cleanup(tearDownFunc)
+	is, err := services.NewTmpImageService(db)
+	assert.NoError(t, err)
+
+	t.Cleanup(func() {
+		os.Remove(is.StorePath())
+	})
+	userService := services.NewUserService(db, false, "")
+	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	anotherUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
+	anotherUser, err := userService.CreateUser(context.Background(), *anotherUserParams)
+	assert.NoError(t, err)
+
+	thingService := services.NewThingService(db, is)
+	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thingParams.OwnerId = testUser.ID
+	thing, err := thingService.CreateThing(context.Background(), *thingParams)
+	assert.Nil(t, err, nil)
+	assert.NotNil(t, thing)
+	assert.NotEmpty(t, thing.ID)
+	// TODO add to list, add image, add properties
+
+	err = thingService.DeleteThing(context.Background(), thing.ID, anotherUser.ID)
+	assert.ErrorIs(t, err, utils.EntityDoesNotBelongToUserError{})
+	err = thingService.DeleteThing(context.Background(), thing.ID, testUser.ID)
+	assert.NoError(t, err)
+}

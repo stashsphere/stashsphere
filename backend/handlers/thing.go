@@ -270,3 +270,19 @@ func (th *ThingHandler) ThingHandlerShow(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, resources.ThingFromModel(thing, authCtx.User.ID, sharedListIds))
 }
+
+func (th *ThingHandler) ThingHandlerDelete(c echo.Context) error {
+	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
+	if !ok {
+		return utils.NoAuthContextError{}
+	}
+	if !authCtx.Authenticated {
+		return utils.NotAuthenticatedError{}
+	}
+	thingId := c.Param("thingId")
+	err := th.thing_service.DeleteThing(c.Request().Context(), thingId, authCtx.User.ID)
+	if err != nil {
+		return err
+	}
+	return c.NoContent(http.StatusNoContent)
+}

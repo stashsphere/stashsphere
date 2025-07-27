@@ -307,3 +307,69 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 	totalPages := uint64(math.Ceil(float64(thingCount) / float64(perPage)))
 	return uint64(thingCount), totalPages, things, nil
 }
+
+func (ts *ThingService) DeleteThing(ctx context.Context, thingId string, userId string) error {
+	err := utils.Tx(ctx, ts.db, func(tx *sql.Tx) error {
+		thing, err := operations.GetThingUnchecked(ctx, tx, thingId)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return utils.NotFoundError{EntityName: "Thing"}
+			}
+			return err
+		}
+		if thing.OwnerID != userId {
+			return utils.EntityDoesNotBelongToUserError{}
+		}
+
+		shareIds := []string{}
+		for _, share := range thing.R.Shares {
+			shareIds = append(shareIds, share.ID)
+		}
+
+		_, err = thing.R.QuantityEntries.DeleteAll(ctx, tx)
+		if err != nil {
+			return err
+		}
+
+		_, err = thing.R.Properties.DeleteAll(ctx, tx)
+		if err != nil {
+			return err
+		}
+
+		err = thing.RemoveShares(ctx, tx, thing.R.Shares...)
+		if err != nil {
+			return err
+		}
+
+		err = thing.RemoveLists(ctx, tx, thing.R.Lists...)
+		if err != nil {
+			return err
+		}
+
+		err = thing.RemoveImages(ctx, tx, thing.R.Images...)
+		if err != nil {
+			return err
+		}
+
+		for _, id := range shareIds {
+			share, err := models.Shares(models.ShareWhere.ID.EQ(id),
+				qm.Load(qm.Rels(models.ShareRels.Lists)),
+				qm.Load(qm.Rels(models.ShareRels.Things)),
+			).One(ctx, tx)
+			if err != nil {
+				return err
+			}
+			if len(share.R.Lists) == 0 && len(share.R.Things) == 0 {
+				_, err = share.Delete(ctx, tx)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		_, err = thing.Delete(ctx, tx)
+
+		return err
+	})
+	return err
+}

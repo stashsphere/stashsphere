@@ -223,8 +223,7 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 	thingsGroup.POST("", thingHandler.ThingHandlerPost)
 	thingsGroup.PATCH("/:thingId", thingHandler.ThingHandlerPatch)
 	thingsGroup.GET("/:thingId", thingHandler.ThingHandlerShow)
-	// TODO
-	// thingsGroup.DELETE("/:thingId", thingHandler.ThingHandlerDelete)
+	thingsGroup.DELETE("/:thingId", thingHandler.ThingHandlerDelete)
 
 	listsGroup := a.Group("/lists")
 	listsGroup.GET("", listHandler.ListHandlerIndex)
