@@ -1,17 +1,16 @@
-import { useContext, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { List } from '../../api/resources';
-import { AxiosContext } from '../../context/axios';
-import { getList } from '../../api/lists';
-import { Headline, Icon } from '../shared';
+import { Headline, Icon, PrimaryButton, SecondaryButton } from '../shared';
 import { ThingInfo } from '../shared';
 import { SharingStateComponent } from '../shared/sharing_state';
 import { UserNameAndUserId } from '../shared/user';
 
 interface ListDetailsProps {
-  id: string;
+  list: List;
+  onDelete: () => void;
 }
 
-const ListActions = ({ list }: { list: List }) => {
+const ListActions = ({ list, onDeleteClick }: { list: List; onDeleteClick: () => void }) => {
   return (
     <div className="flex flex-row gap-3 justify-between items-center">
       <div className="flex flex-row justify-start gap-3">
@@ -55,54 +54,51 @@ const ListActions = ({ list }: { list: List }) => {
           </a>
         )}
         {list.actions.canDelete && (
-          <a href="#">
+          <div onClick={() => onDeleteClick()}>
             <Icon
               icon="mdi--trash-can"
               size="medium"
               className="text-danger"
-              tooltip="Delete this thing"
+              tooltip="Delete this List"
             />
-          </a>
+          </div>
         )}
       </div>
     </div>
   );
 };
 
-export const ListDetails = (props: ListDetailsProps) => {
-  const [list, setList] = useState<null | List>(null);
-  const axiosInstance = useContext(AxiosContext);
+export const ListDetails = ({ list, onDelete }: ListDetailsProps) => {
+  const [showDeleteDialog, setDeleteDialog] = useState(false);
 
-  useEffect(() => {
-    if (!axiosInstance) {
-      return;
-    }
-    getList(axiosInstance, props.id).then(setList);
-  }, [axiosInstance, props.id]);
-
-  if (list === null) {
-    return <h1>Loading</h1>;
-  } else {
-    return (
-      <>
-        <div className="flex flex-row justify-between mb-4">
-          <h1 className="text-2xl text-accent">{list.name}</h1>
-        </div>
-        <ListActions list={list} />
+  return (
+    <>
+      <div className="flex flex-row justify-between mb-4">
+        <h1 className="text-2xl text-accent">{list.name}</h1>
+      </div>
+      <ListActions list={list} onDeleteClick={() => setDeleteDialog(!showDeleteDialog)} />
+      {showDeleteDialog && (
         <div>
-          <Headline type="h2">Owner</Headline>
-          <UserNameAndUserId
-            userId={list.owner.id}
-            imageBorderColor="border-display"
-            textColor="text-display"
-          />
+          <Headline type="h2">Delete List?</Headline>
+          <div className="grid grid-cols-2 gap-2 max-w-sm">
+            <PrimaryButton onClick={onDelete}>Delete</PrimaryButton>
+            <SecondaryButton onClick={() => setDeleteDialog(false)}>Cancel</SecondaryButton>
+          </div>
         </div>
-        <div className="flex flex-row gap-4 mt-4 flex-wrap justify-center">
-          {list.things.map((thing) => (
-            <ThingInfo thing={thing} key={thing.id} />
-          ))}
-        </div>
-      </>
-    );
-  }
+      )}
+      <div>
+        <Headline type="h2">Owner</Headline>
+        <UserNameAndUserId
+          userId={list.owner.id}
+          imageBorderColor="border-display"
+          textColor="text-display"
+        />
+      </div>
+      <div className="flex flex-row gap-4 mt-4 flex-wrap justify-center">
+        {list.things.map((thing) => (
+          <ThingInfo thing={thing} key={thing.id} />
+        ))}
+      </div>
+    </>
+  );
 };

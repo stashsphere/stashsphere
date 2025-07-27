@@ -73,3 +73,7 @@ export const updateListParamsFromList = (list: List): UpdateListParams => {
   };
   return params;
 };
+
+export const deleteList = async (axios: Axios, id: string) => {
+  return await axios.delete(`/lists/` + id);
+};
