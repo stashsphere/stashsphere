@@ -94,3 +94,7 @@ export const updateThingParamsFromThing = (thing: Thing): UpdateThingParams => {
   };
   return params;
 };
+
+export const deleteThing = async (axios: Axios, id: string) => {
+  return await axios.delete(`/things/` + id);
+};
