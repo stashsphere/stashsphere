@@ -250,44 +250,57 @@ func (ls *ListService) GetList(ctx context.Context, listId string, userId string
 	return list, nil
 }
 
-func (ls *ListService) AddThingToList(ctx context.Context, thingId string, listId string, userId string) (*models.List, error) {
-	thing, err := models.FindThing(ctx, ls.db, thingId)
-	if err != nil {
-		return nil, err
-	}
-	list, err := models.FindList(ctx, ls.db, listId)
-	if err != nil {
-		return nil, err
-	}
-	if thing.OwnerID != userId || list.OwnerID != userId {
-		return nil, utils.EntityDoesNotBelongToUserError{}
-	}
-	err = list.AddThings(ctx, ls.db, true, thing)
-	if err != nil {
-		return nil, err
-	}
-	return ls.GetList(ctx, listId, list.OwnerID)
-}
-
-func (ls *ListService) RemoveThingFromList(ctx context.Context, thingId string, listId string, userId string) (*models.List, error) {
-	thing, err := models.FindThing(ctx, ls.db, thingId)
-	if err != nil {
-		return nil, err
-	}
-	list, err := models.FindList(ctx, ls.db, listId)
-	if err != nil {
-		return nil, err
-	}
-	if thing.OwnerID != userId || list.OwnerID != userId {
-		return nil, utils.EntityDoesNotBelongToUserError{}
-	}
-	err = list.RemoveThings(ctx, ls.db, thing)
-	if err != nil {
-		return nil, err
-	}
-	return ls.GetList(ctx, listId, userId)
-}
-
 func (ls *ListService) GetSharedListIdsForUser(ctx context.Context, userId string) ([]string, error) {
 	return operations.GetSharedListIdsForUser(ctx, ls.db, userId)
+}
+
+func (ts *ListService) DeleteList(ctx context.Context, listId string, userId string) error {
+	err := utils.Tx(ctx, ts.db, func(tx *sql.Tx) error {
+		list, err := operations.GetListUnchecked(ctx, tx, listId)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return utils.NotFoundError{EntityName: "List"}
+			}
+			return err
+		}
+		if list.OwnerID != userId {
+			return utils.EntityDoesNotBelongToUserError{}
+		}
+
+		shareIds := []string{}
+		for _, share := range list.R.Shares {
+			shareIds = append(shareIds, share.ID)
+		}
+
+		err = list.RemoveShares(ctx, tx, list.R.Shares...)
+		if err != nil {
+			return err
+		}
+
+		err = list.RemoveThings(ctx, tx, list.R.Things...)
+		if err != nil {
+			return err
+		}
+
+		for _, id := range shareIds {
+			share, err := models.Shares(models.ShareWhere.ID.EQ(id),
+				qm.Load(qm.Rels(models.ShareRels.Lists)),
+				qm.Load(qm.Rels(models.ShareRels.Things)),
+			).One(ctx, tx)
+			if err != nil {
+				return err
+			}
+			if len(share.R.Lists) == 0 && len(share.R.Things) == 0 {
+				_, err = share.Delete(ctx, tx)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		_, err = list.Delete(ctx, tx)
+
+		return err
+	})
+	return err
 }

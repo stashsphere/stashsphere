@@ -230,6 +230,7 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 	listsGroup.POST("", listHandler.ListHandlerPost)
 	listsGroup.GET("/:listId", listHandler.ListHandlerShow)
 	listsGroup.PATCH("/:listId", listHandler.ListHandlerPatch)
+	listsGroup.DELETE("/:listId", listHandler.ListHandlerDelete)
 
 	imageGroup := a.Group("/images")
 	imageGroup.GET("", imageHandler.ImageHandlerIndex)

@@ -167,3 +167,19 @@ func (lh *ListHandler) ListHandlerPatch(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, resources.ListFromModel(list, authCtx.User.ID, sharedListIds))
 }
+
+func (lh *ListHandler) ListHandlerDelete(c echo.Context) error {
+	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
+	if !ok {
+		return utils.NoAuthContextError{}
+	}
+	if !authCtx.Authenticated {
+		return utils.NotAuthenticatedError{}
+	}
+	listId := c.Param("listId")
+	err := lh.list_service.DeleteList(c.Request().Context(), listId, authCtx.User.ID)
+	if err != nil {
+		return err
+	}
+	return c.NoContent(http.StatusNoContent)
+}
