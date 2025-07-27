@@ -7,7 +7,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/assets/Goldman-Regular.woff2') format('woff2');
+  src: url('/fonts/Goldman-Regular.woff2') format('woff2');
 }
 
 @font-face {
@@ -15,7 +15,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/assets/Goldman-Heavy.woff2') format('woff2');
+  src: url('/fonts/Goldman-Heavy.woff2') format('woff2');
 }
 
 @theme {
