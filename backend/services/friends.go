@@ -41,8 +41,9 @@ func (fs *FriendService) CreateFriendRequest(ctx context.Context, params CreateF
 		}
 
 		existingFriendShip, err := models.Friendships(
-			qm.Expr(models.FriendshipWhere.Friend1ID.EQ(params.UserId),
-				qm.Or2(models.FriendshipWhere.Friend2ID.EQ(params.UserId)))).Count(ctx, tx)
+			qm.Expr(
+				qm.Expr(models.FriendshipWhere.Friend1ID.EQ(params.UserId), (models.FriendshipWhere.Friend2ID.EQ(params.ReceiverId))),
+				qm.Or2(qm.Expr(models.FriendshipWhere.Friend2ID.EQ(params.UserId), models.FriendshipWhere.Friend1ID.EQ(params.ReceiverId))))).Count(ctx, tx)
 		if err != nil {
 			return err
 		}
