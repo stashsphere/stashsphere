@@ -17,7 +17,13 @@ export const UserNameAndProfile = ({
 }: { profile: UserProfile } & UserNameAndProfileProps) => {
   const profilePicture = useMemo(() => {
     if (profile.image === null) {
-      return <Icon icon="mdi--user" className="mr-2" />;
+      return (
+        <div
+          className={`flex justify-center items-center w-10 h-10 rounded-full border-2 ${imageBorderColor}`}
+        >
+          <Icon icon="mdi--user" className="" />
+        </div>
+      );
     } else {
       return (
         <ImageComponent
