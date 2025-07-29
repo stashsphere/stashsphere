@@ -91,9 +91,6 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 		if err != nil {
 			return err
 		}
-		if err != nil {
-			return err
-		}
 
 		images, err := models.Images(models.ImageWhere.ID.IN(params.ImagesIds)).All(ctx, tx)
 		if err != nil {
