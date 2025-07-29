@@ -1,14 +1,17 @@
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { AxiosContext } from '../../context/axios';
-import { PagedThings } from '../../api/resources';
-import { getThings } from '../../api/things';
+import { PagedThings, ThingsSummary } from '../../api/resources';
+import { getThings, getThingsSummary } from '../../api/things';
 import { Pages } from '../../components/pages';
 import { ThingInfo } from '../../components/shared';
 import { PrimaryButton } from '../../components/shared';
+import { UserNameAndUserId } from '../../components/shared/user';
 
 export const Things = () => {
   const axiosInstance = useContext(AxiosContext);
   const [things, setThings] = useState<PagedThings | undefined>(undefined);
+  const [summary, setSummary] = useState<ThingsSummary | undefined>(undefined);
+  const [selectedOwners, setSelectedOwners] = useState<string[]>([]);
 
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -16,12 +19,46 @@ export const Things = () => {
     if (axiosInstance === null) {
       return;
     }
-    getThings(axiosInstance, currentPage)
+    getThingsSummary(axiosInstance).then(setSummary);
+  }, [axiosInstance]);
+
+  useEffect(() => {
+    if (summary === undefined) {
+      setSelectedOwners([]);
+    } else {
+      setSelectedOwners(summary.ownerIds);
+    }
+  }, [summary]);
+
+  useEffect(() => {
+    if (axiosInstance === null) {
+      return;
+    }
+    getThings(axiosInstance, currentPage, selectedOwners)
       .then(setThings)
       .catch((reason) => {
         console.log(reason);
       });
-  }, [axiosInstance, currentPage]);
+  }, [axiosInstance, currentPage, selectedOwners]);
+
+  const toggleOwnerId = useCallback(
+    (id: string) => {
+      if (!summary) {
+        return;
+      }
+      if (!selectedOwners.includes(id)) {
+        setSelectedOwners([...selectedOwners, id]);
+      } else {
+        const temp = [...selectedOwners].filter((v) => v !== id);
+        if (temp.length > 0) {
+          setSelectedOwners(temp);
+        } else {
+          setSelectedOwners(summary.ownerIds);
+        }
+      }
+    },
+    [selectedOwners, summary]
+  );
 
   if (!things) {
     return <p>Loading...</p>;
@@ -29,7 +66,27 @@ export const Things = () => {
 
   return (
     <>
-      <div className="flex flex-row flex-row-reverse">
+      <div className="flex flex-row justify-between">
+        <div className="flex flex-row border-primary gap-4 select-none">
+          {summary &&
+            summary.ownerIds.sort().map((ownerId) => (
+              <div
+                className={
+                  (selectedOwners.includes(ownerId) ? '' : 'brightness-30 ') +
+                  'bg-secondary p-1 rounded'
+                }
+                onClick={() => toggleOwnerId(ownerId)}
+                key={ownerId}
+              >
+                <UserNameAndUserId
+                  key={ownerId}
+                  userId={ownerId}
+                  textColor="text-primary"
+                  imageBorderColor="border-display"
+                />
+              </div>
+            ))}
+        </div>
         <a href="/things/create">
           <PrimaryButton>Add Thing</PrimaryButton>
         </a>

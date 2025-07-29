@@ -72,6 +72,11 @@ export interface ReducedThing {
   owner: User;
 }
 
+export interface ThingsSummary {
+  ownerIds: string[];
+  totalCount: number;
+}
+
 export interface Paged {
   perPage: number;
   page: number;

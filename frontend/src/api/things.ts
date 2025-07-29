@@ -1,10 +1,17 @@
 import { Axios } from 'axios';
-import { PagedThings, SharingState, Thing } from './resources';
+import { PagedThings, SharingState, Thing, ThingsSummary } from './resources';
 
-export const getThings = async (axios: Axios, currentPage: number) => {
+export const getThings = async (axios: Axios, currentPage: number, ownerIds: string[]) => {
   const response = await axios.get(`/things?page=${currentPage}`, {
     headers: {
       'Content-Type': 'application/json',
+    },
+    params: {
+      page: currentPage,
+      filterOwnerId: ownerIds,
+    },
+    paramsSerializer: {
+      indexes: null,
     },
   });
 
@@ -14,6 +21,21 @@ export const getThings = async (axios: Axios, currentPage: number) => {
 
   const things = response.data as PagedThings;
   return things;
+};
+
+export const getThingsSummary = async (axios: Axios) => {
+  const response = await axios.get(`/things/summary`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (response.status != 200) {
+    throw `Got error ${response}`;
+  }
+
+  const summary = response.data as ThingsSummary;
+  return summary;
 };
 
 export const getThing = async (axios: Axios, id: string) => {
