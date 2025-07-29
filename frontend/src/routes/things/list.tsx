@@ -67,7 +67,7 @@ export const Things = () => {
   return (
     <>
       <div className="flex flex-row justify-between">
-        <div className="flex flex-row border-primary gap-4 select-none">
+        <div className="flex flex-row border-primary gap-2 select-none">
           {summary &&
             summary.ownerIds.sort().map((ownerId) => (
               <div
