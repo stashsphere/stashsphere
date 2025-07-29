@@ -7,6 +7,7 @@ import { PagedThings } from '../../api/resources';
 import { getThings } from '../../api/things';
 import { Pages } from '../../components/pages';
 import { AuthContext } from '../../context/auth';
+import { PrimaryButton } from '../../components/shared';
 
 export const CreateList = () => {
   const authCtx = useContext(AuthContext);
@@ -57,12 +58,7 @@ export const CreateList = () => {
         onPageChange={(n) => setCurrentPage(n)}
         pages={selectableThingsPages?.totalPageCount || 0}
       />
-      <button
-        type="submit"
-        className="bg-blue-500 text-white py-2 px-4 rounded-sm hover:bg-blue-600 focus:outline-hidden focus:ring-3 focus:border-blue-300"
-      >
-        Create
-      </button>
+      <PrimaryButton type="submit">Create</PrimaryButton>
     </ListEditor>
   );
 };
