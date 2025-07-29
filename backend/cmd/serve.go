@@ -220,6 +220,7 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 
 	thingsGroup := a.Group("/things")
 	thingsGroup.GET("", thingHandler.ThingHandlerIndex)
+	thingsGroup.GET("/summary", thingHandler.ThingHandlerSummary)
 	thingsGroup.POST("", thingHandler.ThingHandlerPost)
 	thingsGroup.PATCH("/:thingId", thingHandler.ThingHandlerPatch)
 	thingsGroup.GET("/:thingId", thingHandler.ThingHandlerShow)

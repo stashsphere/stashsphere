@@ -26,8 +26,9 @@ func NewThingHandler(thing_service *services.ThingService, list_service *service
 }
 
 type ThingsParams struct {
-	Page    uint64 `query:"page"`
-	PerPage uint64 `query:"perPage"`
+	Page           uint64   `query:"page"`
+	PerPage        uint64   `query:"perPage"`
+	FilterOwnerIds []string `query:"filterOwnerId"`
 }
 
 func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
@@ -48,10 +49,11 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 
 	totalCount, totalPageCount, things, err := th.thing_service.GetThingsForUser(c.Request().Context(),
 		services.GetThingsForUserParams{
-			UserId:   authCtx.User.ID,
-			PerPage:  params.PerPage,
-			Page:     params.Page,
-			Paginate: true,
+			UserId:         authCtx.User.ID,
+			PerPage:        params.PerPage,
+			Page:           params.Page,
+			Paginate:       true,
+			FilterOwnerIds: params.FilterOwnerIds,
 		},
 	)
 	if err != nil {
@@ -69,6 +71,21 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 		TotalCount:     totalCount,
 	}
 	return c.JSON(http.StatusOK, paginated)
+}
+
+func (th *ThingHandler) ThingHandlerSummary(c echo.Context) error {
+	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
+	if !ok {
+		return utils.NoAuthContextError{}
+	}
+	if !authCtx.Authenticated {
+		return utils.NotAuthenticatedError{}
+	}
+	summary, err := th.thing_service.GetSummaryForUser(c.Request().Context(), authCtx.User.ID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, summary)
 }
 
 type PropertyTypeTag string

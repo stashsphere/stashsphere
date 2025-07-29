@@ -244,15 +244,68 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 	return ts.GetThing(ctx, thingId, outerThing.OwnerID)
 }
 
+type ThingsForUserSummary struct {
+	OwnerIds   []string `json:"ownerIds"`
+	TotalCount int      `json:"totalCount"`
+}
+
+func (ts *ThingService) GetSummaryForUser(ctx context.Context, userId string) (*ThingsForUserSummary, error) {
+	tx, err := ts.db.BeginTx(ctx, &sql.TxOptions{
+		ReadOnly: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sharedThingIds, err := operations.GetSharedThingIdsForUser(ctx, tx, userId)
+	if err != nil {
+		return nil, err
+	}
+	interfaceIds := make([]interface{}, len(sharedThingIds))
+	for i, s := range sharedThingIds {
+		interfaceIds[i] = s
+	}
+
+	searchCond := qm.Expr(
+		models.ThingWhere.OwnerID.EQ(userId),
+		qm.OrIn("id in ?", interfaceIds...),
+	)
+
+	ownerIdMaps := make(map[string]bool)
+
+	things, err := models.Things(qm.Load(models.ThingRels.Owner), searchCond).All(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, thing := range things {
+		ownerIdMaps[thing.OwnerID] = true
+	}
+
+	ownerIds := make([]string, len(ownerIdMaps))
+
+	i := 0
+	for k := range ownerIdMaps {
+		ownerIds[i] = k
+		i++
+	}
+
+	return &ThingsForUserSummary{
+		OwnerIds:   ownerIds,
+		TotalCount: len(things),
+	}, nil
+}
+
 type GetThingsForUserParams struct {
-	UserId   string
-	PerPage  uint64
-	Page     uint64
-	Paginate bool
+	UserId         string
+	PerPage        uint64
+	Page           uint64
+	Paginate       bool
+	FilterOwnerIds []string
 }
 
 func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsForUserParams) (uint64, uint64, models.ThingSlice, error) {
-	userId, perPage, page, paginate := params.UserId, params.PerPage, params.Page, params.Paginate
+	userId, perPage, page, paginate, filterUserIds := params.UserId, params.PerPage, params.Page, params.Paginate, params.FilterOwnerIds
 
 	tx, err := ts.db.BeginTx(ctx, &sql.TxOptions{
 		ReadOnly: true,
@@ -274,6 +327,14 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 		models.ThingWhere.OwnerID.EQ(userId),
 		qm.OrIn("id in ?", interfaceIds...),
 	)
+
+	if len(filterUserIds) > 0 {
+		filterUserInterfaceIds := make([]interface{}, len(filterUserIds))
+		for i, u := range filterUserIds {
+			filterUserInterfaceIds[i] = u
+		}
+		searchCond = qm.Expr(searchCond, qm.AndIn("owner_id in ?", filterUserInterfaceIds...))
+	}
 
 	thingCount, err := models.Things(searchCond).Count(ctx, tx)
 	if err != nil {
