@@ -145,31 +145,33 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 }
 
 func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string) (*os.File, *models.Image, error) {
-	image, err := models.Images(models.ImageWhere.Hash.EQ(hash),
+	images, err := models.Images(models.ImageWhere.Hash.EQ(hash),
 		qm.Load(models.ImageRels.Profiles),
-	).One(ctx, is.db)
+	).All(ctx, is.db)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil, utils.NotFoundError{EntityName: "Image"}
-		}
 		return nil, nil, err
+	}
+	if len(images) == 0 {
+		return nil, nil, utils.NotFoundError{EntityName: "Image"}
 	}
 	sharedImagesForUser, err := operations.GetSharedImageIdsForUser(ctx, is.db, userId)
 	if err != nil {
 		return nil, nil, err
 	}
 	authorized := func() bool {
-		for _, id := range sharedImagesForUser {
-			if id == image.ID {
+		for _, image := range images {
+			for _, id := range sharedImagesForUser {
+				if id == image.ID {
+					return true
+				}
+			}
+			if userId == image.OwnerID {
 				return true
 			}
-		}
-		if userId == image.OwnerID {
-			return true
-		}
-		// it's used as a profile picture
-		if len(image.R.Profiles) > 0 {
-			return true
+			// it's used as a profile picture
+			if len(image.R.Profiles) > 0 {
+				return true
+			}
 		}
 		return false
 	}()
@@ -177,13 +179,13 @@ func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string
 		return nil, nil, utils.UserHasNoAccessRightsError{}
 	}
 
-	path := filepath.Join(is.storePath, image.Hash)
+	path := filepath.Join(is.storePath, images[0].Hash)
 
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, nil, err
 	}
-	return file, image, nil
+	return file, images[0], nil
 }
 
 func (is *ImageService) ImageIndex(ctx context.Context, userId string, perPage uint64, page uint64) (uint64, uint64, models.ImageSlice, error) {

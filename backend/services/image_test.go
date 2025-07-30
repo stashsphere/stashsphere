@@ -143,6 +143,14 @@ func TestImageAccessSharedThing(t *testing.T) {
 	assert.NotNil(t, share)
 	_, _, err = imageService.ImageGet(context.Background(), bob.ID, pngImage.Hash)
 	assert.Nil(t, err, "bob has access through thing share")
+
+	// duplicated hash not assigned and shared with bob, make sure this does not result in
+	// errors
+	pngFile2, err := testcommon.Assets.Open("assets/test.png")
+	_, err = imageService.CreateImage(context.Background(), alice.ID, "test.png", pngFile2)
+	assert.NoError(t, err)
+	_, _, err = imageService.ImageGet(context.Background(), bob.ID, pngImage.Hash)
+	assert.Nil(t, err, "bob has access through thing share")
 }
 
 func TestDeleteImage(t *testing.T) {
