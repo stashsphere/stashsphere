@@ -4,6 +4,7 @@ import { Icon } from './shared';
 import { createImage } from '../api/image';
 import { AxiosContext } from '../context/axios';
 import { ReducedImage } from '../api/resources';
+import { Pages } from './pages';
 
 type ImageUploaderProps = {
   onUpload: (images: ReducedImage[]) => void;
@@ -12,15 +13,30 @@ type ImageUploaderProps = {
 export const ImageUploader = ({ onUpload }: ImageUploaderProps) => {
   const [files, setFiles] = useState<File[]>([]);
   const axiosInstance = useContext(AxiosContext);
+  const [page, setPage] = useState(0);
+  const imagesPerPage = 8;
 
   const previewUrls = useMemo(() => {
-    const urls = [];
-
-    for (const file of files) {
-      urls.push(URL.createObjectURL(file));
+    const maxPage = Math.ceil(files.length / imagesPerPage);
+    let lpage = page;
+    if (page >= maxPage) {
+      lpage = Math.max(maxPage - 1, 0);
+      setPage(lpage);
     }
+
+    const urls = files
+      .map((file, idx) => {
+        return { file, idx };
+      })
+      .slice(lpage * imagesPerPage, (lpage + 1) * imagesPerPage)
+      .map((value) => {
+        return {
+          url: URL.createObjectURL(value.file),
+          idx: value.idx,
+        };
+      });
     return urls;
-  }, [files]);
+  }, [files, page]);
 
   const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const v = [];
@@ -61,7 +77,7 @@ export const ImageUploader = ({ onUpload }: ImageUploaderProps) => {
       <h2 className="text-xl font-bold mb-4 text-onneutral">Image Uploader</h2>
       <div className="mb-4">
         <div className="flex flex-wrap gap-4">
-          {previewUrls.map((url, idx) => (
+          {previewUrls.map(({ url, idx }) => (
             <div key={url}>
               <div className="flex items-center gap-4 mb-2 flex-col">
                 <div className="flex w-60 h-60 items-center justify-center rounded-md">
@@ -83,6 +99,15 @@ export const ImageUploader = ({ onUpload }: ImageUploaderProps) => {
           multiple
           hidden
         />
+        <div>
+          {(page !== 0 || files.length > imagesPerPage) && (
+            <Pages
+              currentPage={page}
+              onPageChange={(n) => setPage(n)}
+              pages={Math.ceil(files.length / imagesPerPage)}
+            />
+          )}
+        </div>
         <div className="flex flex-row gap-4">
           <PrimaryButton onClick={() => inputRef.current?.click()}>Browse</PrimaryButton>
           <PrimaryButton onClick={onUploadClick} disabled={files.length === 0 ? true : false}>

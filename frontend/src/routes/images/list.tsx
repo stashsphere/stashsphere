@@ -46,13 +46,15 @@ export const Images = () => {
   }
   return (
     <>
+      <div className="mb-2">
+        {showUploader ? (
+          <PrimaryButton onClick={() => setShowUploader(false)}>Hide browser</PrimaryButton>
+        ) : (
+          <PrimaryButton onClick={() => setShowUploader(true)}>Upload more images</PrimaryButton>
+        )}
+      </div>
       {showUploader ? (
-        <PrimaryButton onClick={() => setShowUploader(false)}>Hide browser</PrimaryButton>
-      ) : (
-        <PrimaryButton onClick={() => setShowUploader(true)}>Upload more images</PrimaryButton>
-      )}
-      {showUploader ? (
-        <div className="mt-2">
+        <div className="my-2">
           <ImageUploader onUpload={onUpload} />
         </div>
       ) : null}
