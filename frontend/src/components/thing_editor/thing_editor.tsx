@@ -164,6 +164,32 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
     setImages([...images]);
   };
 
+  const moveLeft = (idx: number) => {
+    if (idx == 0) {
+      return;
+    }
+    if (idx > images.length) {
+      return;
+    }
+    const tmp = images[idx - 1];
+    images[idx - 1] = images[idx];
+    images[idx] = tmp;
+    setImages([...images]);
+  };
+
+  const moveRight = (idx: number) => {
+    if (idx < 0) {
+      return;
+    }
+    if (idx + 1 >= images.length) {
+      return;
+    }
+    const tmp = images[idx + 1];
+    images[idx + 1] = images[idx];
+    images[idx] = tmp;
+    setImages([...images]);
+  };
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -175,7 +201,7 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
           <div className="mb-6">
             <Headline type="h2">Images</Headline>
             {images.length > 0 ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 mb-4">
+              <div className="grid grid-cols-3 gap-2 mb-4">
                 {previewUrls.map((url, idx) => (
                   <div key={url} className="relative group">
                     <div className="aspect-square relative overflow-hidden rounded-sm border border-gray-300">
@@ -184,24 +210,42 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
                         src={url}
                         alt="Preview"
                       />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1">
+                      <div className="absolute bg-black/50 flex items-center justify-center gap-1 h-10 bottom-0 w-full">
+                        <button
+                          onClick={() => moveLeft(idx)}
+                          className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors flex"
+                        >
+                          <Icon
+                            icon="mdi--arrow-left-circle-outline"
+                            className="text-white text-xs"
+                          />
+                        </button>
                         <button
                           onClick={() => rotateLeft(idx)}
-                          className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
+                          className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors flex"
                         >
                           <Icon icon="mdi--rotate-left" className="text-white text-xs" />
                         </button>
                         <button
                           onClick={() => removeFile(idx)}
-                          className="p-1 bg-red-500/80 rounded-full hover:bg-red-500 transition-colors"
+                          className="p-1 bg-red-500/80 rounded-full hover:bg-red-500 transition-colors flex"
                         >
                           <Icon icon="mdi--trash" className="text-white text-xs" />
                         </button>
                         <button
                           onClick={() => rotateRight(idx)}
-                          className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
+                          className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors flex"
                         >
                           <Icon icon="mdi--rotate-right" className="text-white text-xs" />
+                        </button>
+                        <button
+                          onClick={() => moveRight(idx)}
+                          className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors flex"
+                        >
+                          <Icon
+                            icon="mdi--arrow-right-circle-outline"
+                            className="text-white text-xs"
+                          />
                         </button>
                       </div>
                     </div>
