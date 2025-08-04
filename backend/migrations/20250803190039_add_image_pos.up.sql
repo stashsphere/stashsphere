@@ -1,0 +1,1 @@
+ALTER TABLE images_things ADD COLUMN pos integer NOT NULL DEFAULT 0;

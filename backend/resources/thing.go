@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"sort"
 	"time"
 
 	"github.com/stashsphere/backend/models"
@@ -60,6 +61,18 @@ func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string) 
 		sharingState = &sharingStateString
 	}
 
+	imageThings := make([]models.ImagesThing, len(thing.R.ImagesThings))
+	for i, imageThing := range thing.R.ImagesThings {
+		imageThings[i] = *imageThing
+	}
+	sort.Slice(imageThings, func(i, j int) bool {
+		return imageThings[i].Pos < imageThings[j].Pos
+	})
+	images := make([]models.Image, len(imageThings))
+	for i, imageThing := range imageThings {
+		images[i] = *imageThing.R.Image
+	}
+
 	return &Thing{
 		ID:           thing.ID,
 		Name:         thing.Name,
@@ -68,7 +81,7 @@ func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string) 
 		CreatedAt:    thing.CreatedAt,
 		Owner:        UserFromModel(thing.R.Owner),
 		Lists:        filteredLists,
-		Images:       ReducedImagesFromModelSlice(thing.R.Images),
+		Images:       ReducedImagesFromModel(images),
 		Properties:   PropertiesFromModelSlice(thing.R.Properties),
 		Shares:       shares,
 		SharingState: sharingState,
@@ -124,10 +137,18 @@ func ReducedThingFromModel(thing *models.Thing, userId string) *ReducedThing {
 	}
 }
 
-func ReducedThingsFromModel(things models.ThingSlice, userId string) []ReducedThing {
+func ReducedThingsFromModelSlice(things models.ThingSlice, userId string) []ReducedThing {
 	reducedThings := make([]ReducedThing, len(things))
 	for i, thing := range things {
 		reducedThings[i] = *ReducedThingFromModel(thing, userId)
+	}
+	return reducedThings
+}
+
+func ReducedThingsFromModel(things []models.Thing, userId string) []ReducedThing {
+	reducedThings := make([]ReducedThing, len(things))
+	for i, thing := range things {
+		reducedThings[i] = *ReducedThingFromModel(&thing, userId)
 	}
 	return reducedThings
 }

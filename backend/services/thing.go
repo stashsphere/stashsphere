@@ -96,8 +96,16 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 		if err != nil {
 			return err
 		}
-		// TODO make sure the image belongs to the owner of the thing
-		err = thing.AddImages(ctx, tx, false, images...)
+
+		imageThings := make([]*models.ImagesThing, len(images))
+		for i, image := range images {
+			imageThings[i] = &models.ImagesThing{
+				Pos:     i,
+				ImageID: image.ID,
+			}
+		}
+
+		err = thing.AddImagesThings(ctx, tx, true, imageThings...)
 		if err != nil {
 			return err
 		}
@@ -156,7 +164,7 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 	err := utils.Tx(ctx, ts.db, func(tx *sql.Tx) error {
 		thing, err := models.Things(
 			qm.Load(models.ThingRels.Properties),
-			qm.Load(models.ThingRels.Images),
+			qm.Load(models.ThingRels.ImagesThings),
 			qm.Load(models.ThingRels.QuantityEntries),
 			models.ThingWhere.ID.EQ(thingId),
 		).One(ctx, tx)
@@ -223,12 +231,20 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 			return err
 		}
 
-		images, err := models.Images(models.ImageWhere.ID.IN(params.ImagesIds)).All(ctx, tx)
+		_, err = thing.R.ImagesThings.DeleteAll(ctx, tx)
 		if err != nil {
 			return err
 		}
 
-		err = thing.SetImages(ctx, tx, false, images...)
+		imageThings := make([]*models.ImagesThing, len(params.ImagesIds))
+		for i, imageId := range params.ImagesIds {
+			imageThings[i] = &models.ImagesThing{
+				Pos:     i,
+				ImageID: imageId,
+			}
+		}
+
+		err = thing.AddImagesThings(ctx, tx, true, imageThings...)
 		if err != nil {
 			return err
 		}
@@ -353,7 +369,7 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 		qm.Load(models.ThingRels.Owner),
 		qm.Load(qm.Rels(models.ThingRels.Shares, models.ShareRels.Owner)),
 		qm.Load(qm.Rels(models.ThingRels.Shares, models.ShareRels.TargetUser)),
-		qm.Load(models.ThingRels.Images),
+		qm.Load(qm.Rels(models.ThingRels.ImagesThings, models.ImagesThingRels.Image)),
 		searchCond,
 		sortCond,
 	)
@@ -394,17 +410,17 @@ func (ts *ThingService) DeleteThing(ctx context.Context, thingId string, userId 
 			return err
 		}
 
+		_, err = thing.R.ImagesThings.DeleteAll(ctx, tx)
+		if err != nil {
+			return err
+		}
+
 		err = thing.RemoveShares(ctx, tx, thing.R.Shares...)
 		if err != nil {
 			return err
 		}
 
 		err = thing.RemoveLists(ctx, tx, thing.R.Lists...)
-		if err != nil {
-			return err
-		}
-
-		err = thing.RemoveImages(ctx, tx, thing.R.Images...)
 		if err != nil {
 			return err
 		}

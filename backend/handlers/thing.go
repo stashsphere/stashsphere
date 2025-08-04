@@ -252,11 +252,10 @@ func (th *ThingHandler) ThingHandlerPatch(c echo.Context) error {
 	if err := c.Validate(thingParams); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	thing, err := th.thing_service.EditThing(c.Request().Context(), thingId, authCtx.User.ID, UpdateThingParamsToUpdateThingParams(thingParams))
+	_, err := th.thing_service.EditThing(c.Request().Context(), thingId, authCtx.User.ID, UpdateThingParamsToUpdateThingParams(thingParams))
 	if err != nil {
 		return err
 	}
-	c.Logger().Infof("Thing edited: %v", thing.ID)
 	updated_thing, err := th.thing_service.GetThing(c.Request().Context(), thingId, authCtx.User.ID)
 	if err != nil {
 		return err

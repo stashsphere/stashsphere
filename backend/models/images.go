@@ -86,20 +86,20 @@ var ImageWhere = struct {
 
 // ImageRels is where relationship names are stored.
 var ImageRels = struct {
-	Owner    string
-	Things   string
-	Profiles string
+	Owner        string
+	ImagesThings string
+	Profiles     string
 }{
-	Owner:    "Owner",
-	Things:   "Things",
-	Profiles: "Profiles",
+	Owner:        "Owner",
+	ImagesThings: "ImagesThings",
+	Profiles:     "Profiles",
 }
 
 // imageR is where relationships are stored.
 type imageR struct {
-	Owner    *User        `boil:"Owner" json:"Owner" toml:"Owner" yaml:"Owner"`
-	Things   ThingSlice   `boil:"Things" json:"Things" toml:"Things" yaml:"Things"`
-	Profiles ProfileSlice `boil:"Profiles" json:"Profiles" toml:"Profiles" yaml:"Profiles"`
+	Owner        *User            `boil:"Owner" json:"Owner" toml:"Owner" yaml:"Owner"`
+	ImagesThings ImagesThingSlice `boil:"ImagesThings" json:"ImagesThings" toml:"ImagesThings" yaml:"ImagesThings"`
+	Profiles     ProfileSlice     `boil:"Profiles" json:"Profiles" toml:"Profiles" yaml:"Profiles"`
 }
 
 // NewStruct creates a new relationship struct
@@ -114,11 +114,11 @@ func (r *imageR) GetOwner() *User {
 	return r.Owner
 }
 
-func (r *imageR) GetThings() ThingSlice {
+func (r *imageR) GetImagesThings() ImagesThingSlice {
 	if r == nil {
 		return nil
 	}
-	return r.Things
+	return r.ImagesThings
 }
 
 func (r *imageR) GetProfiles() ProfileSlice {
@@ -455,19 +455,18 @@ func (o *Image) Owner(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
-// Things retrieves all the thing's Things with an executor.
-func (o *Image) Things(mods ...qm.QueryMod) thingQuery {
+// ImagesThings retrieves all the images_thing's ImagesThings with an executor.
+func (o *Image) ImagesThings(mods ...qm.QueryMod) imagesThingQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
 	}
 
 	queryMods = append(queryMods,
-		qm.InnerJoin("\"images_things\" on \"things\".\"id\" = \"images_things\".\"thing_id\""),
 		qm.Where("\"images_things\".\"image_id\"=?", o.ID),
 	)
 
-	return Things(queryMods...)
+	return ImagesThings(queryMods...)
 }
 
 // Profiles retrieves all the profile's Profiles with an executor.
@@ -604,9 +603,9 @@ func (imageL) LoadOwner(ctx context.Context, e boil.ContextExecutor, singular bo
 	return nil
 }
 
-// LoadThings allows an eager lookup of values, cached into the
+// LoadImagesThings allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (imageL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular bool, maybeImage interface{}, mods queries.Applicator) error {
+func (imageL) LoadImagesThings(ctx context.Context, e boil.ContextExecutor, singular bool, maybeImage interface{}, mods queries.Applicator) error {
 	var slice []*Image
 	var object *Image
 
@@ -659,10 +658,8 @@ func (imageL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular b
 	}
 
 	query := NewQuery(
-		qm.Select("\"things\".\"id\", \"things\".\"name\", \"things\".\"created_at\", \"things\".\"owner_id\", \"things\".\"description\", \"things\".\"private_note\", \"things\".\"quantity_unit\", \"things\".\"sharing_state\", \"a\".\"image_id\""),
-		qm.From("\"things\""),
-		qm.InnerJoin("\"images_things\" as \"a\" on \"things\".\"id\" = \"a\".\"thing_id\""),
-		qm.WhereIn("\"a\".\"image_id\" in ?", argsSlice...),
+		qm.From(`images_things`),
+		qm.WhereIn(`images_things.image_id in ?`, argsSlice...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -670,36 +667,22 @@ func (imageL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular b
 
 	results, err := query.QueryContext(ctx, e)
 	if err != nil {
-		return errors.Wrap(err, "failed to eager load things")
+		return errors.Wrap(err, "failed to eager load images_things")
 	}
 
-	var resultSlice []*Thing
-
-	var localJoinCols []string
-	for results.Next() {
-		one := new(Thing)
-		var localJoinCol string
-
-		err = results.Scan(&one.ID, &one.Name, &one.CreatedAt, &one.OwnerID, &one.Description, &one.PrivateNote, &one.QuantityUnit, &one.SharingState, &localJoinCol)
-		if err != nil {
-			return errors.Wrap(err, "failed to scan eager loaded results for things")
-		}
-		if err = results.Err(); err != nil {
-			return errors.Wrap(err, "failed to plebian-bind eager loaded slice things")
-		}
-
-		resultSlice = append(resultSlice, one)
-		localJoinCols = append(localJoinCols, localJoinCol)
+	var resultSlice []*ImagesThing
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice images_things")
 	}
 
 	if err = results.Close(); err != nil {
-		return errors.Wrap(err, "failed to close results in eager load on things")
+		return errors.Wrap(err, "failed to close results in eager load on images_things")
 	}
 	if err = results.Err(); err != nil {
-		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for things")
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for images_things")
 	}
 
-	if len(thingAfterSelectHooks) != 0 {
+	if len(imagesThingAfterSelectHooks) != 0 {
 		for _, obj := range resultSlice {
 			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
 				return err
@@ -707,25 +690,24 @@ func (imageL) LoadThings(ctx context.Context, e boil.ContextExecutor, singular b
 		}
 	}
 	if singular {
-		object.R.Things = resultSlice
+		object.R.ImagesThings = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
-				foreign.R = &thingR{}
+				foreign.R = &imagesThingR{}
 			}
-			foreign.R.Images = append(foreign.R.Images, object)
+			foreign.R.Image = object
 		}
 		return nil
 	}
 
-	for i, foreign := range resultSlice {
-		localJoinCol := localJoinCols[i]
+	for _, foreign := range resultSlice {
 		for _, local := range slice {
-			if local.ID == localJoinCol {
-				local.R.Things = append(local.R.Things, foreign)
+			if local.ID == foreign.ImageID {
+				local.R.ImagesThings = append(local.R.ImagesThings, foreign)
 				if foreign.R == nil {
-					foreign.R = &thingR{}
+					foreign.R = &imagesThingR{}
 				}
-				foreign.R.Images = append(foreign.R.Images, local)
+				foreign.R.Image = local
 				break
 			}
 		}
@@ -894,149 +876,57 @@ func (o *Image) SetOwner(ctx context.Context, exec boil.ContextExecutor, insert 
 	return nil
 }
 
-// AddThings adds the given related objects to the existing relationships
+// AddImagesThings adds the given related objects to the existing relationships
 // of the image, optionally inserting them as new records.
-// Appends related to o.R.Things.
-// Sets related.R.Images appropriately.
-func (o *Image) AddThings(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Thing) error {
+// Appends related to o.R.ImagesThings.
+// Sets related.R.Image appropriately.
+func (o *Image) AddImagesThings(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*ImagesThing) error {
 	var err error
 	for _, rel := range related {
 		if insert {
+			rel.ImageID = o.ID
 			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
 				return errors.Wrap(err, "failed to insert into foreign table")
 			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"images_things\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"image_id"}),
+				strmangle.WhereClause("\"", "\"", 2, imagesThingPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ThingID, rel.ImageID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.ImageID = o.ID
 		}
 	}
 
-	for _, rel := range related {
-		query := "insert into \"images_things\" (\"image_id\", \"thing_id\") values ($1, $2)"
-		values := []interface{}{o.ID, rel.ID}
-
-		if boil.IsDebug(ctx) {
-			writer := boil.DebugWriterFrom(ctx)
-			fmt.Fprintln(writer, query)
-			fmt.Fprintln(writer, values)
-		}
-		_, err = exec.ExecContext(ctx, query, values...)
-		if err != nil {
-			return errors.Wrap(err, "failed to insert into join table")
-		}
-	}
 	if o.R == nil {
 		o.R = &imageR{
-			Things: related,
+			ImagesThings: related,
 		}
 	} else {
-		o.R.Things = append(o.R.Things, related...)
+		o.R.ImagesThings = append(o.R.ImagesThings, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
-			rel.R = &thingR{
-				Images: ImageSlice{o},
+			rel.R = &imagesThingR{
+				Image: o,
 			}
 		} else {
-			rel.R.Images = append(rel.R.Images, o)
+			rel.R.Image = o
 		}
 	}
 	return nil
-}
-
-// SetThings removes all previously related items of the
-// image replacing them completely with the passed
-// in related items, optionally inserting them as new records.
-// Sets o.R.Images's Things accordingly.
-// Replaces o.R.Things with related.
-// Sets related.R.Images's Things accordingly.
-func (o *Image) SetThings(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Thing) error {
-	query := "delete from \"images_things\" where \"image_id\" = $1"
-	values := []interface{}{o.ID}
-	if boil.IsDebug(ctx) {
-		writer := boil.DebugWriterFrom(ctx)
-		fmt.Fprintln(writer, query)
-		fmt.Fprintln(writer, values)
-	}
-	_, err := exec.ExecContext(ctx, query, values...)
-	if err != nil {
-		return errors.Wrap(err, "failed to remove relationships before set")
-	}
-
-	removeThingsFromImagesSlice(o, related)
-	if o.R != nil {
-		o.R.Things = nil
-	}
-
-	return o.AddThings(ctx, exec, insert, related...)
-}
-
-// RemoveThings relationships from objects passed in.
-// Removes related items from R.Things (uses pointer comparison, removal does not keep order)
-// Sets related.R.Images.
-func (o *Image) RemoveThings(ctx context.Context, exec boil.ContextExecutor, related ...*Thing) error {
-	if len(related) == 0 {
-		return nil
-	}
-
-	var err error
-	query := fmt.Sprintf(
-		"delete from \"images_things\" where \"image_id\" = $1 and \"thing_id\" in (%s)",
-		strmangle.Placeholders(dialect.UseIndexPlaceholders, len(related), 2, 1),
-	)
-	values := []interface{}{o.ID}
-	for _, rel := range related {
-		values = append(values, rel.ID)
-	}
-
-	if boil.IsDebug(ctx) {
-		writer := boil.DebugWriterFrom(ctx)
-		fmt.Fprintln(writer, query)
-		fmt.Fprintln(writer, values)
-	}
-	_, err = exec.ExecContext(ctx, query, values...)
-	if err != nil {
-		return errors.Wrap(err, "failed to remove relationships before set")
-	}
-	removeThingsFromImagesSlice(o, related)
-	if o.R == nil {
-		return nil
-	}
-
-	for _, rel := range related {
-		for i, ri := range o.R.Things {
-			if rel != ri {
-				continue
-			}
-
-			ln := len(o.R.Things)
-			if ln > 1 && i < ln-1 {
-				o.R.Things[i] = o.R.Things[ln-1]
-			}
-			o.R.Things = o.R.Things[:ln-1]
-			break
-		}
-	}
-
-	return nil
-}
-
-func removeThingsFromImagesSlice(o *Image, related []*Thing) {
-	for _, rel := range related {
-		if rel.R == nil {
-			continue
-		}
-		for i, ri := range rel.R.Images {
-			if o.ID != ri.ID {
-				continue
-			}
-
-			ln := len(rel.R.Images)
-			if ln > 1 && i < ln-1 {
-				rel.R.Images[i] = rel.R.Images[ln-1]
-			}
-			rel.R.Images = rel.R.Images[:ln-1]
-			break
-		}
-	}
 }
 
 // AddProfiles adds the given related objects to the existing relationships

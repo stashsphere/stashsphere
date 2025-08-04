@@ -25,6 +25,14 @@ func ReducedImageFromModel(image *models.Image) ReducedImage {
 	}
 }
 
+func ReducedImagesFromModel(images []models.Image) []ReducedImage {
+	res := make([]ReducedImage, len(images))
+	for idx, image := range images {
+		res[idx] = ReducedImageFromModel(&image)
+	}
+	return res
+}
+
 func ReducedImagesFromModelSlice(images models.ImageSlice) []ReducedImage {
 	res := make([]ReducedImage, len(images))
 	for idx, image := range images {
@@ -49,7 +57,12 @@ type Image struct {
 }
 
 func ImageFromModel(image *models.Image, userId string) Image {
-	canDelete := userId == image.OwnerID && len(image.R.Things) == 0 && len(image.R.Profiles) == 0
+	canDelete := userId == image.OwnerID && len(image.R.ImagesThings) == 0 && len(image.R.Profiles) == 0
+
+	things := make([]models.Thing, len(image.R.ImagesThings))
+	for i, thing := range image.R.ImagesThings {
+		things[i] = *thing.R.Thing
+	}
 
 	return Image{
 		ID:        image.ID,
@@ -58,7 +71,7 @@ func ImageFromModel(image *models.Image, userId string) Image {
 		CreatedAt: image.CreatedAt,
 		Owner:     UserFromModel(image.R.Owner),
 		Hash:      image.Hash,
-		Things:    ReducedThingsFromModel(image.R.Things, userId),
+		Things:    ReducedThingsFromModel(things, userId),
 		Actions: ImageActions{
 			CanDelete: canDelete,
 		},
