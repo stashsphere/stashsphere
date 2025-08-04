@@ -1,5 +1,5 @@
 import { useContext, useState } from 'react';
-import { createImage } from '../../api/image';
+import { createImage, modifyImage } from '../../api/image';
 import { ThingEditor, ThingEditorData } from '../../components/thing_editor';
 import { AxiosContext } from '../../context/axios';
 import { createThing } from '../../api/things';
@@ -19,14 +19,19 @@ export const CreateThing = () => {
     if (!editedData) {
       return;
     }
-    const images_ids = [];
-
+    const images = [];
     for (const file of editedData.images) {
       if (file.type === 'url') {
-        images_ids.push(file.image.id);
+        images.push({ id: file.image.id, rotation: file.rotation });
       } else {
         const image = await createImage(axiosInstance, file.file);
-        images_ids.push(image.id);
+        images.push({ id: image.id, rotation: file.rotation });
+      }
+    }
+
+    for (const image of images) {
+      if (image.rotation !== 0) {
+        await modifyImage(axiosInstance, image.id, image.rotation);
       }
     }
 
@@ -34,7 +39,7 @@ export const CreateThing = () => {
       name: editedData.name,
       privateNote: editedData.privateNote,
       description: editedData.description,
-      imagesIds: images_ids,
+      imagesIds: images.map((x) => x.id),
       properties: editedData.properties,
       quantity: editedData.quantity,
       quantityUnit: editedData.quantityUnit,
