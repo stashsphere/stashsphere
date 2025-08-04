@@ -1,6 +1,5 @@
-import { useMemo } from 'react';
 import { Image } from '../../api/resources';
-import { AccentButton, DangerButton, PrimaryButton } from '../shared';
+import { AccentButton, DangerButton, NeutralButton } from '../shared';
 import { ImageComponent } from '../shared';
 
 type InterActionProps = {
@@ -19,35 +18,13 @@ export const ImageGridTile = ({
   onSelect,
   selected,
 }: ImageGridTileProps) => {
-  const usedText = useMemo(() => {
-    switch (image.things.length) {
-      case 0:
-        return 'Used by no things';
-      case 1:
-        return 'Used by one thing';
-      case 2:
-        return 'Used by two things';
-      default:
-        return `Used by ${image.things.length} things`;
-    }
-  }, [image]);
-
   return (
     <div className="relative group bg-white rounded-sm overflow-hidden border border-gray-200 hover:border-gray-300 transition-colors">
       <div className="aspect-square">
-        <ImageComponent
-          defaultWidth={150}
-          image={image}
-          className="w-full h-full object-scale-down"
-        />
+        <ImageComponent defaultWidth={400} image={image} className="w-full h-full object-contain" />
       </div>
 
-      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-1">
-        <div className="text-white text-xs mb-1">
-          <div className="font-medium truncate text-xs">{image.name}</div>
-          <div className="opacity-75 text-xs">{usedText}</div>
-        </div>
-
+      <div className="absolute bg-black/50 flex items-center justify-center gap-1 h-10 bottom-0 w-full flex flex-col">
         <div className="flex gap-1">
           {onSelect !== undefined &&
             selected !== undefined &&
@@ -59,12 +36,14 @@ export const ImageGridTile = ({
                 ✓
               </AccentButton>
             ) : (
-              <PrimaryButton
-                onClick={() => onSelect(image.id, true)}
+              <NeutralButton
+                onClick={() => {
+                  return onSelect(image.id, true);
+                }}
                 className="text-xs py-0.5 px-1 flex-1 min-h-0 h-auto"
               >
                 +
-              </PrimaryButton>
+              </NeutralButton>
             ))}
           {onDelete && 'actions' in image && image.actions.canDelete && (
             <DangerButton
