@@ -10,9 +10,9 @@ import (
 )
 
 type UserContext struct {
-	ID    string
-	Email string
-	Name  string
+	UserId string
+	Email  string
+	Name   string
 }
 
 type AuthContext struct {
@@ -35,16 +35,16 @@ func ExtractClaims(tokenContextKey string) echo.MiddlewareFunc {
 				c.Set("auth", &anonymousContext)
 				return next(c)
 			}
-			claims, ok := token.Claims.(*operations.ApplicationClaims)
+			claims, ok := token.Claims.(*operations.AccessClaims)
 			if !ok {
 				return errors.New("failed to cast claims as ApplicationClaims")
 			}
 			authenticatedContext := AuthContext{
 				Authenticated: true,
 				User: &UserContext{
-					ID:    claims.ID,
-					Email: claims.Email,
-					Name:  claims.Name,
+					UserId: claims.UserId,
+					Email:  claims.Email,
+					Name:   claims.Name,
 				},
 				AccessToken: token,
 			}

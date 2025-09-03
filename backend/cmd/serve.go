@@ -137,7 +137,7 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 		}
 		return name
 	})
-	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, config.Domains.ApiDomain)
+	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, 24*7*time.Hour, config.Domains.ApiDomain)
 	userService := services.NewUserService(db, config.Invites.Enabled, config.Invites.InviteCode)
 
 	emailService := services.NewEmailService(config.Email)
@@ -184,7 +184,7 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 		},
 		ContinueOnIgnoredError: true,
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return &operations.ApplicationClaims{}
+			return &operations.AccessClaims{}
 		},
 		ContextKey: "token",
 	}))
@@ -209,6 +209,7 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 	a := e.Group("/api")
 	userGroup := a.Group("/user")
 	userGroup.POST("/login", loginHandler.LoginHandlerPost)
+	userGroup.POST("/refresh", loginHandler.LoginHandlerRefreshPost)
 	userGroup.DELETE("/logout", loginHandler.LogoutHandlerDelete)
 	userGroup.POST("/register", registerHandler.RegisterHandlerPost)
 	userGroup.GET("/profile", profileHandler.ProfileHandlerGet)

@@ -48,11 +48,11 @@ func (sh *ShareHandler) ShareHandlerPost(c echo.Context) error {
 	if err := c.Validate(shareParams); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	share, err := sh.share_service.CreateShare(c.Request().Context(), *NewShareParamsToCreateShareParams(shareParams, authCtx.User.ID))
+	share, err := sh.share_service.CreateShare(c.Request().Context(), *NewShareParamsToCreateShareParams(shareParams, authCtx.User.UserId))
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusCreated, resources.ShareFromModel(share, authCtx.User.ID))
+	return c.JSON(http.StatusCreated, resources.ShareFromModel(share, authCtx.User.UserId))
 }
 
 func (sh *ShareHandler) ShareHandlerGet(c echo.Context) error {
@@ -64,11 +64,11 @@ func (sh *ShareHandler) ShareHandlerGet(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	shareId := c.Param("shareId")
-	share, err := sh.share_service.GetShare(c.Request().Context(), shareId, authCtx.User.ID)
+	share, err := sh.share_service.GetShare(c.Request().Context(), shareId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ShareFromModel(share, authCtx.User.ID))
+	return c.JSON(http.StatusOK, resources.ShareFromModel(share, authCtx.User.UserId))
 }
 
 func (sh *ShareHandler) ShareHandlerDelete(c echo.Context) error {
@@ -80,7 +80,7 @@ func (sh *ShareHandler) ShareHandlerDelete(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	shareId := c.Param("shareId")
-	err := sh.share_service.DeleteShare(c.Request().Context(), shareId, authCtx.User.ID)
+	err := sh.share_service.DeleteShare(c.Request().Context(), shareId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}

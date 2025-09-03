@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/stashsphere/backend/middleware"
 	"github.com/stashsphere/backend/services"
 	"github.com/stashsphere/backend/utils"
 )
@@ -29,22 +28,30 @@ func (lh *LoginHandler) LoginHandlerPost(c echo.Context) error {
 	if err := c.Bind(&loginParams); err != nil {
 		return utils.ParameterError{Err: err}
 	}
-	_, accessToken, infoToken, err := lh.authService.AuthorizeUser(c.Request().Context(), loginParams.Email, loginParams.Password)
+	_, accessToken, infoToken, refreshToken, refreshInfoToken, err := lh.authService.AuthorizeUser(c.Request().Context(), loginParams.Email, loginParams.Password)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 	}
-	lh.authService.SetAuthCookies(c, accessToken, infoToken)
+	lh.authService.SetAuthCookies(c, accessToken, infoToken, refreshToken, refreshInfoToken)
 	return nil
 }
 
 func (lh *LoginHandler) LogoutHandlerDelete(c echo.Context) error {
-	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
-	if !ok {
-		return utils.NoAuthContextError{}
-	}
-	if !authCtx.Authenticated {
+	lh.authService.ClearAuthCookies(c)
+	return nil
+}
+
+func (lh *LoginHandler) LoginHandlerRefreshPost(c echo.Context) error {
+	// extract the refresh cookie
+	refreshCookie, err := c.Cookie("stashsphere-refresh")
+	if err != nil || refreshCookie == nil {
 		return utils.NotAuthenticatedError{}
 	}
-	lh.authService.ClearAuthCookies(c)
+	_, accessToken, infoToken, refreshToken, refreshInfoToken, err := lh.authService.AuthorizeUserWithRefreshToken(c.Request().Context(), refreshCookie.Value)
+	if err != nil {
+		c.Logger().Error("Unable to refresh token:", err)
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	}
+	lh.authService.SetAuthCookies(c, accessToken, infoToken, refreshToken, refreshInfoToken)
 	return nil
 }

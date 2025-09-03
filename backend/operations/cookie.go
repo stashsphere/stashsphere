@@ -33,3 +33,31 @@ func SetInfoTokenCookie(c echo.Context, domain string, infoToken string, maxAge 
 	}
 	c.SetCookie(&cookie)
 }
+
+func SetRefreshTokenCookie(c echo.Context, domain string, refreshToken string, maxAge int, secure bool) {
+	cookie := http.Cookie{
+		Name:     "stashsphere-refresh",
+		Value:    refreshToken,
+		Path:     "/api/user/refresh",
+		Domain:   domain,
+		Secure:   secure,
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	}
+	c.SetCookie(&cookie)
+}
+
+func SetRefreshIntoTokenCookie(c echo.Context, domain string, refreshToken string, maxAge int, secure bool) {
+	cookie := http.Cookie{
+		Name:     "stashsphere-refresh-info",
+		Value:    refreshToken,
+		Path:     "/api/user/refresh",
+		Domain:   domain,
+		Secure:   secure,
+		MaxAge:   maxAge,
+		HttpOnly: false,
+		SameSite: http.SameSiteStrictMode,
+	}
+	c.SetCookie(&cookie)
+}

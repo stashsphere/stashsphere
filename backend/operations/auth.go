@@ -25,25 +25,24 @@ func AuthenticateUser(db *sql.DB, ctx context.Context, email string, password st
 	return user, nil
 }
 
-type ApplicationClaims struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
+type AccessClaims struct {
+	UserId string `json:"userId"`
+	Email  string `json:"email"`
+	Name   string `json:"name"`
 	jwt.RegisteredClaims
 }
 
-func CreateJWTTokenForUser(user *models.User, privateKey ed25519.PrivateKey, issuedAt time.Time, lifetime time.Duration) (string, string, error) {
-	claims := ApplicationClaims{
-		ID:    user.ID,
-		Email: user.Email,
-		Name:  user.Name,
+func CreateJWTAccessTokenForUser(user *models.User, privateKey ed25519.PrivateKey, issuedAt time.Time, lifetime time.Duration) (string, string, error) {
+	claims := AccessClaims{
+		UserId: user.ID,
+		Email:  user.Email,
+		Name:   user.Name,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(issuedAt.Add(lifetime)),
 			IssuedAt:  jwt.NewNumericDate(issuedAt),
 			NotBefore: jwt.NewNumericDate(issuedAt),
-			// TODO
-			Issuer:  "inventory",
-			Subject: "main",
+			Issuer:    "inventory",
+			Subject:   "access",
 		},
 	}
 	jwtAccess := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
@@ -59,6 +58,37 @@ func CreateJWTTokenForUser(user *models.User, privateKey ed25519.PrivateKey, iss
 		return "", "", err
 	}
 	return accessToken, infoToken, err
+}
+
+type RefreshClaims struct {
+	UserId string `json:"userId"`
+	jwt.RegisteredClaims
+}
+
+func CreateJWTRefreshTokenForUser(user *models.User, privateKey ed25519.PrivateKey, issuedAt time.Time, lifetime time.Duration) (string, string, error) {
+	claims := RefreshClaims{
+		UserId: user.ID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(issuedAt.Add(lifetime)),
+			IssuedAt:  jwt.NewNumericDate(issuedAt),
+			NotBefore: jwt.NewNumericDate(issuedAt),
+			Issuer:    "inventory",
+			Subject:   "refresh",
+		},
+	}
+	jwtAccess := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	refreshToken, err := jwtAccess.SignedString(privateKey)
+	if err != nil {
+		return "", "", err
+	}
+	jwtInfo := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
+	// create an unsigned jwt token which is handed to the
+	// user as regular cookie
+	infoToken, err := jwtInfo.SignedString(jwt.UnsafeAllowNoneSignatureType)
+	if err != nil {
+		return "", "", err
+	}
+	return refreshToken, infoToken, err
 }
 
 func HashPassword(password string) ([]byte, error) {

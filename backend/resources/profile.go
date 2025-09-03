@@ -16,7 +16,7 @@ type Profile struct {
 
 func ProfileFromUserContext(ctx *middleware.UserContext) Profile {
 	return Profile{
-		ID:    ctx.ID,
+		ID:    ctx.UserId,
 		Name:  ctx.Name,
 		Email: ctx.Email,
 	}

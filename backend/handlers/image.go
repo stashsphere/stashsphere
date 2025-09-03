@@ -44,7 +44,7 @@ func (is *ImageHandler) ImageHandlerPost(c echo.Context) error {
 	}
 	defer src.Close()
 
-	image, err := is.image_service.CreateImage(c.Request().Context(), authCtx.User.ID, file.Filename, src)
+	image, err := is.image_service.CreateImage(c.Request().Context(), authCtx.User.UserId, file.Filename, src)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 		return &utils.ParameterError{Err: err}
 	}
 	hash := c.Param("hash")
-	file, image, err := is.image_service.ImageGet(c.Request().Context(), authCtx.User.ID, hash)
+	file, image, err := is.image_service.ImageGet(c.Request().Context(), authCtx.User.UserId, hash)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return c.String(http.StatusNotFound, "Image Not Found")
@@ -160,7 +160,7 @@ func (is *ImageHandler) ImageHandlerPatch(c echo.Context) error {
 		rotation = operations.Rotation270
 	}
 
-	image, err := is.image_service.ModifyImage(c.Request().Context(), authCtx.User.ID, imageId, services.ModifyImageParams{
+	image, err := is.image_service.ModifyImage(c.Request().Context(), authCtx.User.UserId, imageId, services.ModifyImageParams{
 		Rotation: rotation,
 	})
 	if err != nil {
@@ -175,8 +175,9 @@ func (is *ImageHandler) ImageHandlerPatch(c echo.Context) error {
 }
 
 type ImagesParams struct {
-	Page    uint64 `query:"page"`
-	PerPage uint64 `query:"perPage"`
+	Page           uint64 `query:"page"`
+	PerPage        uint64 `query:"perPage"`
+	OnlyUnassigned bool   `query:"onlyUnassigned"`
 }
 
 // this handler only lists own images to be able to create galleries and manage
@@ -197,12 +198,19 @@ func (is *ImageHandler) ImageHandlerIndex(c echo.Context) error {
 		params.PerPage = 50
 	}
 
-	totalCount, totalPageCount, images, err := is.image_service.ImageIndex(c.Request().Context(), authCtx.User.ID, params.PerPage, params.Page)
+	totalCount, totalPageCount, images, err := is.image_service.ImageIndex(c.Request().Context(),
+		services.ImageIndexParams{
+			UserId:         authCtx.User.UserId,
+			PerPage:        params.PerPage,
+			Page:           params.Page,
+			OnlyUnassigned: params.OnlyUnassigned,
+		})
+
 	if err != nil {
 		return err
 	}
 	paginated := resources.PaginatedImages{
-		Images:         resources.ImagesFromModelSlice(images, authCtx.User.ID),
+		Images:         resources.ImagesFromModelSlice(images, authCtx.User.UserId),
 		PerPage:        uint64(params.PerPage),
 		Page:           uint64(params.Page),
 		TotalPageCount: totalPageCount,
@@ -220,7 +228,7 @@ func (is *ImageHandler) ImageHandlerDelete(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	imageId := c.Param("imageId")
-	deletedImage, err := is.image_service.DeleteImage(c.Request().Context(), authCtx.User.ID, imageId)
+	deletedImage, err := is.image_service.DeleteImage(c.Request().Context(), authCtx.User.UserId, imageId)
 	if err != nil {
 		return err
 	}

@@ -26,7 +26,7 @@ func (ph *ProfileHandler) ProfileHandlerGet(c echo.Context) error {
 	if !authCtx.Authenticated {
 		return utils.NotAuthenticatedError{}
 	}
-	user, err := ph.userService.FindUserByID(c.Request().Context(), authCtx.User.ID)
+	user, err := ph.userService.FindUserByID(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (ph *ProfileHandler) ProfileHandlerPatch(c echo.Context) error {
 		return &utils.ParameterError{Err: err}
 	}
 	serviceParams := params.ToUpdateUserParams()
-	serviceParams.UserId = authCtx.User.ID
+	serviceParams.UserId = authCtx.User.UserId
 	user, err := ph.userService.UpdateUser(c.Request().Context(), serviceParams)
 	if err != nil {
 		return err

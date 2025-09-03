@@ -37,13 +37,13 @@ func (fh *FriendHandler) FriendRequestPost(c echo.Context) error {
 		return &utils.ParameterError{Err: err}
 	}
 	request, err := fh.friend_service.CreateFriendRequest(c.Request().Context(), services.CreateFriendRequestParams{
-		UserId:     authCtx.User.ID,
+		UserId:     authCtx.User.UserId,
 		ReceiverId: friendRequestParams.ReceiverId,
 	})
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusCreated, resources.FriendRequestFromModel(request, authCtx.User.ID))
+	return c.JSON(http.StatusCreated, resources.FriendRequestFromModel(request, authCtx.User.UserId))
 }
 
 func (fh *FriendHandler) FriendRequestIndex(c echo.Context) error {
@@ -54,11 +54,11 @@ func (fh *FriendHandler) FriendRequestIndex(c echo.Context) error {
 	if !authCtx.Authenticated {
 		return utils.NotAuthenticatedError{}
 	}
-	requests, err := fh.friend_service.GetFriendRequests(c.Request().Context(), authCtx.User.ID)
+	requests, err := fh.friend_service.GetFriendRequests(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.FriendRequestsResponseFromResult(requests, authCtx.User.ID))
+	return c.JSON(http.StatusOK, resources.FriendRequestsResponseFromResult(requests, authCtx.User.UserId))
 }
 
 func (fh *FriendHandler) FriendRequestDelete(c echo.Context) error {
@@ -71,7 +71,7 @@ func (fh *FriendHandler) FriendRequestDelete(c echo.Context) error {
 	}
 	requestId := c.Param("requestId")
 	_, err := fh.friend_service.CancelFriendRequest(c.Request().Context(), services.CancelFriendRequestParams{
-		UserId:    authCtx.User.ID,
+		UserId:    authCtx.User.UserId,
 		RequestId: requestId,
 	})
 	if err != nil {
@@ -99,13 +99,13 @@ func (fh *FriendHandler) FriendRequestUpdate(c echo.Context) error {
 	requestId := c.Param("requestId")
 	request, err := fh.friend_service.ReactFriendRequest(c.Request().Context(), services.ReactFriendRequestParams{
 		FriendRequestId: requestId,
-		UserId:          authCtx.User.ID,
+		UserId:          authCtx.User.UserId,
 		Accept:          friendRequestParams.Accept,
 	})
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.FriendRequestFromModel(request, authCtx.User.ID))
+	return c.JSON(http.StatusOK, resources.FriendRequestFromModel(request, authCtx.User.UserId))
 }
 
 func (fh *FriendHandler) FriendsIndex(c echo.Context) error {
@@ -116,11 +116,11 @@ func (fh *FriendHandler) FriendsIndex(c echo.Context) error {
 	if !authCtx.Authenticated {
 		return utils.NotAuthenticatedError{}
 	}
-	friends, err := fh.friend_service.GetFriends(c.Request().Context(), authCtx.User.ID)
+	friends, err := fh.friend_service.GetFriends(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.FriendShipsResponseFromModel(friends, authCtx.User.ID))
+	return c.JSON(http.StatusOK, resources.FriendShipsResponseFromModel(friends, authCtx.User.UserId))
 }
 
 func (fh *FriendHandler) FriendDelete(c echo.Context) error {
@@ -132,7 +132,7 @@ func (fh *FriendHandler) FriendDelete(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	friendId := c.Param("friendId")
-	err := fh.friend_service.Unfriend(c.Request().Context(), authCtx.User.ID, friendId)
+	err := fh.friend_service.Unfriend(c.Request().Context(), authCtx.User.UserId, friendId)
 	if err != nil {
 		return err
 	}

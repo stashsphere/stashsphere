@@ -50,11 +50,11 @@ func (lh *ListHandler) ListHandlerPost(c echo.Context) error {
 	if err := c.Validate(params); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	list, err := lh.list_service.CreateList(c.Request().Context(), NewListParamsToCreateListParams(params, authCtx.User.ID))
+	list, err := lh.list_service.CreateList(c.Request().Context(), NewListParamsToCreateListParams(params, authCtx.User.UserId))
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusCreated, resources.ReducedListFromModel(list, authCtx.User.ID))
+	return c.JSON(http.StatusCreated, resources.ReducedListFromModel(list, authCtx.User.UserId))
 }
 
 func (lh *ListHandler) ListHandlerShow(c echo.Context) error {
@@ -66,15 +66,15 @@ func (lh *ListHandler) ListHandlerShow(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	listId := c.Param("listId")
-	list, err := lh.list_service.GetList(c.Request().Context(), listId, authCtx.User.ID)
+	list, err := lh.list_service.GetList(c.Request().Context(), listId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	sharedListIds, err := lh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
+	sharedListIds, err := lh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ListFromModel(list, authCtx.User.ID, sharedListIds))
+	return c.JSON(http.StatusOK, resources.ListFromModel(list, authCtx.User.UserId, sharedListIds))
 }
 
 type ListsParams struct {
@@ -99,7 +99,7 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 	}
 	totalCount, totalPageCount, lists, err := lh.list_service.GetListsForUser(c.Request().Context(),
 		services.GetListsForUserParams{
-			UserId:   authCtx.User.ID,
+			UserId:   authCtx.User.UserId,
 			PerPage:  params.PerPage,
 			Page:     params.Page,
 			Paginate: true,
@@ -108,12 +108,12 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	sharedListIds, err := lh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
+	sharedListIds, err := lh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
 	paginated := resources.PaginatedLists{
-		Things:         resources.ListsFromModelSlice(lists, authCtx.User.ID, sharedListIds),
+		Things:         resources.ListsFromModelSlice(lists, authCtx.User.UserId, sharedListIds),
 		PerPage:        uint64(params.PerPage),
 		Page:           uint64(params.Page),
 		TotalPageCount: totalPageCount,
@@ -152,20 +152,20 @@ func (lh *ListHandler) ListHandlerPatch(c echo.Context) error {
 	if err := c.Validate(listParams); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	list, err := lh.list_service.UpdateList(c.Request().Context(), listId, authCtx.User.ID, UpdateListParamsToUpdateListParams(listParams))
+	list, err := lh.list_service.UpdateList(c.Request().Context(), listId, authCtx.User.UserId, UpdateListParamsToUpdateListParams(listParams))
 	if err != nil {
 		return err
 	}
 	c.Logger().Infof("List edited: %v", list.ID)
-	list, err = lh.list_service.GetList(c.Request().Context(), listId, authCtx.User.ID)
+	list, err = lh.list_service.GetList(c.Request().Context(), listId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	sharedListIds, err := lh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
+	sharedListIds, err := lh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ListFromModel(list, authCtx.User.ID, sharedListIds))
+	return c.JSON(http.StatusOK, resources.ListFromModel(list, authCtx.User.UserId, sharedListIds))
 }
 
 func (lh *ListHandler) ListHandlerDelete(c echo.Context) error {
@@ -177,7 +177,7 @@ func (lh *ListHandler) ListHandlerDelete(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	listId := c.Param("listId")
-	err := lh.list_service.DeleteList(c.Request().Context(), listId, authCtx.User.ID)
+	err := lh.list_service.DeleteList(c.Request().Context(), listId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}

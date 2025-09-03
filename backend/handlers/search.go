@@ -38,13 +38,13 @@ func (sh *SearchHandler) SearchHandlerGet(c echo.Context) error {
 	if err := c.Bind(&searchParams); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	results, err := sh.search_service.Search(c.Request().Context(), authCtx.User.ID, &services.SearchParams{Query: searchParams.Query})
+	results, err := sh.search_service.Search(c.Request().Context(), authCtx.User.UserId, &services.SearchParams{Query: searchParams.Query})
 	if err != nil {
 		return err
 	}
-	sharedListIds, err := sh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
+	sharedListIds, err := sh.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.SearchResultsFromModel(results, authCtx.User.ID, sharedListIds))
+	return c.JSON(http.StatusOK, resources.SearchResultsFromModel(results, authCtx.User.UserId, sharedListIds))
 }

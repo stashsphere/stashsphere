@@ -49,7 +49,7 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 
 	totalCount, totalPageCount, things, err := th.thing_service.GetThingsForUser(c.Request().Context(),
 		services.GetThingsForUserParams{
-			UserId:         authCtx.User.ID,
+			UserId:         authCtx.User.UserId,
 			PerPage:        params.PerPage,
 			Page:           params.Page,
 			Paginate:       true,
@@ -59,12 +59,12 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	sharedListIds, err := th.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
+	sharedListIds, err := th.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
 	paginated := resources.PaginatedThings{
-		Things:         resources.ThingsFromModelSlice(things, authCtx.User.ID, sharedListIds),
+		Things:         resources.ThingsFromModelSlice(things, authCtx.User.UserId, sharedListIds),
 		PerPage:        uint64(params.PerPage),
 		Page:           uint64(params.Page),
 		TotalPageCount: totalPageCount,
@@ -81,7 +81,7 @@ func (th *ThingHandler) ThingHandlerSummary(c echo.Context) error {
 	if !authCtx.Authenticated {
 		return utils.NotAuthenticatedError{}
 	}
-	summary, err := th.thing_service.GetSummaryForUser(c.Request().Context(), authCtx.User.ID)
+	summary, err := th.thing_service.GetSummaryForUser(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
@@ -193,11 +193,11 @@ func (th *ThingHandler) ThingHandlerPost(c echo.Context) error {
 	if err := c.Validate(thingParams); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	thing, err := th.thing_service.CreateThing(c.Request().Context(), NewThingParamsToCreateThingParams(thingParams, authCtx.User.ID))
+	thing, err := th.thing_service.CreateThing(c.Request().Context(), NewThingParamsToCreateThingParams(thingParams, authCtx.User.UserId))
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusCreated, resources.ReducedThingFromModel(thing, authCtx.User.ID))
+	return c.JSON(http.StatusCreated, resources.ReducedThingFromModel(thing, authCtx.User.UserId))
 }
 
 type UpdateThingParams = NewThingParams
@@ -252,19 +252,19 @@ func (th *ThingHandler) ThingHandlerPatch(c echo.Context) error {
 	if err := c.Validate(thingParams); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	_, err := th.thing_service.EditThing(c.Request().Context(), thingId, authCtx.User.ID, UpdateThingParamsToUpdateThingParams(thingParams))
+	_, err := th.thing_service.EditThing(c.Request().Context(), thingId, authCtx.User.UserId, UpdateThingParamsToUpdateThingParams(thingParams))
 	if err != nil {
 		return err
 	}
-	updated_thing, err := th.thing_service.GetThing(c.Request().Context(), thingId, authCtx.User.ID)
+	updated_thing, err := th.thing_service.GetThing(c.Request().Context(), thingId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	sharedListIds, err := th.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
+	sharedListIds, err := th.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ThingFromModel(updated_thing, authCtx.User.ID, sharedListIds))
+	return c.JSON(http.StatusOK, resources.ThingFromModel(updated_thing, authCtx.User.UserId, sharedListIds))
 }
 
 func (th *ThingHandler) ThingHandlerShow(c echo.Context) error {
@@ -276,15 +276,15 @@ func (th *ThingHandler) ThingHandlerShow(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	thingId := c.Param("thingId")
-	thing, err := th.thing_service.GetThing(c.Request().Context(), thingId, authCtx.User.ID)
+	thing, err := th.thing_service.GetThing(c.Request().Context(), thingId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	sharedListIds, err := th.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.ID)
+	sharedListIds, err := th.list_service.GetSharedListIdsForUser(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ThingFromModel(thing, authCtx.User.ID, sharedListIds))
+	return c.JSON(http.StatusOK, resources.ThingFromModel(thing, authCtx.User.UserId, sharedListIds))
 }
 
 func (th *ThingHandler) ThingHandlerDelete(c echo.Context) error {
@@ -296,7 +296,7 @@ func (th *ThingHandler) ThingHandlerDelete(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	thingId := c.Param("thingId")
-	err := th.thing_service.DeleteThing(c.Request().Context(), thingId, authCtx.User.ID)
+	err := th.thing_service.DeleteThing(c.Request().Context(), thingId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}

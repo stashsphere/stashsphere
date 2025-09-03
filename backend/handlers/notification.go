@@ -42,7 +42,7 @@ func (nh *NotificationHandler) Index(c echo.Context) error {
 		params.PerPage = 50
 	}
 	totalCount, totalPageCount, notifications, err := nh.notification_service.GetNotifications(c.Request().Context(), services.GetNotificationsForUserParams{
-		UserId:             authCtx.User.ID,
+		UserId:             authCtx.User.UserId,
 		PerPage:            params.PerPage,
 		Page:               params.Page,
 		Paginate:           true,
@@ -72,7 +72,7 @@ func (nh *NotificationHandler) Acknowledge(c echo.Context) error {
 	notificationId := c.Param("notificationId")
 	err := nh.notification_service.AcknowledgeNotification(c.Request().Context(), services.AcknowledgeNotificationParams{
 		NotificationId: notificationId,
-		UserId:         authCtx.User.ID,
+		UserId:         authCtx.User.UserId,
 	})
 	if err != nil {
 		return err

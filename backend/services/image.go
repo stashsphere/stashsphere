@@ -188,23 +188,53 @@ func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string
 	return file, images[0], nil
 }
 
-func (is *ImageService) ImageIndex(ctx context.Context, userId string, perPage uint64, page uint64) (uint64, uint64, models.ImageSlice, error) {
-	searchCond := models.ImageWhere.OwnerID.EQ(userId)
+type ImageIndexParams struct {
+	UserId         string
+	PerPage        uint64
+	Page           uint64
+	OnlyUnassigned bool
+}
 
-	imageCount, err := models.Images(searchCond).Count(ctx, is.db)
+func (is *ImageService) ImageIndex(ctx context.Context, params ImageIndexParams) (uint64, uint64, models.ImageSlice, error) {
+	userId, perPage, page, onlyUnassigned := params.UserId, params.PerPage, params.Page, params.OnlyUnassigned
+
+	searchCond := []qm.QueryMod{models.ImageWhere.OwnerID.EQ(userId)}
+
+	if onlyUnassigned {
+		type IdRow struct {
+			ImageId string `boil:"image_id"`
+		}
+		var idRows []IdRow
+		err := models.NewQuery(qm.Distinct("image_id"), qm.From("images_things")).Bind(ctx, is.db, &idRows)
+		if err != nil {
+			return 0, 0, models.ImageSlice{}, err
+		}
+		imageIds := make([]string, len(idRows))
+		for i, row := range idRows {
+			imageIds[i] = row.ImageId
+		}
+		// TODO: convert to join...
+		searchCond = append(searchCond, models.ImageWhere.ID.NIN(imageIds))
+	}
+	imageCount, err := models.Images(searchCond...).Count(ctx, is.db)
 	if err != nil {
 		return 0, 0, models.ImageSlice{}, err
 	}
-
-	images, err := models.Images(
+	imageQuery := []qm.QueryMod{
 		qm.Load(models.ImageRels.ImagesThings),
 		qm.Load(qm.Rels(models.ImageRels.ImagesThings, models.ImagesThingRels.Thing, models.ThingRels.Owner)),
 		qm.Load(models.ImageRels.Owner),
 		qm.Load(models.ImageRels.Profiles),
-		searchCond,
 		qm.OrderBy(models.ImageColumns.CreatedAt),
-		qm.Offset(int(perPage*page)),
+		qm.Offset(int(perPage * page)),
 		qm.Limit(int(perPage)),
+	}
+	for _, s := range searchCond {
+		imageQuery = append(imageQuery, s)
+	}
+
+	images, err := models.Images(
+		imageQuery...,
 	).All(ctx, is.db)
 	if err != nil {
 		return 0, 0, models.ImageSlice{}, err
