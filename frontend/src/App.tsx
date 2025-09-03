@@ -31,11 +31,13 @@ import { SearchContext } from './context/search';
 import { ShowFriends } from './routes/friends';
 import { ShowNotifications } from './routes/notifications';
 import { ShowUser } from './routes/users/show';
+import { jwtDecode } from 'jwt-decode';
+import { logout, refreshTokens } from './api/auth';
 
 export const App = () => {
   const [config, setConfig] = useState<Config | null>(null);
   const [cookies] = useCookies(['stashsphere-info']);
-  const infoCookie = cookies['stashsphere-info'];
+  const infoCookie = cookies['stashsphere-info'] as string | undefined;
   const [profileKey, setProfileKey] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,6 +72,25 @@ export const App = () => {
       setProfile(null);
     }
   }, [infoCookie, axiosInstance, profileKey]);
+
+  useEffect(() => {
+    if (infoCookie && axiosInstance) {
+      const decoded = jwtDecode(infoCookie);
+      const id = setInterval(() => {
+        const now = new Date().getTime();
+        const secondsToExpiry = (decoded.exp || 0) - now / 1000;
+        // if the token expires in the next 15 minutes
+        if (secondsToExpiry < 15 * 60) {
+          console.log('Access Token expires in %d. Starting refresh process', secondsToExpiry);
+          refreshTokens(axiosInstance).catch(() => {
+            // force logout when refreshing failed
+            logout(axiosInstance);
+          });
+        }
+      }, 10000);
+      return () => clearInterval(id);
+    }
+  }, [infoCookie, axiosInstance]);
 
   if (config === null) {
     return 'Fetching config. Please wait.';

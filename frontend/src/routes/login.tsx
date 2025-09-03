@@ -3,6 +3,7 @@ import { AxiosContext } from '../context/axios';
 import { useNavigate } from 'react-router';
 import { AuthContext } from '../context/auth';
 import { PrimaryButton } from '../components/shared';
+import { login } from '../api/auth';
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -19,24 +20,13 @@ export const Login = () => {
     }
   }, [navigate, authContext.loggedIn]);
 
-  const login = async (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (axiosInstance === null) {
       return;
     }
     try {
-      await axiosInstance.post(
-        '/user/login',
-        {
-          email: email,
-          password: password,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      await login(axiosInstance, email, password);
       setError(undefined);
     } catch {
       setError('Wrong username or password.');
@@ -47,7 +37,7 @@ export const Login = () => {
     <div className="flex items-center justify-center">
       <div className="flex-none bg-white p-8 rounded-sm shadow-md w-96">
         <h2 className="text-primary text-2xl font-semibold mb-4">Login</h2>
-        <form onSubmit={login}>
+        <form onSubmit={onSubmit}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-primary text-sm font-medium">
               E-Mail
