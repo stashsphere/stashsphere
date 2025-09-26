@@ -237,7 +237,11 @@ export const ProfileEditor = ({ children, profile, onUpdateProfile }: Props) => 
           </div>
         }
       >
-        <ImageBrowserGrid onSelected={setImageBrowserImages} multiple={false} />
+        <ImageBrowserGrid
+          onSelected={setImageBrowserImages}
+          multiple={false}
+          onlyUnassigned={true}
+        />
       </Modal>
 
       {children}

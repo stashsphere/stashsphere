@@ -17,12 +17,20 @@ export const fetchImageData = async (axios: Axios, id: string): Promise<File> =>
   return response.data as File;
 };
 
-export const getImages = async (axios: Axios, currentPage: number, perPage: number) => {
-  const response = await axios.get(`/images?page=${currentPage}&perPage=${perPage}`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+export const getImages = async (
+  axios: Axios,
+  currentPage: number,
+  perPage: number,
+  onlyUnassigned: boolean
+) => {
+  const response = await axios.get(
+    `/images?page=${currentPage}&perPage=${perPage}&onlyUnassigned=${onlyUnassigned}`,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   if (response.status != 200) {
     throw `Got error ${response}`;

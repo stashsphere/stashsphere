@@ -7,6 +7,7 @@ import { Icon, Headline, Modal } from '../shared';
 import { ImageBrowserGrid } from './image_browser_grid';
 import QuantityEditor from './quantity_editor';
 import { urlForImage } from '../../api/image';
+import { Toggle } from '../shared/toggle';
 
 export type ThingEditorData = {
   name: string;
@@ -48,6 +49,7 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
   const [quantity, setQuantity] = useState(0);
   const [quantityUnit, setQuantityUnit] = useState('');
   const [sharingState, setSharingState] = useState<SharingState>('private');
+  const [onlyUnassignedImages, setOnlyUnassignedImages] = useState(true);
 
   const config = useContext(ConfigContext);
 
@@ -343,6 +345,11 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
         size="full"
         footer={
           <div className="flex gap-4 justify-end">
+            <Toggle value={onlyUnassignedImages} onChange={(v) => setOnlyUnassignedImages(v)}>
+              <span className="ms-3 text-sm font-medium text-display">
+                Show only unassigned images
+              </span>
+            </Toggle>
             <SecondaryButton onClick={() => setShowImageBrowser(false)}>Cancel</SecondaryButton>
             <PrimaryButton
               onClick={() => {
@@ -355,7 +362,11 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
           </div>
         }
       >
-        <ImageBrowserGrid onSelected={setImageBrowserImages} multiple={true} />
+        <ImageBrowserGrid
+          onSelected={setImageBrowserImages}
+          multiple={true}
+          onlyUnassigned={onlyUnassignedImages}
+        />
       </Modal>
     </div>
   );

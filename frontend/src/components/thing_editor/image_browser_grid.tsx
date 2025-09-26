@@ -8,25 +8,29 @@ import { Pages } from '../pages';
 export interface ImageBrowserGridProps {
   onSelected: (image: Image[]) => void;
   multiple?: boolean;
+  onlyUnassigned: boolean;
 }
 
-export const ImageBrowserGrid = ({ onSelected, multiple }: ImageBrowserGridProps) => {
+export const ImageBrowserGrid = ({
+  onSelected,
+  multiple,
+  onlyUnassigned,
+}: ImageBrowserGridProps) => {
   const axiosInstance = useContext(AxiosContext);
   const [currentPage, setCurrentPage] = useState(0);
   const [images, setImages] = useState<PagedImages | undefined>(undefined);
-
   const [selectedImages, setSelectedImages] = useState<Image[]>([]);
 
   useEffect(() => {
     if (axiosInstance === null) {
       return;
     }
-    getImages(axiosInstance, currentPage, 24)
+    getImages(axiosInstance, currentPage, 24, onlyUnassigned)
       .then(setImages)
       .catch((reason) => {
         console.log(reason);
       });
-  }, [axiosInstance, currentPage]);
+  }, [axiosInstance, currentPage, onlyUnassigned]);
 
   const selectedImageIds = useMemo(() => {
     return selectedImages.map((e) => e.id);

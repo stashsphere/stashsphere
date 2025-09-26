@@ -20,7 +20,7 @@ export const ImageBrowser = ({ onSelected }: ImageBrowserProps) => {
     if (axiosInstance === null) {
       return;
     }
-    getImages(axiosInstance, currentPage, 18)
+    getImages(axiosInstance, currentPage, 18, false)
       .then(setImages)
       .catch((reason) => {
         console.log(reason);
