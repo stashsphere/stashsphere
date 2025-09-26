@@ -223,3 +223,13 @@ export type StashsphereNotification =
 export interface PagedNotifications extends Paged {
   notifications: StashsphereNotification[];
 }
+
+export type CartEntry = {
+  thingId: string;
+  ownerId: string;
+  createdAt: Date;
+};
+
+export type Cart = {
+  entries: CartEntry[];
+};

@@ -137,3 +137,14 @@ export const RedButton = ({ children, ...rest }: ButtonProps) => {
     </button>
   );
 };
+
+export const GreenButton = ({ children, ...rest }: ButtonProps) => {
+  return (
+    <button
+      className="bg-green-600 text-white py-2 px-4 rounded-sm hover:bg-green-500 focus:outline-hidden focus:ring-3 focus:border-green-300"
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+};

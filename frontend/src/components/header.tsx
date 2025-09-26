@@ -1,10 +1,12 @@
-import { KeyboardEvent, ReactNode, useContext, useState } from 'react';
+import { KeyboardEvent, ReactNode, useContext, useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
 import stashsphereLogo from '../assets/stashsphere-logo-256.png';
 import { Icon } from './shared';
 import { SearchContext } from '../context/search';
 import { Profile } from '../api/resources';
 import { UserNameAndProfile } from './shared/user';
+import { CartContext } from '../context/cart';
+import { formatHumanUnit } from '../lib/format';
 
 type HeaderProps = {
   profile: Profile | null;
@@ -58,6 +60,23 @@ const NotificationItem = ({ hasUnacknowledged }: { hasUnacknowledged: boolean })
   } else {
     return <Icon className="" icon={'mdi--notifications-none'} />;
   }
+};
+
+const CartItem = () => {
+  const { cart } = useContext(CartContext);
+
+  const formatted = useMemo(() => {
+    return formatHumanUnit(cart?.entries.length || 0);
+  }, [cart]);
+
+  return (
+    <NavItem to="/cart">
+      <div className="flex">
+        <Icon className="" icon={'mdi--cart-heart'} />
+        <div className="w-5 text-sm mt-2">{formatted}</div>
+      </div>
+    </NavItem>
+  );
 };
 
 const HeaderLoggedIn = ({
@@ -124,6 +143,7 @@ const HeaderLoggedIn = ({
             <NavItem to="/notifications">
               <NotificationItem hasUnacknowledged={hasUnacknowledgedNotifications} />
             </NavItem>
+            <CartItem />
             <NavItem to="/user/logout">Logout</NavItem>
           </div>
         </div>
@@ -147,6 +167,12 @@ const HeaderLoggedIn = ({
               <NavItem to="/user/profile" onCLick={toggleMobileMenu}>
                 <Icon icon="mdi--user" className="mr-2" />
                 {profile.name}
+              </NavItem>
+              <NavItem to="/notifications" onCLick={toggleMobileMenu}>
+                Notifications
+              </NavItem>
+              <NavItem to="/cart" onCLick={toggleMobileMenu}>
+                Cart
               </NavItem>
               <NavItem to="/user/logout" onCLick={toggleMobileMenu}>
                 Logout
