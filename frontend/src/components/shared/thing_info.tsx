@@ -44,14 +44,16 @@ export const ThingInfo = ({ thing }: ThingInfoProps) => {
 
   return (
     <div className="flex flex-col gap-4 flex-start items-start border border-secondary rounded-md p-1">
-      <div className="flex w-80 h-80 items-center justify-center bg-brand-900 p-2 rounded-md">
-        <a href={`/things/${thing.id}`}>{firstImageContent}</a>
-      </div>
+      <a href={`/things/${thing.id}`}>
+        <div className="flex w-80 h-80 items-center justify-center bg-brand-900 p-2 rounded-md">
+          {firstImageContent}
+        </div>
+      </a>
       <div className="w-80">
         <a href={`/things/${thing.id}`}>
           <h2 className="text-display text-xl mb-2">{thing.name}</h2>
         </a>
-        <div className="flex flex-row gap-2 items-center">
+        <div className="flex flex-row gap-2 items-center justify-between">
           <UserNameAndUserId
             userId={thing.owner.id}
             textColor="text-display"
