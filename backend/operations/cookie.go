@@ -50,9 +50,11 @@ func SetRefreshTokenCookie(c echo.Context, domain string, refreshToken string, m
 
 func SetRefreshIntoTokenCookie(c echo.Context, domain string, refreshToken string, maxAge int, secure bool) {
 	cookie := http.Cookie{
-		Name:     "stashsphere-refresh-info",
-		Value:    refreshToken,
-		Path:     "/api/user/refresh",
+		Name:  "stashsphere-refresh-info",
+		Value: refreshToken,
+		// make sure that browsers can access this cookie easily from all
+		// paths
+		Path:     "/",
 		Domain:   domain,
 		Secure:   secure,
 		MaxAge:   maxAge,

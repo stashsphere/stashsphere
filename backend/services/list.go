@@ -117,14 +117,17 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 			return err
 		}
 
+		allThingIds := []string{}
 		oldThingIds := make(map[string]bool)
 		for _, oldThing := range list.R.Things {
 			oldThingIds[oldThing.ID] = true
+			allThingIds = append(allThingIds, oldThing.ID)
 		}
 		for _, newId := range params.ThingIds {
 			if _, ok := oldThingIds[newId]; !ok {
 				// the newId does not exist yet
 				newIdsInParameters = append(newIdsInParameters, newId)
+				allThingIds = append(allThingIds, newId)
 			}
 		}
 
@@ -149,6 +152,11 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 				return err
 			}
 		}
+		err = operations.RemoveForbiddenThingsFromCarts(ctx, tx, allThingIds)
+		if err != nil {
+			return err
+		}
+
 		outerList = list
 		return nil
 	})
@@ -272,6 +280,11 @@ func (ts *ListService) DeleteList(ctx context.Context, listId string, userId str
 			shareIds = append(shareIds, share.ID)
 		}
 
+		thingIds := []string{}
+		for _, thing := range list.R.Things {
+			thingIds = append(thingIds, thing.ID)
+		}
+
 		err = list.RemoveShares(ctx, tx, list.R.Shares...)
 		if err != nil {
 			return err
@@ -299,7 +312,14 @@ func (ts *ListService) DeleteList(ctx context.Context, listId string, userId str
 		}
 
 		_, err = list.Delete(ctx, tx)
+		if err != nil {
+			return err
+		}
 
+		err = operations.RemoveForbiddenThingsFromCarts(ctx, tx, thingIds)
+		if err != nil {
+			return err
+		}
 		return err
 	})
 	return err

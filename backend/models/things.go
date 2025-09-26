@@ -101,6 +101,7 @@ var ThingWhere = struct {
 // ThingRels is where relationship names are stored.
 var ThingRels = struct {
 	Owner           string
+	CartEntries     string
 	ImagesThings    string
 	Lists           string
 	Properties      string
@@ -108,6 +109,7 @@ var ThingRels = struct {
 	Shares          string
 }{
 	Owner:           "Owner",
+	CartEntries:     "CartEntries",
 	ImagesThings:    "ImagesThings",
 	Lists:           "Lists",
 	Properties:      "Properties",
@@ -118,6 +120,7 @@ var ThingRels = struct {
 // thingR is where relationships are stored.
 type thingR struct {
 	Owner           *User              `boil:"Owner" json:"Owner" toml:"Owner" yaml:"Owner"`
+	CartEntries     CartEntrySlice     `boil:"CartEntries" json:"CartEntries" toml:"CartEntries" yaml:"CartEntries"`
 	ImagesThings    ImagesThingSlice   `boil:"ImagesThings" json:"ImagesThings" toml:"ImagesThings" yaml:"ImagesThings"`
 	Lists           ListSlice          `boil:"Lists" json:"Lists" toml:"Lists" yaml:"Lists"`
 	Properties      PropertySlice      `boil:"Properties" json:"Properties" toml:"Properties" yaml:"Properties"`
@@ -135,6 +138,13 @@ func (r *thingR) GetOwner() *User {
 		return nil
 	}
 	return r.Owner
+}
+
+func (r *thingR) GetCartEntries() CartEntrySlice {
+	if r == nil {
+		return nil
+	}
+	return r.CartEntries
 }
 
 func (r *thingR) GetImagesThings() ImagesThingSlice {
@@ -499,6 +509,20 @@ func (o *Thing) Owner(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
+// CartEntries retrieves all the cart_entry's CartEntries with an executor.
+func (o *Thing) CartEntries(mods ...qm.QueryMod) cartEntryQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"cart_entries\".\"thing_id\"=?", o.ID),
+	)
+
+	return CartEntries(queryMods...)
+}
+
 // ImagesThings retrieves all the images_thing's ImagesThings with an executor.
 func (o *Thing) ImagesThings(mods ...qm.QueryMod) imagesThingQuery {
 	var queryMods []qm.QueryMod
@@ -683,6 +707,119 @@ func (thingL) LoadOwner(ctx context.Context, e boil.ContextExecutor, singular bo
 					foreign.R = &userR{}
 				}
 				foreign.R.OwnerThings = append(foreign.R.OwnerThings, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadCartEntries allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (thingL) LoadCartEntries(ctx context.Context, e boil.ContextExecutor, singular bool, maybeThing interface{}, mods queries.Applicator) error {
+	var slice []*Thing
+	var object *Thing
+
+	if singular {
+		var ok bool
+		object, ok = maybeThing.(*Thing)
+		if !ok {
+			object = new(Thing)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeThing)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeThing))
+			}
+		}
+	} else {
+		s, ok := maybeThing.(*[]*Thing)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeThing)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeThing))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &thingR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &thingR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`cart_entries`),
+		qm.WhereIn(`cart_entries.thing_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load cart_entries")
+	}
+
+	var resultSlice []*CartEntry
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice cart_entries")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on cart_entries")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for cart_entries")
+	}
+
+	if len(cartEntryAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.CartEntries = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &cartEntryR{}
+			}
+			foreign.R.Thing = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.ThingID {
+				local.R.CartEntries = append(local.R.CartEntries, foreign)
+				if foreign.R == nil {
+					foreign.R = &cartEntryR{}
+				}
+				foreign.R.Thing = local
 				break
 			}
 		}
@@ -1334,6 +1471,59 @@ func (o *Thing) SetOwner(ctx context.Context, exec boil.ContextExecutor, insert 
 		related.R.OwnerThings = append(related.R.OwnerThings, o)
 	}
 
+	return nil
+}
+
+// AddCartEntries adds the given related objects to the existing relationships
+// of the thing, optionally inserting them as new records.
+// Appends related to o.R.CartEntries.
+// Sets related.R.Thing appropriately.
+func (o *Thing) AddCartEntries(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*CartEntry) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.ThingID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"cart_entries\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"thing_id"}),
+				strmangle.WhereClause("\"", "\"", 2, cartEntryPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.UserID, rel.ThingID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.ThingID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &thingR{
+			CartEntries: related,
+		}
+	} else {
+		o.R.CartEntries = append(o.R.CartEntries, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &cartEntryR{
+				Thing: o,
+			}
+		} else {
+			rel.R.Thing = o
+		}
+	}
 	return nil
 }
 

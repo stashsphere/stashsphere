@@ -119,33 +119,7 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 }
 
 func (ts *ThingService) GetThing(ctx context.Context, thingId string, userId string) (*models.Thing, error) {
-	thing, err := operations.GetThingUnchecked(ctx, ts.db, thingId)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, utils.NotFoundError{EntityName: "Thing"}
-		}
-		return nil, err
-	}
-	sharedThingsForUser, err := operations.GetSharedThingIdsForUser(ctx, ts.db, userId)
-	if err != nil {
-		return nil, err
-	}
-	authorized := func() bool {
-		for _, id := range sharedThingsForUser {
-			if id == thingId {
-				return true
-			}
-		}
-		if userId == thing.OwnerID {
-			return true
-		}
-		return false
-	}()
-	if !authorized {
-		return nil, utils.UserHasNoAccessRightsError{}
-	}
-
-	return thing, nil
+	return operations.GetThingChecked(ctx, ts.db, thingId, userId)
 }
 
 type UpdateThingParams struct {
@@ -242,6 +216,11 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 				Pos:     i,
 				ImageID: imageId,
 			}
+		}
+
+		err = operations.RemoveForbiddenThingsFromCarts(ctx, tx, []string{thingId})
+		if err != nil {
+			return err
 		}
 
 		err = thing.AddImagesThings(ctx, tx, true, imageThings...)

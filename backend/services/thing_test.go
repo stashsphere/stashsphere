@@ -35,7 +35,7 @@ func TestThingCreation(t *testing.T) {
 	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
 	thingParams.OwnerId = testUser.ID
 	thing, err := thingService.CreateThing(context.Background(), *thingParams)
-	assert.Nil(t, err, nil)
+	assert.NoError(t, err)
 	assert.NotNil(t, thing)
 	assert.NotEmpty(t, thing.ID)
 }

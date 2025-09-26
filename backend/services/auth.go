@@ -65,7 +65,7 @@ func (as *AuthService) ClearAuthCookies(ctx echo.Context) {
 func (as *AuthService) AuthorizeUserWithRefreshToken(ctx context.Context, value string) (*models.User, string, string, string, string, error) {
 	token, err := jwt.ParseWithClaims(value, &operations.RefreshClaims{}, func(t *jwt.Token) (interface{}, error) {
 		return as.publicKey, nil
-	})
+	}, jwt.WithValidMethods([]string{"EdDSA"}))
 	if err != nil {
 		return nil, "", "", "", "", err
 	}

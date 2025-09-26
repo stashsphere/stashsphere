@@ -160,6 +160,7 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 	searchService := services.NewSearchService(db, thingService, listService)
 	shareService := services.NewShareService(db, notificationService)
 	friendService := services.NewFriendService(db, notificationService)
+	cartService := services.NewCartService(db)
 
 	e.Validator = &CustomValidator{validator: validate, trans: &trans}
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -191,8 +192,6 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 	e.Use(inv_middleware.ExtractClaims("token"))
 	e.Use(inv_middleware.HeadToGetMiddleware)
 	e.HTTPErrorHandler = inv_middleware.CreateStashSphereHTTPErrorHandler(e)
-	// TODO add refresh token middleware: check whether accessToken is less than 15min of lifetime, try to access refreshtoken, if validate
-	// set new access and refresh token
 
 	loginHandler := handlers.NewLoginHandler(authService)
 	registerHandler := handlers.NewRegisterHandler(userService)
@@ -205,6 +204,7 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 	shareHandler := handlers.NewShareHandler(shareService)
 	friendHandler := handlers.NewFriendHandler(friendService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
+	cartHandler := handlers.NewCartHandler(cartService)
 
 	a := e.Group("/api")
 	userGroup := a.Group("/user")
@@ -258,6 +258,10 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 	notificationsGroup := a.Group("/notifications")
 	notificationsGroup.GET("", notificationHandler.Index)
 	notificationsGroup.PATCH("/:notificationId", notificationHandler.Acknowledge)
+
+	cartGroup := a.Group("/cart")
+	cartGroup.GET("", cartHandler.Index)
+	cartGroup.PUT("", cartHandler.Put)
 
 	a.GET("/search", searchHandler.SearchHandlerGet)
 

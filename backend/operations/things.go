@@ -2,8 +2,11 @@ package operations
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/stashsphere/backend/models"
+	"github.com/stashsphere/backend/utils"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -166,4 +169,33 @@ func SumQuantity(thing *models.Thing) int64 {
 
 func DeltaQuantity(thing *models.Thing, target uint64) int64 {
 	return int64(target) - SumQuantity(thing)
+}
+
+func GetThingChecked(ctx context.Context, exec boil.ContextExecutor, thingId string, userId string) (*models.Thing, error) {
+	thing, err := GetThingUnchecked(ctx, exec, thingId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, utils.NotFoundError{EntityName: "Thing"}
+		}
+		return nil, err
+	}
+	sharedThingsForUser, err := GetSharedThingIdsForUser(ctx, exec, userId)
+	if err != nil {
+		return nil, err
+	}
+	authorized := func() bool {
+		for _, id := range sharedThingsForUser {
+			if id == thingId {
+				return true
+			}
+		}
+		if userId == thing.OwnerID {
+			return true
+		}
+		return false
+	}()
+	if !authorized {
+		return nil, utils.UserHasNoAccessRightsError{}
+	}
+	return thing, nil
 }

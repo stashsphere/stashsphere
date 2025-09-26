@@ -207,12 +207,23 @@ func (ss *ShareService) DeleteShare(ctx context.Context, shareId string, request
 			models.ShareWhere.ID.EQ(shareId),
 			qm.Load(models.ShareRels.Things),
 			qm.Load(models.ShareRels.Lists),
+			qm.Load(qm.Rels(models.ShareRels.Lists, models.ListRels.Things)),
 		).One(ctx, tx)
 		if err != nil {
 			return err
 		}
 		if share.OwnerID != requestingUser {
 			return utils.EntityDoesNotBelongToUserError{}
+		}
+		// all shared things that might no longer be accessible by users
+		thingIds := []string{}
+		for _, thing := range share.R.Things {
+			thingIds = append(thingIds, thing.ID)
+		}
+		for _, list := range share.R.Lists {
+			for _, thing := range list.R.Things {
+				thingIds = append(thingIds, thing.ID)
+			}
 		}
 		err = share.RemoveThings(ctx, tx, share.R.Things...)
 		if err != nil {
@@ -223,6 +234,10 @@ func (ss *ShareService) DeleteShare(ctx context.Context, shareId string, request
 			return err
 		}
 		_, err = share.Delete(ctx, tx)
+		if err != nil {
+			return err
+		}
+		err = operations.RemoveForbiddenThingsFromCarts(ctx, tx, thingIds)
 		return err
 	})
 	return err
