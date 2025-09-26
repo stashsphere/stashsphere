@@ -39,8 +39,9 @@ import { CartContext } from './context/cart';
 
 export const App = () => {
   const [config, setConfig] = useState<Config | null>(null);
-  const [cookies] = useCookies(['stashsphere-info']);
+  const [cookies] = useCookies(['stashsphere-info', 'stashsphere-refresh-info']);
   const infoCookie = cookies['stashsphere-info'] as string | undefined;
+  const refreshInfoCookie = cookies['stashsphere-refresh-info'] as string | undefined;
   const [profileKey, setProfileKey] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,6 +49,7 @@ export const App = () => {
     () => ({ searchTerm, setSearchTerm }),
     [searchTerm, setSearchTerm]
   );
+  const loggedIn = infoCookie !== undefined || refreshInfoCookie !== undefined;
 
   useEffect(() => {
     getConfig()
@@ -107,7 +109,7 @@ export const App = () => {
         <AuthContext.Provider
           value={{
             profile,
-            loggedIn: infoCookie !== undefined,
+            loggedIn,
             invalidateProfile: () => {
               setProfileKey(profileKey + 1);
             },
