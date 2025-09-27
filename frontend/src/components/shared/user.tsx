@@ -19,7 +19,7 @@ export const UserNameAndProfile = ({
     if (profile.image === null) {
       return (
         <div
-          className={`flex justify-center items-center w-10 h-10 rounded-full border-2 ${imageBorderColor}`}
+          className={`flex justify-center items-center w-6 h-6 md:w-10 md:h-10 rounded-full border-2 ${imageBorderColor}`}
         >
           <Icon icon="mdi--user" className="" />
         </div>
@@ -28,7 +28,7 @@ export const UserNameAndProfile = ({
       return (
         <ImageComponent
           image={profile.image}
-          className={`w-10 h-10 rounded-full border-2 ${imageBorderColor}`}
+          className={`w-6 h-6 md:w-10 md:h-10 rounded-full border-2 ${imageBorderColor}`}
           defaultWidth={128}
         />
       );
@@ -36,7 +36,7 @@ export const UserNameAndProfile = ({
   }, [profile, imageBorderColor]);
 
   return (
-    <div className={`flex flex-row items-center gap-2 ${textColor}`}>
+    <div className={`flex flex-row items-center gap-2 ${textColor} text-sm md:text-base`}>
       {profilePicture}
       {profile.name}
     </div>

@@ -103,7 +103,7 @@ const HeaderLoggedIn = ({
   };
 
   return (
-    <nav className="bg-primary shadow-lg mb-4">
+    <nav className="bg-primary shadow-lg md:mb-4">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex justify-between items-center">
           <a href="/">

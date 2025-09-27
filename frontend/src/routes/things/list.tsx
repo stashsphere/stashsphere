@@ -67,13 +67,13 @@ export const Things = () => {
   return (
     <>
       <div className="flex flex-row justify-between">
-        <div className="flex flex-row border-primary gap-2 select-none">
+        <div className="flex flex-row border-primary gap-1 md:gap-2 select-none flex-wrap">
           {summary &&
             summary.ownerIds.sort().map((ownerId) => (
               <div
                 className={
                   (selectedOwners.includes(ownerId) ? '' : 'brightness-30 ') +
-                  'bg-secondary p-1 rounded'
+                  'bg-secondary p-1 rounded flex-none'
                 }
                 onClick={() => toggleOwnerId(ownerId)}
                 key={ownerId}
@@ -87,9 +87,11 @@ export const Things = () => {
               </div>
             ))}
         </div>
-        <a href="/things/create">
-          <PrimaryButton>Add Thing</PrimaryButton>
-        </a>
+        <div className="flex-none">
+          <a href="/things/create">
+            <PrimaryButton>Add Thing</PrimaryButton>
+          </a>
+        </div>
       </div>
       <div className="flex flex-row gap-4 mt-4 flex-wrap justify-center">
         {things.things.map((thing) => (

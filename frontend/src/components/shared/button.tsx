@@ -2,6 +2,8 @@ import React from 'react';
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
+const commonTextClass = 'text-sm md:text-base';
+
 export const Button = ({ children }: ButtonProps) => {
   return (
     <button className="bg-blue-500 text-white py-2 px-4 rounded-sm hover:bg-blue-600 focus:outline-hidden focus:ring-3 focus:border-blue-300">
@@ -20,7 +22,14 @@ export const PrimaryButton = ({ children, className, disabled, ...rest }: Button
   }
   return (
     <button
-      className={'rounded-sm py-2 px-4'.concat(' ', disabledClasses, ' ', className || '')}
+      className={'rounded-sm py-2 px-4'.concat(
+        ' ',
+        commonTextClass,
+        ' ',
+        disabledClasses,
+        ' ',
+        className || ''
+      )}
       {...rest}
     >
       {children}
@@ -38,7 +47,14 @@ export const SecondaryButton = ({ children, className, disabled, ...rest }: Butt
   }
   return (
     <button
-      className={'rounded-sm py-2 px-4'.concat(' ', disabledClasses, ' ', className || '')}
+      className={'rounded-sm py-2 px-4'.concat(
+        ' ',
+        commonTextClass,
+        ' ',
+        disabledClasses,
+        ' ',
+        className || ''
+      )}
       {...rest}
     >
       {children}
@@ -56,7 +72,14 @@ export const AccentButton = ({ children, className, disabled, ...rest }: ButtonP
   }
   return (
     <button
-      className={'rounded-sm py-2 px-4'.concat(' ', disabledClasses, ' ', className || '')}
+      className={'rounded-sm py-2 px-4'.concat(
+        ' ',
+        commonTextClass,
+        ' ',
+        disabledClasses,
+        ' ',
+        className || ''
+      )}
       {...rest}
     >
       {children}
@@ -68,6 +91,8 @@ export const NeutralButton = ({ children, className, ...rest }: ButtonProps) => 
   return (
     <button
       className={'bg-neutral text-onneutral hover:bg-neutral-hover rounded-sm py-2 px-4 focus:ring-3 focus:border-neutral-hover'.concat(
+        ' ',
+        commonTextClass,
         ' ',
         className || ''
       )}
@@ -82,6 +107,8 @@ export const DangerButton = ({ children, className, ...rest }: ButtonProps) => {
   return (
     <button
       className={'bg-danger text-ondanger hover:bg-danger-hover rounded-sm py-2 px-4 focus:ring-3 focus:border-danger-hover'.concat(
+        ' ',
+        commonTextClass,
         ' ',
         className || ''
       )}

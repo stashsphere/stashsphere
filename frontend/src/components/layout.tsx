@@ -33,7 +33,7 @@ export const Layout = () => {
         profile={authContext.profile}
         hasUnacknowledgedNotifications={hasUnacknowledgedNotifications}
       />
-      <div className="bg-content md:p-2">
+      <div className="bg-content p-1 md:p-2">
         <Outlet />
       </div>
     </>
