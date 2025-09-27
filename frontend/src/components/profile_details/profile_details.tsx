@@ -25,12 +25,14 @@ export const ProfileDetails = ({ profile }: ProfileProps) => {
         <div className="flex flex-row gap-4">
           <div>
             {profile.image ? (
-              <ImageComponent
-                image={profile.image}
-                defaultWidth={256}
-                className="w-[256px] h-[256px] mb-4 rounded-sm"
-                alt="Main"
-              />
+              <div className="flex w-80 h-80 items-center justify-center bg-brand-900 p-2 rounded-md">
+                <ImageComponent
+                  image={profile.image}
+                  defaultWidth={512}
+                  className="w-full h-full amb-4 rounded-sm object-contain"
+                  alt="Main"
+                />
+              </div>
             ) : (
               <div className="flex flex-col text-center">
                 <Icon size="256px" icon="mdi--user"></Icon>
