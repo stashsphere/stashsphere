@@ -213,6 +213,13 @@ func (is *ImageService) ImageIndex(ctx context.Context, params ImageIndexParams)
 		for i, row := range idRows {
 			imageIds[i] = row.ImageId
 		}
+		err = models.NewQuery(qm.Distinct("image_id"), qm.From("profiles")).Bind(ctx, is.db, &idRows)
+		if err != nil {
+			return 0, 0, models.ImageSlice{}, err
+		}
+		for _, row := range idRows {
+			imageIds = append(imageIds, row.ImageId)
+		}
 		// TODO: convert to join...
 		searchCond = append(searchCond, models.ImageWhere.ID.NIN(imageIds))
 	}
