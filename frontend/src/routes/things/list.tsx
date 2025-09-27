@@ -34,7 +34,7 @@ export const Things = () => {
     if (axiosInstance === null) {
       return;
     }
-    getThings(axiosInstance, currentPage, selectedOwners)
+    getThings(axiosInstance, currentPage, 10, selectedOwners)
       .then(setThings)
       .catch((reason) => {
         console.log(reason);

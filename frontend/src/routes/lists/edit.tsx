@@ -32,7 +32,7 @@ export const EditList = () => {
     if (axiosInstance === null) {
       return;
     }
-    getThings(axiosInstance, currentPage, [])
+    getThings(axiosInstance, currentPage, 10, [])
       .then(setSelectableThingsPages)
       .catch((reason) => {
         console.log(reason);

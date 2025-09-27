@@ -1,7 +1,12 @@
 import { Axios } from 'axios';
 import { PagedThings, SharingState, Thing, ThingsSummary } from './resources';
 
-export const getThings = async (axios: Axios, currentPage: number, ownerIds: string[]) => {
+export const getThings = async (
+  axios: Axios,
+  currentPage: number,
+  perPage: number,
+  ownerIds: string[]
+) => {
   const response = await axios.get(`/things?page=${currentPage}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -9,6 +14,7 @@ export const getThings = async (axios: Axios, currentPage: number, ownerIds: str
     params: {
       page: currentPage,
       filterOwnerId: ownerIds,
+      perPage: perPage,
     },
     paramsSerializer: {
       indexes: null,
