@@ -68,7 +68,9 @@ export const ShowCart = () => {
   return (
     <div>
       <Headline type="h2">Cart</Headline>
-      {(cartByUser === null || Object.keys(cartByUser).length === 0) && <p>No entries yet</p>}
+      {(cartByUser === null || Object.keys(cartByUser).length === 0) && (
+        <p className="text-display">No entries yet</p>
+      )}
       {cartByUser &&
         Object.entries(cartByUser).map(([ownerId, entries]) => {
           return (
