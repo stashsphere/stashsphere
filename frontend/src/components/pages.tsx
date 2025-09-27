@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 export const Pages = ({
   pages,
   currentPage,
@@ -7,22 +9,58 @@ export const Pages = ({
   currentPage: number;
   onPageChange: (page: number) => void;
 }) => {
-  const allPages = Array.from(Array(pages === 0 ? 1 : pages).keys());
+  const allPages = useMemo(() => {
+    const pageNumbers = [];
+    const lastPage = pages - 1;
+
+    pageNumbers.push(0);
+
+    if (currentPage > 2) {
+      pageNumbers.push('...');
+    }
+
+    if (currentPage > 1) {
+      pageNumbers.push(currentPage - 1);
+    }
+
+    if (currentPage != 0) {
+      pageNumbers.push(currentPage);
+    }
+
+    if (currentPage < lastPage) {
+      pageNumbers.push(currentPage + 1);
+    }
+
+    if (currentPage < lastPage - 2) {
+      pageNumbers.push('...');
+    }
+
+    if (lastPage > 1 && currentPage < lastPage - 1) {
+      pageNumbers.push(lastPage);
+    }
+
+    return pageNumbers;
+  }, [currentPage, pages]);
+
   return (
     <div className="flex justify-center mt-4">
       <ul className="flex list-none">
-        {allPages.map((page) => (
+        {allPages.map((item, index) => (
           <li
-            key={page + 1}
-            className={`mx-2 ${page === currentPage ? 'border-2 border-primary' : ''}`}
+            key={index}
+            className={`mx-2 ${typeof item === 'number' && item === currentPage ? 'border-2 border-primary' : ''}`}
           >
-            <a
-              href="#"
-              onClick={() => onPageChange(page)}
-              className="block py-1 px-3 text-primary hover:bg-primary hover:text-onprimary hover:ring-3"
-            >
-              {page + 1}
-            </a>
+            {typeof item === 'number' ? (
+              <a
+                href="#"
+                onClick={() => onPageChange(item)}
+                className="block py-1 px-3 text-primary hover:bg-primary hover:text-onprimary hover:ring-3"
+              >
+                {item + 1}
+              </a>
+            ) : (
+              <span className="py-1 px-3 text-gray-500">...</span>
+            )}
           </li>
         ))}
       </ul>
