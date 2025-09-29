@@ -32,7 +32,7 @@ import { ShowFriends } from './routes/friends';
 import { ShowNotifications } from './routes/notifications';
 import { ShowUser } from './routes/users/show';
 import { jwtDecode } from 'jwt-decode';
-import { logout, refreshTokens } from './api/auth';
+import { refreshTokens } from './api/auth';
 import { ShowCart } from './routes/cart';
 import { useCart } from './hooks/useCart';
 import { CartContext } from './context/cart';
@@ -79,22 +79,22 @@ export const App = () => {
   }, [infoCookie, axiosInstance, profileKey]);
 
   useEffect(() => {
-    if (infoCookie && axiosInstance) {
-      const decoded = jwtDecode(infoCookie);
-      const id = setInterval(() => {
+    const id = setInterval(() => {
+      if (infoCookie && axiosInstance) {
+        const decoded = jwtDecode(infoCookie);
         const now = new Date().getTime();
         const secondsToExpiry = (decoded.exp || 0) - now / 1000;
         // if the token expires in the next 15 minutes
         if (secondsToExpiry < 15 * 60) {
           console.log('Access Token expires in %d. Starting refresh process', secondsToExpiry);
-          refreshTokens(axiosInstance).catch(() => {
-            // force logout when refreshing failed
-            logout(axiosInstance);
-          });
+          refreshTokens(axiosInstance);
         }
-      }, 10000);
-      return () => clearInterval(id);
-    }
+      }
+      if (!infoCookie && axiosInstance) {
+        refreshTokens(axiosInstance);
+      }
+    }, 10000);
+    return () => clearInterval(id);
   }, [infoCookie, axiosInstance]);
 
   const [cart, addToCart, removeFromCart, clearCart, cartByUser] = useCart(axiosInstance, loggedIn);
