@@ -11,7 +11,7 @@ const ImageGrid = (props: ImageGridProps) => {
   return (
     <div className="grid grid-cols-2 gap-2 m-4">
       {images.map((image) => (
-        <div className="flex w-30 h-30 items-center justify-center rounded-md">
+        <div className="flex w-30 h-30 items-center justify-center rounded-md" key={image.id}>
           <ImageComponent
             image={image}
             className="object-contain w-full h-full"
