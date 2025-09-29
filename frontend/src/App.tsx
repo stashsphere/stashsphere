@@ -79,7 +79,7 @@ export const App = () => {
   }, [infoCookie, axiosInstance, profileKey]);
 
   useEffect(() => {
-    const id = setInterval(() => {
+    const callback = () => {
       if (infoCookie && axiosInstance) {
         const decoded = jwtDecode(infoCookie);
         const now = new Date().getTime();
@@ -90,12 +90,16 @@ export const App = () => {
           refreshTokens(axiosInstance);
         }
       }
-      if (!infoCookie && axiosInstance) {
-        refreshTokens(axiosInstance);
+      if (!infoCookie && refreshInfoCookie && axiosInstance) {
+        refreshTokens(axiosInstance).then(() => {
+          window.location.reload();
+        });
       }
-    }, 10000);
+    };
+    const id = setInterval(callback, 10000);
+    callback();
     return () => clearInterval(id);
-  }, [infoCookie, axiosInstance]);
+  }, [infoCookie, axiosInstance, refreshInfoCookie]);
 
   const [cart, addToCart, removeFromCart, clearCart, cartByUser] = useCart(axiosInstance, loggedIn);
 
