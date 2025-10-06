@@ -29,9 +29,11 @@ export const ThingInfoRow = ({ thing }: { thing: Thing }) => {
 
   return (
     <div className="flex flex-row gap-4 flex-start items-center border border-secondary rounded-md p-1">
-      <div className="flex w-16 h-16 items-center justify-center bg-brand-900 p-2 rounded-md">
-        <a href={`/things/${thing.id}`}>{firstImageContent}</a>
-      </div>
+      <a href={`/things/${thing.id}`}>
+        <div className="flex w-24 h-24 items-center justify-center bg-brand-900 p-1 rounded-md">
+          {firstImageContent}
+        </div>
+      </a>
       <div className="w-32">
         <a href={`/things/${thing.id}`}>
           <h2 className="text-display text-xl mb-2">{thing.name}</h2>
