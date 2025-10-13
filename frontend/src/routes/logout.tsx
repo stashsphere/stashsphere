@@ -14,8 +14,7 @@ export const Logout = () => {
         return;
       }
       try {
-        const response = await axiosInstance.delete('/user/logout');
-        console.log(response.data);
+        await axiosInstance.delete('/user/logout');
       } catch (error) {
         console.error(error);
       }
