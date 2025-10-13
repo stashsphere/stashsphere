@@ -17,7 +17,7 @@ import { RequireAuth } from './routes/private';
 import { Lists } from './routes/lists/list';
 import { CreateList } from './routes/lists/create';
 import { ShowList } from './routes/lists/show';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search } from './routes/search';
 import { getProfile } from './api/profile';
 import { Profile } from './api/resources';
@@ -49,6 +49,7 @@ export const App = () => {
     () => ({ searchTerm, setSearchTerm }),
     [searchTerm, setSearchTerm]
   );
+
   const loggedIn = infoCookie !== undefined || refreshInfoCookie !== undefined;
 
   useEffect(() => {
@@ -101,6 +102,18 @@ export const App = () => {
     return () => clearInterval(id);
   }, [infoCookie, axiosInstance, refreshInfoCookie]);
 
+  const invalidateProfile = useCallback(() => {
+    setProfileKey((prev) => prev + 1);
+  }, []);
+
+  const authContextValue = useMemo(() => {
+    return {
+      profile,
+      loggedIn,
+      invalidateProfile,
+    };
+  }, [invalidateProfile, loggedIn, profile]);
+
   const [cart, addToCart, removeFromCart, clearCart, cartByUser] = useCart(axiosInstance, loggedIn);
 
   if (config === null) {
@@ -110,15 +123,7 @@ export const App = () => {
   return (
     <ConfigContext.Provider value={config}>
       <AxiosContext.Provider value={axiosInstance}>
-        <AuthContext.Provider
-          value={{
-            profile,
-            loggedIn,
-            invalidateProfile: () => {
-              setProfileKey(profileKey + 1);
-            },
-          }}
-        >
+        <AuthContext.Provider value={authContextValue}>
           <SearchContext.Provider value={searchContextValue}>
             <CartContext.Provider
               value={{

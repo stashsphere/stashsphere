@@ -205,7 +205,7 @@ export const ShowFriends = () => {
   }, [axiosInstance, mutateKey]);
 
   const updateState = () => {
-    setMutateKey(mutateKey + 1);
+    setMutateKey((prev) => prev + 1);
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { AxiosContext } from '../../context/axios';
 import { AuthContext } from '../../context/auth';
 import { PagedNotifications } from '../../api/resources';
@@ -10,15 +10,17 @@ export const ShowNotifications = () => {
   const axiosInstance = useContext(AxiosContext);
   const authContext = useContext(AuthContext);
 
-  const [notifications, setNotifications] = useState<PagedNotifications | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(0);
+  const [notifications, setNotifications] = useState<PagedNotifications | undefined>(undefined);
   const [mutateKey, setMutateKey] = useState(0);
+
+  const loggedIn = authContext.loggedIn;
 
   useEffect(() => {
     if (axiosInstance === null) {
       return;
     }
-    if (!authContext.loggedIn) {
+    if (!loggedIn) {
       return;
     }
     fetchNotifications(axiosInstance, false, currentPage)
@@ -26,11 +28,11 @@ export const ShowNotifications = () => {
       .catch((reason) => {
         console.log(reason);
       });
-  }, [axiosInstance, authContext, currentPage, mutateKey]);
+  }, [axiosInstance, loggedIn, currentPage, mutateKey]);
 
-  const mutate = () => {
-    setMutateKey(mutateKey + 1);
-  };
+  const mutate = useCallback(() => {
+    setMutateKey((prev) => prev + 1);
+  }, []);
 
   if (!notifications) {
     return <p>Loading...</p>;

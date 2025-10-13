@@ -11,7 +11,7 @@ export const Things = () => {
   const axiosInstance = useContext(AxiosContext);
   const [things, setThings] = useState<PagedThings | undefined>(undefined);
   const [summary, setSummary] = useState<ThingsSummary | undefined>(undefined);
-  const [selectedOwners, setSelectedOwners] = useState<string[]>([]);
+  const [selectedOwners, setSelectedOwners] = useState<string[] | undefined>(undefined);
 
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -24,7 +24,7 @@ export const Things = () => {
 
   useEffect(() => {
     if (summary === undefined) {
-      setSelectedOwners([]);
+      setSelectedOwners(undefined);
     } else {
       setSelectedOwners(summary.ownerIds);
     }
@@ -32,6 +32,9 @@ export const Things = () => {
 
   useEffect(() => {
     if (axiosInstance === null) {
+      return;
+    }
+    if (selectedOwners === undefined) {
       return;
     }
     getThings(axiosInstance, currentPage, 10, selectedOwners)
@@ -44,6 +47,9 @@ export const Things = () => {
   const toggleOwnerId = useCallback(
     (id: string) => {
       if (!summary) {
+        return;
+      }
+      if (!selectedOwners) {
         return;
       }
       if (!selectedOwners.includes(id)) {
@@ -72,7 +78,7 @@ export const Things = () => {
             summary.ownerIds.sort().map((ownerId) => (
               <div
                 className={
-                  (selectedOwners.includes(ownerId) ? '' : 'brightness-30 ') +
+                  (selectedOwners && selectedOwners.includes(ownerId) ? '' : 'brightness-30 ') +
                   'bg-secondary p-1 rounded flex-none'
                 }
                 onClick={() => toggleOwnerId(ownerId)}
