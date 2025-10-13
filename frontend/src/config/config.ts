@@ -3,6 +3,7 @@ import { config as devConfig } from './config.development.ts';
 
 export interface Config {
   apiHost: string;
+  strict?: boolean;
 }
 
 export const getConfig = async (): Promise<Config> => {

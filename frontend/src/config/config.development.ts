@@ -1,5 +1,6 @@
-import { Config } from "./config";
+import { Config } from './config';
 
 export const config: Config = {
-    apiHost: "http://localhost:1323",
+  apiHost: 'http://localhost:1323',
+  strict: true,
 };
