@@ -54,7 +54,7 @@ export const Things = () => {
       }
       if (!selectedOwners.includes(id)) {
         setSelectedOwners([...selectedOwners, id]);
-      } else if (selectedOwners.length === summary.totalCount) {
+      } else if (selectedOwners.length === summary.ownerIds.length) {
         setSelectedOwners([id]);
       } else {
         const temp = [...selectedOwners].filter((v) => v !== id);
