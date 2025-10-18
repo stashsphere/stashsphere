@@ -60,7 +60,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 func Serve(config config.StashSphereServeConfig, debug bool) error {
 	consoleOutput := zerolog.ConsoleWriter{Out: os.Stderr}
 	loggerOutput := consoleOutput
-	logger := zerolog.New(loggerOutput)
+	logger := zerolog.New(loggerOutput).With().Timestamp().Logger()
 	log.Logger = logger
 
 	boil.DebugMode = debug
@@ -109,19 +109,8 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 	}()
 
 	e := echo.New()
-
-	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		LogURI:    true,
-		LogStatus: true,
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			logger.Info().
-				Str("URI", v.URI).
-				Int("status", v.Status).
-				Msg("request")
-
-			return nil
-		},
-	}))
+	e.HideBanner = true
+	e.HidePort = true
 
 	en := en.New()
 	uni := ut.New(en, en)
@@ -165,6 +154,10 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 	e.Validator = &CustomValidator{validator: validate, trans: &trans}
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Output: loggerOutput,
+		Format: `{"level":"info", "time":"${time_rfc3339_nano}","id":"${id}","remote_ip":"${remote_ip}",` +
+			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
+			`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
+			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",
 	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
@@ -267,6 +260,8 @@ func Serve(config config.StashSphereServeConfig, debug bool) error {
 
 	e.GET("/assets/:hash", imageHandler.ImageHandlerGet)
 	e.HEAD("/assets/:hash", imageHandler.ImageHandlerGet)
+
+	log.Info().Msgf("stashsphere listening on %s", config.ListenAddress)
 
 	return e.Start(config.ListenAddress)
 }

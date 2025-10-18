@@ -60,7 +60,6 @@ func CreateStashSphereHTTPErrorHandler(echoInstance *echo.Echo) func(err error, 
 				message = "A pending request already exists"
 			}
 		default:
-			c.Logger().Error("Unhandled error type:", err)
 			echoInstance.DefaultHTTPErrorHandler(err, c)
 			return
 		}
