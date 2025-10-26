@@ -33,10 +33,6 @@ This also run a `checkPhase`, i.e. `go test ./...`.
 
 `nix build .#checks.x86_64-linux.nixos-test`
 
-## TODO
-
--  Add structured logging framework with middleware
-
 ## License
 
 AGPLv3
