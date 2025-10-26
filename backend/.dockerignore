@@ -1,0 +1,5 @@
+.git
+backend
+image_cache
+image_store
+Dockerfile
