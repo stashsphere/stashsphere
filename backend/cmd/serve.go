@@ -311,6 +311,9 @@ var serveCommand = &cobra.Command{
 			},
 			"frontendUrl":  "http://localhost",
 			"instanceName": "stashsphereDev",
+			"email": map[string]interface{}{
+				"backend": "stdout",
+			},
 		}, "."), nil)
 
 		for _, configPath := range configPaths {
