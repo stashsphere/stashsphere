@@ -51,7 +51,7 @@ in
             RestrictNamespaces = true;
             RestrictSUIDSGID = true;
             ExecStartPre = ''
-              ${pkgs.stashsphere}/bin/backend migrate --conf ${settingsFile} ${configFilesArgs}
+              ${pkgs.stashsphere}/bin/backend migrate --conf ${configFilesArgs}
             '';
             ExecStart = ''
               ${pkgs.stashsphere}/bin/backend serve --conf ${configFilesArgs}
