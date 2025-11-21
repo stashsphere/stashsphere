@@ -24,6 +24,7 @@
           {
             frontend = pkgs.callPackage ./default.nix { inherit version; };
           });
+      overlay = import ./overlay.nix;
       devShells = forAllSystems (system:
         let
           pkgs = nixpkgsFor.${system};
