@@ -49,7 +49,7 @@ export const Register = () => {
         <h2 className="text-primary text-2xl font-semibold mb-4">Register an account</h2>
         <form onSubmit={register}>
           <div className="mb-4">
-            <label htmlFor="email" className="block text-primary text-sm font-medium">
+            <label htmlFor="name" className="block text-primary text-sm font-medium">
               Name
             </label>
             <input
