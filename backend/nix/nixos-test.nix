@@ -1,6 +1,6 @@
-{ nixosTest, pkgs }:
+{ testers, pkgs }:
 
-nixosTest {
+testers.nixosTest {
   name = "stashsphere";
 
   nodes.server = { ... }: {

@@ -10,7 +10,7 @@ buildGoModule {
 
   src = builtins.filterSource (path: type: baseNameOf path != "nix") ../.;
 
-  vendorHash = "sha256-4cRv/4Fx30pgo8UBLibmdeTNLK2UdFxgxSs6mvsl2cc=";
+  vendorHash = "sha256-aV2Jd5wF5TTFtX8XdweZClFGFyUuNkKjeXep/8kWX7g=";
 
   buildInputs = [
     # libmagic
