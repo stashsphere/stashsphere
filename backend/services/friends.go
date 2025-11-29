@@ -32,7 +32,7 @@ type CreateFriendRequestParams struct {
 func (fs *FriendService) CreateFriendRequest(ctx context.Context, params CreateFriendRequestParams) (*models.FriendRequest, error) {
 	var outerRequest *models.FriendRequest
 	err := utils.Tx(ctx, fs.db, func(tx *sql.Tx) error {
-		pendingFriendRequests, err := models.FriendRequests(models.FriendRequestWhere.State.EQ(models.FriendRequestStatePending), models.FriendRequestWhere.SenderID.EQ(params.UserId)).Count(ctx, tx)
+		pendingFriendRequests, err := models.FriendRequests(models.FriendRequestWhere.State.EQ(models.FriendRequestStatePending), models.FriendRequestWhere.SenderID.EQ(params.UserId), models.FriendRequestWhere.ReceiverID.EQ(params.ReceiverId)).Count(ctx, tx)
 		if err != nil {
 			return err
 		}
