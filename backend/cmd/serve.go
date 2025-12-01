@@ -540,7 +540,7 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 		),
 		commonThingsOptions,
 	)
-	fuegoecho.PatchEcho(engine, thingsGroup, "/{thingId}", thingHandler.ThingHandlerPatch,
+	fuegoecho.PatchEcho(engine, thingsGroup, "/:thingId", thingHandler.ThingHandlerPatch,
 		option.Summary("Update Thing"),
 		option.Description("Update an existing thing's properties, images, and metadata"),
 		option.Path("thingId", "Thing ID", param.Required(), param.Example("example thing ID", "thing123")),
