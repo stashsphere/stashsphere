@@ -526,7 +526,7 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 			200,
 			"Things summary",
 			fuego.Response{
-				Type:         ss_middleware.ErrorResponse{},
+				Type:         services.ThingsForUserSummary{},
 				ContentTypes: []string{"application/json"},
 			},
 		),
