@@ -16,6 +16,9 @@ import (
 func TestImageCreation(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 
 	imageService, err := services.NewTmpImageService(db)
@@ -61,6 +64,9 @@ func TestImageCreation(t *testing.T) {
 func TestImageAccess(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 
 	userService := services.NewUserService(db, false, "")
@@ -94,7 +100,9 @@ func TestImageAccess(t *testing.T) {
 func TestImageAccessSharedThing(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
-
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 	userService := services.NewUserService(db, false, "")
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
@@ -156,7 +164,9 @@ func TestImageAccessSharedThing(t *testing.T) {
 func TestDeleteImage(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
-
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 	userService := services.NewUserService(db, false, "")
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
@@ -196,7 +206,9 @@ func TestDeleteImage(t *testing.T) {
 func TestDeleteImageInUse(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
-
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 	userService := services.NewUserService(db, false, "")
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)

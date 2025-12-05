@@ -26,6 +26,9 @@ type testEnv struct {
 func setupTestEnv(t *testing.T) *testEnv {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 
 	is, err := services.NewTmpImageService(db)

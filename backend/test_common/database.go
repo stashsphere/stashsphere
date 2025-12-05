@@ -52,6 +52,10 @@ func CreateTestSchema() (*sql.DB, func(), error) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		err = rootDb.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	final_db_path := fmt.Sprintf("%s&search_path=%s", basePath, schemaName)
 	db, err := sql.Open("postgres", final_db_path)

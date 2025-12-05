@@ -15,7 +15,9 @@ import (
 func TestFriendRequestCreationReject(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
-
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 
 	userService := services.NewUserService(db, false, "")
@@ -83,7 +85,9 @@ func TestFriendRequestCreationReject(t *testing.T) {
 func TestFriendRequestCreationAccept(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
-
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 
 	userService := services.NewUserService(db, false, "")

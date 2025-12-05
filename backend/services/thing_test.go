@@ -18,7 +18,9 @@ import (
 func TestThingCreation(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
-
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 	is, err := services.NewTmpImageService(db)
 	assert.NoError(t, err)
@@ -43,7 +45,9 @@ func TestThingCreation(t *testing.T) {
 func TestThingAccess(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
-
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 	is, err := services.NewTmpImageService(db)
 	assert.NoError(t, err)
@@ -73,6 +77,9 @@ func TestThingAccess(t *testing.T) {
 func TestThingAccessShareThing(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.Nil(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 
 	is, err := services.NewTmpImageService(db)
@@ -122,6 +129,9 @@ func TestThingAccessShareThing(t *testing.T) {
 func TestThingQuantity(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.Nil(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 
 	is, err := services.NewTmpImageService(db)
@@ -187,6 +197,9 @@ func createFriendShip(t *testing.T, db *sql.DB, userId1 string, userId2 string) 
 func TestSharingState(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 
 	is, err := services.NewTmpImageService(db)
@@ -257,7 +270,9 @@ func TestSharingState(t *testing.T) {
 func TestDeletion(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
-
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 	is, err := services.NewTmpImageService(db)
 	assert.NoError(t, err)
@@ -291,6 +306,9 @@ func TestThingDeletionRemovesFromCart(t *testing.T) {
 	// Setup: Create test schema and services
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
 	t.Cleanup(tearDownFunc)
 
 	is, err := services.NewTmpImageService(db)
