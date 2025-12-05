@@ -1,17 +1,16 @@
 import { Thing } from '../../api/resources';
-import { Icon, PrimaryButton } from '.';
+import { Icon } from '.';
 import { PropertyList } from '../thing_details';
 import { ImageComponent } from '../shared';
 import { UserNameAndUserId } from './user';
-import { useCallback, useContext, useMemo } from 'react';
-import { CartContext } from '../../context/cart';
-import { GreenButton } from './button';
+import CartButton from './cart_button';
 
 type ThingInfoProps = {
   thing: Thing;
+  hideCart?: boolean;
 };
 
-export const ThingInfo = ({ thing }: ThingInfoProps) => {
+export const ThingInfo = ({ thing, hideCart }: ThingInfoProps) => {
   const firstImage = thing.images[0];
   const firstImageContent = firstImage ? (
     <ImageComponent
@@ -24,23 +23,6 @@ export const ThingInfo = ({ thing }: ThingInfoProps) => {
       <Icon icon="mdi--image-off-outline" />
     </span>
   );
-
-  const { cart, addToCart, removeFromCart } = useContext(CartContext);
-
-  const isPartOfCart = useMemo(() => {
-    if (!cart) {
-      return false;
-    }
-    return cart.entries.map((e) => e.thingId).includes(thing.id);
-  }, [cart, thing.id]);
-
-  const onCartClick = useCallback(() => {
-    if (isPartOfCart) {
-      removeFromCart(thing.id);
-    } else {
-      addToCart(thing.id);
-    }
-  }, [isPartOfCart, removeFromCart, thing.id, addToCart]);
 
   return (
     <div className="flex flex-col gap-4 flex-start items-start border border-secondary rounded-md p-1">
@@ -62,15 +44,7 @@ export const ThingInfo = ({ thing }: ThingInfoProps) => {
           <h2 className="text-display">
             <Icon icon="mdi--animation" /> {thing.quantity} {thing.quantityUnit}
           </h2>
-          {isPartOfCart ? (
-            <GreenButton onClick={onCartClick}>
-              <Icon className="" icon={'mdi--cart-remove'} />
-            </GreenButton>
-          ) : (
-            <PrimaryButton onClick={onCartClick}>
-              <Icon className="" icon={'mdi--cart-plus'} />
-            </PrimaryButton>
-          )}
+          {!hideCart && <CartButton thingId={thing.id} />}
         </div>
         <PropertyList properties={thing.properties} collapsable={true} keyWidth="8rem" />
       </div>

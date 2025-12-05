@@ -90,7 +90,7 @@ export const ShareEditor = (props: ShareEditorProps) => {
   const ObjectComponent = useMemo(() => {
     switch (props.type) {
       case 'thing': {
-        return <ThingInfo thing={props.thing}></ThingInfo>;
+        return <ThingInfo thing={props.thing} hideCart></ThingInfo>;
       }
       case 'list': {
         return <ListInfo list={props.list}></ListInfo>;

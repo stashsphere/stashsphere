@@ -6,6 +6,7 @@ import { Headline, PrimaryButton, SecondaryButton } from '../shared';
 import { Icon } from '../shared';
 import { SharingStateComponent } from '../shared/sharing_state';
 import { UserNameAndUserId } from '../shared/user';
+import CartButton from '../shared/cart_button';
 
 interface ThingDetailsProps {
   thing: Thing;
@@ -75,7 +76,11 @@ export const ThingDetails = ({ thing, onDelete }: ThingDetailsProps) => {
 
   return (
     <div className="flex flex-col gap-8">
-      <Headline type="h1">{thing.name}</Headline>
+      <div className="flex flex-row justify-between">
+        <Headline type="h1">{thing.name}</Headline>
+        <CartButton thingId={thing.id} />
+      </div>
+
       <div className="flex flex-col md:flex-row gap-6">
         <div className="flex-1">
           <ThingImages images={thing.images} />
