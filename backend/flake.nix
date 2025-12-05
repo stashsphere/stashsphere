@@ -32,6 +32,10 @@
       devShells = forAllSystems (system:
         let
           pkgs = nixpkgsFor.${system};
+
+          go-migrate-pg = pkgs.go-migrate.overrideAttrs (oldAttrs: {
+            tags = [ "postgres" ];
+          });
         in
         {
           default = pkgs.mkShell {
@@ -42,7 +46,7 @@
               bashInteractive
               file
               sqlboiler
-              go-migrate
+              go-migrate-pg
               postgresql
             ];
             env = {
