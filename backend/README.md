@@ -11,7 +11,11 @@ can be separated.
 
 ### Building the application
 
-`go build -o stashsphere`. You need `file` / `libmagic`.
+You need `file` / `libmagic`.
+
+```
+go build -o stashsphere
+```
 
 ### Running the application
 
@@ -19,7 +23,9 @@ You need a postgresql server running.
 
 For example:
 
-`./stashsphere serve --conf stashsphere.yaml --conf invite.yaml`
+```
+./stashsphere serve --conf stashsphere.yaml --conf invite.yaml
+```
 
 ### OpenAPI
 
