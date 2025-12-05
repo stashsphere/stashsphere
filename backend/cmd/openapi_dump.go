@@ -73,10 +73,15 @@ var openApiDumpCommand = &cobra.Command{
 			outputPath = "doc/openapi.json"
 		}
 
-		_, engine, err := setup(config, false, true, outputPath)
+		_, engine, db, err := setup(config, false, true, outputPath)
 		if err != nil {
 			return err
 		}
+		defer func() {
+			if err := db.Close(); err != nil {
+				log.Error().Err(err).Msg("failed to close database connection")
+			}
+		}()
 
 		_ = engine.OutputOpenAPISpec()
 		return nil

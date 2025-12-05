@@ -63,7 +63,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return nil
 }
 
-func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, openAPIPath string) (*echo.Echo, *fuego.Engine, error) {
+func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, openAPIPath string) (*echo.Echo, *fuego.Engine, *sql.DB, error) {
 	consoleOutput := zerolog.ConsoleWriter{Out: os.Stderr}
 	loggerOutput := consoleOutput
 	logger := zerolog.New(loggerOutput).With().Timestamp().Logger()
@@ -75,7 +75,7 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 		log.Warn().Msg("No private key provided, generating one. Cookies won't work after restart")
 		generatedKey, err := crypto.GenerateEd25519StringKey()
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		config.Auth.PrivateKey = generatedKey
 	}
@@ -105,14 +105,9 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 
 	db, err := sql.Open("postgres", dbOptions)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	defer func() {
-		if err := db.Close(); err != nil {
-			panic(err)
-		}
-	}()
 
 	e := echo.New()
 	e.HideBanner = true
@@ -171,11 +166,11 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 		}, emailService)
 	imageService, err := services.NewImageService(db, config.Image.Path)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	cacheService, err := services.NewCacheService(config.Image.CachePath)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	thingService := services.NewThingService(db, imageService)
 	listService := services.NewListService(db, notificationService)
@@ -1450,14 +1445,19 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 
 	engine.RegisterOpenAPIRoutes(&fuegoecho.OpenAPIHandler{Echo: e})
 
-	return e, engine, nil
+	return e, engine, db, nil
 }
 
 func Serve(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool) error {
-	echo, _, err := setup(config, debug, serveOpenAPI, "")
+	echo, _, db, err := setup(config, debug, serveOpenAPI, "")
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close database connection")
+		}
+	}()
 	log.Info().Msgf("stashsphere listening on %s", config.ListenAddress)
 	return echo.Start(config.ListenAddress)
 }
