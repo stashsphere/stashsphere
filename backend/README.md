@@ -11,7 +11,7 @@ can be separated.
 
 ### Building the application
 
-`go build`. You need `file` / `libmagic`.
+`go build -o stashsphere`. You need `file` / `libmagic`.
 
 ### Running the application
 
@@ -19,7 +19,19 @@ You need a postgresql server running.
 
 For example:
 
-`./backend serve --conf stashsphere.yaml --conf invite.yaml`
+`./stashsphere serve --conf stashsphere.yaml --conf invite.yaml`
+
+### OpenAPI
+
+An OpenAPI 3.1 schema is generated through `fuego` dynamically from code.
+For that, run the application with the `--serve-openapi` flag and then
+navigate to `http://127.0.0.1:1323/swagger`.
+
+Alternatively, use the `openapi-dump` command:
+
+```
+./stashsphere openapi-dump --output $(date +%s)-stashsphere.json
+```
 
 ## Nix
 
