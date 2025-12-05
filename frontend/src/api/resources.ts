@@ -233,3 +233,8 @@ export type CartEntry = {
 export type Cart = {
   entries: CartEntry[];
 };
+
+export type AutoCompleteResult = {
+  completionType: 'name' | 'value';
+  values: string[];
+};
