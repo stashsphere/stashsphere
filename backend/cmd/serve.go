@@ -108,7 +108,6 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 		return nil, nil, nil, err
 	}
 
-
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -217,10 +216,10 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 
 	loginHandler := handlers.NewLoginHandler(authService)
 	registerHandler := handlers.NewRegisterHandler(userService)
-	thingHandler := handlers.NewThingHandler(thingService, listService, propertyService)
+	thingHandler := handlers.NewThingHandler(thingService, listService)
 	listHandler := handlers.NewListHandler(listService)
 	imageHandler := handlers.NewImageHandler(imageService, cacheService)
-	searchHandler := handlers.NewSearchHandler(searchService, listService)
+	searchHandler := handlers.NewSearchHandler(searchService, listService, propertyService)
 	profileHandler := handlers.NewProfileHandler(userService)
 	userHandler := handlers.NewUserHandler(userService)
 	shareHandler := handlers.NewShareHandler(shareService)
@@ -1379,6 +1378,29 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 			"Search results",
 			fuego.Response{
 				Type:         resources.SearchResult{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			401,
+			"Not authenticated",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		commonSearchOptions,
+	)
+	fuegoecho.GetEcho(engine, a, "/search/property_auto_complete", searchHandler.AutocompleteGet,
+		option.Summary("Autocomplete thing properties"),
+		option.Description("Autocomplete names and values of properties"),
+		option.Query("name", "the name to auto-complete, won't auto-complete when value is provided", param.Required(), param.Example("name", "length")),
+		option.Query("value", "the value to auto-complete", param.Example("value", "1300")),
+		option.AddResponse(
+			200,
+			"Search results",
+			fuego.Response{
+				Type:         services.PropertyAutoCompleteResult{},
 				ContentTypes: []string{"application/json"},
 			},
 		),

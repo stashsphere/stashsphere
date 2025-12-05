@@ -286,3 +286,77 @@ func TestDeletion(t *testing.T) {
 	err = thingService.DeleteThing(context.Background(), thing.ID, testUser.ID)
 	assert.NoError(t, err)
 }
+
+func TestThingDeletionRemovesFromCart(t *testing.T) {
+	// Setup: Create test schema and services
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(tearDownFunc)
+
+	is, err := services.NewTmpImageService(db)
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		os.Remove(is.StorePath())
+	})
+
+	userService := services.NewUserService(db, false, "")
+	thingService := services.NewThingService(db, is)
+	cartService := services.NewCartService(db)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, emailService)
+	shareService := services.NewShareService(db, notificationService)
+
+	// Create users: alice (owner), bob (recipient)
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	bob, err := userService.CreateUser(context.Background(), *bobParams)
+	assert.NoError(t, err)
+
+	// Alice creates a thing
+	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thingParams.OwnerId = alice.ID
+	thing, err := thingService.CreateThing(context.Background(), *thingParams)
+	assert.NoError(t, err)
+	assert.NotNil(t, thing)
+
+	// Alice shares thing with bob
+	share, err := shareService.CreateThingShare(context.Background(), services.CreateThingShareParams{
+		ThingId:      thing.ID,
+		OwnerId:      alice.ID,
+		TargetUserId: bob.ID,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, share)
+
+	// Verify bob can access the thing
+	_, err = thingService.GetThing(context.Background(), thing.ID, bob.ID)
+	assert.NoError(t, err, "bob should have access through share")
+
+	// Bob adds thing to cart
+	cartEntries, err := cartService.UpdateCart(context.Background(), services.UpdateCartParams{
+		UserId:   bob.ID,
+		ThingIds: []string{thing.ID},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, cartEntries, 1, "bob's cart should contain the thing")
+
+	// Alice deletes the thing
+	err = thingService.DeleteThing(context.Background(), thing.ID, alice.ID)
+	assert.NoError(t, err)
+
+	// Verify bob's cart is empty after deletion
+	bobCart, err := cartService.GetCart(context.Background(), bob.ID)
+	assert.NoError(t, err)
+	assert.Len(t, bobCart, 0, "bob's cart should be empty after thing deletion")
+
+	// Verify thing no longer exists
+	_, err = thingService.GetThing(context.Background(), thing.ID, alice.ID)
+	assert.Error(t, err, "thing should be deleted")
+	assert.ErrorIs(t, err, utils.NotFoundError{EntityName: "Thing"}, "should return NotFoundError")
+}
