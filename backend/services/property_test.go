@@ -480,7 +480,7 @@ func TestPropertyAutoComplete_EmptyValueQuery(t *testing.T) {
 	assertContainsString(t, result.Values, "Red")
 }
 
-func TestPropertyAutoComplete_CaseSensitiveMatching(t *testing.T) {
+func TestPropertyAutoComplete_CaseInsensitiveMatching(t *testing.T) {
 	env := setupTestEnv(t)
 	user := createTestUser(t, env.ctx, env.db)
 
@@ -497,7 +497,7 @@ func TestPropertyAutoComplete_CaseSensitiveMatching(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 0, "LIKE operator is case-sensitive")
+	assert.Len(t, result.Values, 1, "ILIKE operator is case-insensitive")
 }
 
 func TestPropertyAutoComplete_SpecialCharactersInName(t *testing.T) {
