@@ -11,12 +11,12 @@ import (
 )
 
 type ShareHandler struct {
-	share_service *services.ShareService
+	shareService *services.ShareService
 }
 
-func NewShareHandler(share_service *services.ShareService) *ShareHandler {
+func NewShareHandler(shareService *services.ShareService) *ShareHandler {
 	return &ShareHandler{
-		share_service,
+		shareService,
 	}
 }
 
@@ -48,7 +48,7 @@ func (sh *ShareHandler) ShareHandlerPost(c echo.Context) error {
 	if err := c.Validate(shareParams); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	share, err := sh.share_service.CreateShare(c.Request().Context(), *NewShareParamsToCreateShareParams(shareParams, authCtx.User.UserId))
+	share, err := sh.shareService.CreateShare(c.Request().Context(), *NewShareParamsToCreateShareParams(shareParams, authCtx.User.UserId))
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (sh *ShareHandler) ShareHandlerGet(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	shareId := c.Param("shareId")
-	share, err := sh.share_service.GetShare(c.Request().Context(), shareId, authCtx.User.UserId)
+	share, err := sh.shareService.GetShare(c.Request().Context(), shareId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (sh *ShareHandler) ShareHandlerDelete(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	shareId := c.Param("shareId")
-	err := sh.share_service.DeleteShare(c.Request().Context(), shareId, authCtx.User.UserId)
+	err := sh.shareService.DeleteShare(c.Request().Context(), shareId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}

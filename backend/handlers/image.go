@@ -17,12 +17,12 @@ import (
 )
 
 type ImageHandler struct {
-	image_service *services.ImageService
-	cache_service *services.CacheService
+	imageService *services.ImageService
+	cacheService *services.CacheService
 }
 
-func NewImageHandler(image_service *services.ImageService, cache_service *services.CacheService) *ImageHandler {
-	return &ImageHandler{image_service, cache_service}
+func NewImageHandler(imageService *services.ImageService, cacheService *services.CacheService) *ImageHandler {
+	return &ImageHandler{imageService, cacheService}
 }
 
 func (is *ImageHandler) ImageHandlerPost(c echo.Context) error {
@@ -44,7 +44,7 @@ func (is *ImageHandler) ImageHandlerPost(c echo.Context) error {
 	}
 	defer src.Close()
 
-	image, err := is.image_service.CreateImage(c.Request().Context(), authCtx.User.UserId, file.Filename, src)
+	image, err := is.imageService.CreateImage(c.Request().Context(), authCtx.User.UserId, file.Filename, src)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 		return &utils.ParameterError{Err: err}
 	}
 	hash := c.Param("hash")
-	file, image, err := is.image_service.ImageGet(c.Request().Context(), authCtx.User.UserId, hash)
+	file, image, err := is.imageService.ImageGet(c.Request().Context(), authCtx.User.UserId, hash)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return c.String(http.StatusNotFound, "Image Not Found")
@@ -99,7 +99,7 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 	}
 
 	if resize {
-		if !is.cache_service.Exists(etag) {
+		if !is.cacheService.Exists(etag) {
 			resized, err := operations.ResizeImage(file, int(imageParams.Width))
 			if err != nil {
 				return err
@@ -108,12 +108,12 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 			if err != nil {
 				return err
 			}
-			err = is.cache_service.Put(etag, resizedContent)
+			err = is.cacheService.Put(etag, resizedContent)
 			if err != nil {
 				return err
 			}
 		}
-		returnedImageReader, err = is.cache_service.Get(etag)
+		returnedImageReader, err = is.cacheService.Get(etag)
 		if err != nil {
 			return err
 		}
@@ -160,7 +160,7 @@ func (is *ImageHandler) ImageHandlerPatch(c echo.Context) error {
 		rotation = operations.Rotation270
 	}
 
-	image, err := is.image_service.ModifyImage(c.Request().Context(), authCtx.User.UserId, imageId, services.ModifyImageParams{
+	image, err := is.imageService.ModifyImage(c.Request().Context(), authCtx.User.UserId, imageId, services.ModifyImageParams{
 		Rotation: rotation,
 	})
 	if err != nil {
@@ -198,7 +198,7 @@ func (is *ImageHandler) ImageHandlerIndex(c echo.Context) error {
 		params.PerPage = 50
 	}
 
-	totalCount, totalPageCount, images, err := is.image_service.ImageIndex(c.Request().Context(),
+	totalCount, totalPageCount, images, err := is.imageService.ImageIndex(c.Request().Context(),
 		services.ImageIndexParams{
 			UserId:         authCtx.User.UserId,
 			PerPage:        params.PerPage,
@@ -228,7 +228,7 @@ func (is *ImageHandler) ImageHandlerDelete(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	imageId := c.Param("imageId")
-	deletedImage, err := is.image_service.DeleteImage(c.Request().Context(), authCtx.User.UserId, imageId)
+	deletedImage, err := is.imageService.DeleteImage(c.Request().Context(), authCtx.User.UserId, imageId)
 	if err != nil {
 		return err
 	}

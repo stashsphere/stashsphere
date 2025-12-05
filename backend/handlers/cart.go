@@ -11,12 +11,12 @@ import (
 )
 
 type CartHandler struct {
-	cart_service *services.CartService
+	cartService *services.CartService
 }
 
-func NewCartHandler(cart_service *services.CartService) *CartHandler {
+func NewCartHandler(cartService *services.CartService) *CartHandler {
 	return &CartHandler{
-		cart_service,
+		cartService,
 	}
 }
 
@@ -29,7 +29,7 @@ func (ch *CartHandler) Index(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 
-	entries, err := ch.cart_service.GetCart(c.Request().Context(), authCtx.User.UserId)
+	entries, err := ch.cartService.GetCart(c.Request().Context(), authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (ch *CartHandler) Put(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	entries, err := ch.cart_service.UpdateCart(c.Request().Context(), services.UpdateCartParams{
+	entries, err := ch.cartService.UpdateCart(c.Request().Context(), services.UpdateCartParams{
 		UserId:   authCtx.User.UserId,
 		ThingIds: params.ThingIds,
 	})

@@ -11,12 +11,12 @@ import (
 )
 
 type NotificationHandler struct {
-	notification_service *services.NotificationService
+	notificationService *services.NotificationService
 }
 
-func NewNotificationHandler(notification_service *services.NotificationService) *NotificationHandler {
+func NewNotificationHandler(notificationService *services.NotificationService) *NotificationHandler {
 	return &NotificationHandler{
-		notification_service,
+		notificationService,
 	}
 }
 
@@ -41,7 +41,7 @@ func (nh *NotificationHandler) Index(c echo.Context) error {
 	if params.PerPage == 0 {
 		params.PerPage = 50
 	}
-	totalCount, totalPageCount, notifications, err := nh.notification_service.GetNotifications(c.Request().Context(), services.GetNotificationsForUserParams{
+	totalCount, totalPageCount, notifications, err := nh.notificationService.GetNotifications(c.Request().Context(), services.GetNotificationsForUserParams{
 		UserId:             authCtx.User.UserId,
 		PerPage:            params.PerPage,
 		Page:               params.Page,
@@ -70,7 +70,7 @@ func (nh *NotificationHandler) Acknowledge(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	notificationId := c.Param("notificationId")
-	err := nh.notification_service.AcknowledgeNotification(c.Request().Context(), services.AcknowledgeNotificationParams{
+	err := nh.notificationService.AcknowledgeNotification(c.Request().Context(), services.AcknowledgeNotificationParams{
 		NotificationId: notificationId,
 		UserId:         authCtx.User.UserId,
 	})
