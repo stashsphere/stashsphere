@@ -23,4 +23,11 @@ buildGoModule {
     postgresql
     postgresqlTestHook
   ];
+
+  outputs = [ "out" "doc" ];
+
+  postInstall = ''
+    mkdir -p $doc
+    $out/bin/backend openapi-dump --output $doc/openapi.json
+  '';
 }
