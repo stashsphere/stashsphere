@@ -1,0 +1,5 @@
+Hi {{.TargetUserName}},
+
+{{.OwnerName}} has added new things to a list
+that is shared with you.
+Head to {{.FrontendUrl}} to view it.

@@ -478,3 +478,91 @@ func (ns *NotificationService) listShared(ctx context.Context, params listShared
 	}
 	return ns.emailService.Deliver(params.TargetUserEmail, subject.String(), body.String())
 }
+
+type ThingsAddedToListParams struct {
+	ListId       string
+	OwnerId      string
+	TargetUserId string
+}
+
+func (ns *NotificationService) ThingsAddedToList(ctx context.Context, params ThingsAddedToListParams) error {
+	owner, err := operations.FindUserByID(ctx, ns.db, params.OwnerId)
+	if err != nil {
+		return err
+	}
+	targetUser, err := operations.FindUserByID(ctx, ns.db, params.TargetUserId)
+	if err != nil {
+		return err
+	}
+	return ns.thingsAddedToList(ctx, thingsAddedToListParamsFull{
+		OwnerId:         params.OwnerId,
+		ListId:          params.ListId,
+		OwnerName:       owner.Name,
+		TargetUserId:    params.TargetUserId,
+		TargetUserName:  targetUser.Name,
+		TargetUserEmail: targetUser.Email,
+	})
+}
+
+type thingsAddedToListParamsFull struct {
+	ListId          string
+	OwnerId         string
+	OwnerName       string
+	TargetUserId    string
+	TargetUserName  string
+	TargetUserEmail string
+}
+
+func (ns *NotificationService) thingsAddedToList(ctx context.Context, params thingsAddedToListParamsFull) error {
+	_, err := ns.CreateNotification(ctx, CreateNotification{
+		RecipientId: params.TargetUserId,
+		Content: notifications.ThingsAddedToList{
+			ListId: params.ListId,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	bodyTempl, err := template.ParseFS(templates.FS, "things_added_to_list.body.txt")
+	if err != nil {
+		return err
+	}
+
+	subjectTempl, err := template.ParseFS(templates.FS, "things_added_to_list.subject.txt")
+	if err != nil {
+		return err
+	}
+
+	type BodyData struct {
+		TargetUserName string
+		OwnerName      string
+		FrontendUrl    string
+	}
+
+	type SubjectData struct {
+		InstanceName string
+		OwnerName    string
+	}
+
+	var body bytes.Buffer
+	err = bodyTempl.Execute(&body, BodyData{
+		TargetUserName: params.TargetUserName,
+		FrontendUrl:    ns.data.FrontendUrl,
+		OwnerName:      params.OwnerName,
+	})
+	if err != nil {
+		return err
+	}
+
+	var subject bytes.Buffer
+	err = subjectTempl.Execute(&subject, SubjectData{
+		InstanceName: ns.data.InstanceName,
+		OwnerName:    params.OwnerName,
+	})
+	if err != nil {
+		return err
+	}
+
+	return ns.emailService.Deliver(params.TargetUserEmail, subject.String(), body.String())
+}

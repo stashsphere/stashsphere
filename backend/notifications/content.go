@@ -5,6 +5,7 @@ const (
 	NotifyThingShared           = "THING_SHARED"
 	NotifyListShared            = "LIST_SHARED"
 	NotifyFriendRequestReaction = "FRIEND_REQUEST_REACTION"
+	NotifyThingsAddedToList     = "THINGS_ADDED_TO_LIST"
 )
 
 type StashsphereNotification interface {
@@ -46,4 +47,12 @@ type ListShared struct {
 
 func (n ListShared) ContentType() string {
 	return NotifyListShared
+}
+
+type ThingsAddedToList struct {
+	ListId string `json:"listId"`
+}
+
+func (n ThingsAddedToList) ContentType() string {
+	return NotifyThingsAddedToList
 }

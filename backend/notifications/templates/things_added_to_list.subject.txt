@@ -1,0 +1,1 @@
+[{{.InstanceName}}] {{.OwnerName}} added things to a list
