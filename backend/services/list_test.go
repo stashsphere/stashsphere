@@ -189,6 +189,95 @@ func TestListSharingState(t *testing.T) {
 	assert.NotNil(t, res)
 }
 
+func TestListSharedWithFriendsNotification(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	userService := services.NewUserService(db, false, "")
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	listService := services.NewListService(db, notificationService)
+
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	bob, err := userService.CreateUser(context.Background(), *bobParams)
+	assert.NoError(t, err)
+
+	// bob is a friend of alice
+	createFriendShip(t, db, alice.ID, bob.ID)
+
+	// alice creates a list shared with friends
+	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	listParams.OwnerId = alice.ID
+	listParams.SharingState = models.SharingStateFriends.String()
+	_, err = listService.CreateList(context.Background(), *listParams)
+	assert.NoError(t, err)
+
+	// bob should receive an email notification
+	assert.Len(t, emailService.Mails, 1, "bob should receive a notification email")
+	assert.Equal(t, bobParams.Email, emailService.Mails[0].To)
+}
+
+func TestListUpdateToSharedNotification(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	userService := services.NewUserService(db, false, "")
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	listService := services.NewListService(db, notificationService)
+
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	bob, err := userService.CreateUser(context.Background(), *bobParams)
+	assert.NoError(t, err)
+
+	// bob is a friend of alice
+	createFriendShip(t, db, alice.ID, bob.ID)
+
+	// alice creates a private list
+	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	listParams.OwnerId = alice.ID
+	listParams.SharingState = "private"
+	list, err := listService.CreateList(context.Background(), *listParams)
+	assert.NoError(t, err)
+
+	// no emails should be sent for a private list
+	assert.Len(t, emailService.Mails, 0, "no notification for private list")
+
+	// alice updates the list to share with friends
+	_, err = listService.UpdateList(context.Background(), list.ID, alice.ID, services.UpdateListParams{
+		Name:         list.Name,
+		ThingIds:     []string{},
+		SharingState: models.SharingStateFriends.String(),
+	})
+	assert.NoError(t, err)
+
+	// bob should now receive an email notification
+	assert.Len(t, emailService.Mails, 1, "bob should receive a notification email when list is shared")
+	assert.Equal(t, bobParams.Email, emailService.Mails[0].To)
+}
+
 func TestListDeletion(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
