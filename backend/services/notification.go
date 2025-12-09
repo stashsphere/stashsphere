@@ -127,15 +127,34 @@ func (ns *NotificationService) AcknowledgeNotification(ctx context.Context, para
 }
 
 type CreateFriendRequestNotificationParams struct {
+	ReceiverId string
+	RequestId  string
+	SenderId   string
+}
+
+type createFriendRequestNotificationParamsFull struct {
 	ReceiverId    string
 	ReceiverName  string
 	ReceiverEmail string
 	RequestId     string
 	SenderId      string
-	SenderName    string
 }
 
 func (ns *NotificationService) CreateFriendRequest(ctx context.Context, params CreateFriendRequestNotificationParams) error {
+	receiver, err := operations.FindUserByID(ctx, ns.db, params.ReceiverId)
+	if err != nil {
+		return err
+	}
+	return ns.createFriendRequest(ctx, createFriendRequestNotificationParamsFull{
+		ReceiverId:    params.ReceiverId,
+		ReceiverName:  receiver.Name,
+		ReceiverEmail: receiver.Email,
+		RequestId:     params.RequestId,
+		SenderId:      params.SenderId,
+	})
+}
+
+func (ns *NotificationService) createFriendRequest(ctx context.Context, params createFriendRequestNotificationParamsFull) error {
 	_, err := ns.CreateNotification(ctx, CreateNotification{
 		RecipientId: params.ReceiverId,
 		Content: notifications.FriendRequest{
@@ -187,6 +206,13 @@ func (ns *NotificationService) CreateFriendRequest(ctx context.Context, params C
 }
 
 type CreateFriendRequestReactionParams struct {
+	RequestId  string
+	ReceiverId string
+	SenderId   string
+	Accepted   bool
+}
+
+type createFriendRequestReactionParamsFull struct {
 	RequestId    string
 	ReceiverId   string
 	SenderId     string
@@ -197,6 +223,26 @@ type CreateFriendRequestReactionParams struct {
 }
 
 func (ns *NotificationService) CreateFriendRequestReaction(ctx context.Context, params CreateFriendRequestReactionParams) error {
+	receiver, err := operations.FindUserByID(ctx, ns.db, params.ReceiverId)
+	if err != nil {
+		return err
+	}
+	sender, err := operations.FindUserByID(ctx, ns.db, params.SenderId)
+	if err != nil {
+		return err
+	}
+	return ns.createFriendRequestReaction(ctx, createFriendRequestReactionParamsFull{
+		RequestId:    params.RequestId,
+		ReceiverId:   params.ReceiverId,
+		SenderId:     params.SenderId,
+		SenderEmail:  sender.Email,
+		ReceiverName: receiver.Name,
+		Accepted:     params.Accepted,
+		SenderName:   sender.Name,
+	})
+}
+
+func (ns *NotificationService) createFriendRequestReaction(ctx context.Context, params createFriendRequestReactionParamsFull) error {
 	_, err := ns.CreateNotification(ctx, CreateNotification{
 		RecipientId: params.ReceiverId,
 		Content: notifications.FriendRequestReaction{
@@ -262,20 +308,45 @@ func (ns *NotificationService) CreateFriendRequestReaction(ctx context.Context, 
 }
 
 type ThingSharedParams struct {
+	ThingId      string
+	SharerId     string
+	TargetUserId string
+}
+
+type thingSharedParamsFull struct {
 	ThingId         string
 	SharerName      string
-	SharedId        string
+	SharerId        string
 	TargetUserId    string
 	TargetUserName  string
 	TargetUserEmail string
 }
 
 func (ns *NotificationService) ThingShared(ctx context.Context, params ThingSharedParams) error {
+	sharer, err := operations.FindUserByID(ctx, ns.db, params.SharerId)
+	if err != nil {
+		return err
+	}
+	targetUser, err := operations.FindUserByID(ctx, ns.db, params.TargetUserId)
+	if err != nil {
+		return err
+	}
+	return ns.thingShared(ctx, thingSharedParamsFull{
+		ThingId:         params.ThingId,
+		SharerName:      sharer.Name,
+		SharerId:        params.SharerId,
+		TargetUserId:    params.TargetUserId,
+		TargetUserName:  targetUser.Name,
+		TargetUserEmail: targetUser.Email,
+	})
+}
+
+func (ns *NotificationService) thingShared(ctx context.Context, params thingSharedParamsFull) error {
 	_, err := ns.CreateNotification(ctx, CreateNotification{
 		RecipientId: params.TargetUserId,
 		Content: notifications.ThingShared{
 			ThingId:  params.ThingId,
-			SharerId: params.SharedId,
+			SharerId: params.SharerId,
 		},
 	})
 	if err != nil {

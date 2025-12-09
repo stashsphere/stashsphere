@@ -9,7 +9,6 @@ import (
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/stashsphere/backend/models"
-	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/utils"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -70,23 +69,12 @@ func (fs *FriendService) CreateFriendRequest(ctx context.Context, params CreateF
 	if err != nil {
 		return nil, err
 	}
-	receiver, err := operations.FindUserByID(ctx, fs.db, outerRequest.ReceiverID)
-	if err != nil {
-		return nil, err
-	}
-	sender, err := operations.FindUserByID(ctx, fs.db, outerRequest.SenderID)
-	if err != nil {
-		return nil, err
-	}
 
 	err = fs.ns.CreateFriendRequest(ctx,
 		CreateFriendRequestNotificationParams{
-			ReceiverId:    outerRequest.ReceiverID,
-			SenderId:      outerRequest.SenderID,
-			ReceiverName:  receiver.Name,
-			ReceiverEmail: receiver.Email,
-			SenderName:    sender.Name,
-			RequestId:     outerRequest.ID,
+			ReceiverId: outerRequest.ReceiverID,
+			SenderId:   outerRequest.SenderID,
+			RequestId:  outerRequest.ID,
 		})
 	if err != nil {
 		log.Error().Msgf("Could not create notification: %v", err)
@@ -211,22 +199,11 @@ func (fs *FriendService) ReactFriendRequest(ctx context.Context, params ReactFri
 	if err != nil {
 		return nil, err
 	}
-	receiver, err := operations.FindUserByID(ctx, fs.db, outerRequest.ReceiverID)
-	if err != nil {
-		return nil, err
-	}
-	sender, err := operations.FindUserByID(ctx, fs.db, outerRequest.SenderID)
-	if err != nil {
-		return nil, err
-	}
 	err = fs.ns.CreateFriendRequestReaction(ctx, CreateFriendRequestReactionParams{
-		RequestId:    outerRequest.ID,
-		ReceiverId:   outerRequest.ReceiverID,
-		Accepted:     params.Accept,
-		SenderEmail:  sender.Email,
-		ReceiverName: receiver.Name,
-		SenderName:   sender.Name,
-		SenderId:     sender.ID,
+		RequestId:  outerRequest.ID,
+		ReceiverId: outerRequest.ReceiverID,
+		Accepted:   params.Accept,
+		SenderId:   outerRequest.SenderID,
 	})
 	if err != nil {
 		log.Error().Msgf("Could not create notification: %v", err)

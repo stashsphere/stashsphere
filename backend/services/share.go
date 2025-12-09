@@ -68,23 +68,10 @@ func (ss *ShareService) CreateThingShare(ctx context.Context, params CreateThing
 		return nil, err
 	}
 
-	sharer, err := operations.FindUserByID(ctx, ss.db, params.OwnerId)
-	if err != nil {
-		return nil, err
-	}
-
-	targetUser, err := operations.FindUserByID(ctx, ss.db, params.TargetUserId)
-	if err != nil {
-		return nil, err
-	}
-
 	err = ss.ns.ThingShared(ctx, ThingSharedParams{
-		ThingId:         params.ThingId,
-		SharerName:      sharer.Name,
-		SharedId:        sharer.ID,
-		TargetUserId:    params.TargetUserId,
-		TargetUserName:  targetUser.Name,
-		TargetUserEmail: targetUser.Email,
+		ThingId:      params.ThingId,
+		TargetUserId: params.TargetUserId,
+		SharerId:     params.OwnerId,
 	})
 	if err != nil {
 		log.Error().Msgf("Could not create notification: %v", err)
