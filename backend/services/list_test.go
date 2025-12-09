@@ -30,7 +30,7 @@ func TestListCreation(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	listService := services.NewListService(db, notificationService)
 
 	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
@@ -62,7 +62,7 @@ func TestListAccess(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	listService := services.NewListService(db, notificationService)
 
 	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
@@ -87,7 +87,7 @@ func TestListAccessShareList(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	shareService := services.NewShareService(db, notificationService)
 	listService := services.NewListService(db, notificationService)
 
@@ -132,7 +132,7 @@ func TestListSharingState(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	listService := services.NewListService(db, notificationService)
 
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
@@ -209,7 +209,7 @@ func TestListDeletion(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	listService := services.NewListService(db, notificationService)
 
 	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
@@ -254,7 +254,7 @@ func TestListCreationWithThings(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	listService := services.NewListService(db, notificationService)
 
 	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
@@ -302,7 +302,7 @@ func TestListUpdateWithThings(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	listService := services.NewListService(db, notificationService)
 
 	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
@@ -355,7 +355,7 @@ func TestListCannotAddOthersThings(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	listService := services.NewListService(db, notificationService)
 
 	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
@@ -384,7 +384,7 @@ func TestRemoveThingFromListRemovesFromCart(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	thingService := services.NewThingService(db, is)
 	listService := services.NewListService(db, notificationService)
 	cartService := services.NewCartService(db)

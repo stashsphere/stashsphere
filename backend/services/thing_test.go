@@ -93,7 +93,7 @@ func TestThingAccessShareThing(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	shareService := services.NewShareService(db, notificationService)
 	thingService := services.NewThingService(db, is)
 
@@ -177,7 +177,7 @@ func createFriendShip(t *testing.T, db *sql.DB, userId1 string, userId2 string) 
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	friendService := services.NewFriendService(db, notificationService)
 
 	request, err := friendService.CreateFriendRequest(context.Background(), services.CreateFriendRequestParams{
@@ -324,7 +324,7 @@ func TestThingDeletionRemovesFromCart(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	shareService := services.NewShareService(db, notificationService)
 
 	// Create users: alice (owner), bob (recipient)

@@ -25,7 +25,7 @@ func TestFriendRequestCreationReject(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	friendService := services.NewFriendService(db, notificationService)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
@@ -95,7 +95,7 @@ func TestFriendRequestCreationAccept(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	friendService := services.NewFriendService(db, notificationService)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)

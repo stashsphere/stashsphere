@@ -134,7 +134,7 @@ func TestImageAccessSharedThing(t *testing.T) {
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	shareService := services.NewShareService(db, notificationService)
 
 	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)

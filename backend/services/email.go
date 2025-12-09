@@ -63,19 +63,19 @@ type TestEmail struct {
 }
 
 type TestEmailService struct {
-	mails []TestEmail
+	Mails []TestEmail
 }
 
-func (h TestEmailService) Deliver(identifier string, subject string, body string) error {
+func (h *TestEmailService) Deliver(identifier string, subject string, body string) error {
 	newMail := TestEmail{
 		To:      identifier,
 		Subject: subject,
 		Body:    body,
 	}
-	h.mails = append(h.mails, newMail)
+	h.Mails = append(h.Mails, newMail)
 	return nil
 }
 
-func (h TestEmailService) Clear() {
-	h.mails = []TestEmail{}
+func (h *TestEmailService) Clear() {
+	h.Mails = []TestEmail{}
 }

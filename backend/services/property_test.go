@@ -80,7 +80,7 @@ func createDirectShare(t *testing.T, ctx context.Context, db *sql.DB, thingId, o
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	shareService := services.NewShareService(db, notificationService)
 
 	share, err := shareService.CreateThingShare(ctx, services.CreateThingShareParams{
@@ -349,7 +349,7 @@ func TestPropertyAutoComplete_NoAccessAfterShareRemoved(t *testing.T) {
 	notificationService := services.NewNotificationService(env.db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
-	}, emailService)
+	}, &emailService)
 	shareService := services.NewShareService(env.db, notificationService)
 	err = shareService.DeleteShare(env.ctx, share.ID, alice.ID)
 	assert.NoError(t, err)
