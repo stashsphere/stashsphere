@@ -13,6 +13,7 @@ import (
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/notifications"
 	"github.com/stashsphere/backend/notifications/templates"
+	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/utils"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -322,6 +323,12 @@ func (ns *NotificationService) ThingShared(ctx context.Context, params ThingShar
 }
 
 type ListSharedParams struct {
+	ListId       string
+	SharedId     string
+	TargetUserId string
+}
+
+type listSharedParamsFull struct {
 	ListId          string
 	SharerName      string
 	SharedId        string
@@ -331,6 +338,25 @@ type ListSharedParams struct {
 }
 
 func (ns *NotificationService) ListShared(ctx context.Context, params ListSharedParams) error {
+	sharer, err := operations.FindUserByID(ctx, ns.db, params.SharedId)
+	if err != nil {
+		return err
+	}
+	targetUser, err := operations.FindUserByID(ctx, ns.db, params.TargetUserId)
+	if err != nil {
+		return err
+	}
+	return ns.listShared(ctx, listSharedParamsFull{
+		ListId:          params.ListId,
+		SharerName:      sharer.Name,
+		SharedId:        sharer.ID,
+		TargetUserName:  targetUser.Name,
+		TargetUserId:    params.TargetUserId,
+		TargetUserEmail: targetUser.Email,
+	})
+}
+
+func (ns *NotificationService) listShared(ctx context.Context, params listSharedParamsFull) error {
 	_, err := ns.CreateNotification(ctx, CreateNotification{
 		RecipientId: params.TargetUserId,
 		Content: notifications.ListShared{

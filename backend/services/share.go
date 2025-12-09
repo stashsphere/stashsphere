@@ -133,23 +133,11 @@ func (ss *ShareService) CreateListShare(ctx context.Context, params CreateListSh
 	if err != nil {
 		return nil, err
 	}
-	sharer, err := operations.FindUserByID(ctx, ss.db, params.OwnerId)
-	if err != nil {
-		return nil, err
-	}
-
-	targetUser, err := operations.FindUserByID(ctx, ss.db, params.TargetUserId)
-	if err != nil {
-		return nil, err
-	}
 
 	err = ss.ns.ListShared(ctx, ListSharedParams{
-		ListId:          params.ListId,
-		SharerName:      sharer.Name,
-		SharedId:        sharer.ID,
-		TargetUserId:    params.TargetUserId,
-		TargetUserName:  targetUser.Name,
-		TargetUserEmail: targetUser.Email,
+		ListId:       params.ListId,
+		SharedId:     params.OwnerId,
+		TargetUserId: params.TargetUserId,
 	})
 
 	if err != nil {

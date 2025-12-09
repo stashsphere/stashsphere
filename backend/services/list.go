@@ -32,6 +32,8 @@ type CreateListParams struct {
 
 func (ls *ListService) CreateList(ctx context.Context, params CreateListParams) (*models.List, error) {
 	var outerList *models.List
+	targetUsersIds := []string{}
+
 	err := utils.Tx(ctx, ls.db, func(tx *sql.Tx) error {
 		listID, err := gonanoid.New()
 		if err != nil {
@@ -42,8 +44,24 @@ func (ls *ListService) CreateList(ctx context.Context, params CreateListParams) 
 		switch params.SharingState {
 		case "friends":
 			sharingState = models.SharingStateFriends
+			targetUsersIds, err = operations.GetFriendIds(ctx, tx, params.OwnerId)
+			if err != nil {
+				return err
+			}
 		case "friends-of-friends":
 			sharingState = models.SharingStateFriendsOfFriends
+			ownerFriendIds, err := operations.GetFriendIds(ctx, tx, params.OwnerId)
+			if err != nil {
+				return err
+			}
+			for _, friendId := range ownerFriendIds {
+				friendOfFriendIds, err := operations.GetFriendIds(ctx, tx, friendId)
+				if err != nil {
+					return err
+				}
+				targetUsersIds = append(targetUsersIds, friendOfFriendIds...)
+				targetUsersIds = append(targetUsersIds, friendId)
+			}
 		}
 
 		list := models.List{
@@ -77,6 +95,14 @@ func (ls *ListService) CreateList(ctx context.Context, params CreateListParams) 
 	if err != nil {
 		return nil, err
 	}
+
+	for _, targetUserId := range targetUsersIds {
+		ls.ns.ListShared(ctx, ListSharedParams{
+			ListId:       outerList.ID,
+			SharedId:     outerList.OwnerID,
+			TargetUserId: targetUserId,
+		})
+	}
 	return ls.GetList(ctx, outerList.ID, outerList.OwnerID)
 }
 
@@ -88,7 +114,7 @@ type UpdateListParams struct {
 
 func (ls *ListService) UpdateList(ctx context.Context, listId string, userId string, params UpdateListParams) (*models.List, error) {
 	var outerList *models.List
-	var newIdsInParameters []string
+	targetUsersIds := []string{}
 	err := utils.Tx(ctx, ls.db, func(tx *sql.Tx) error {
 		list, err := models.Lists(qm.Load(models.ListRels.Things), models.ListWhere.ID.EQ(listId)).One(ctx, tx)
 		if err != nil {
@@ -101,12 +127,36 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 			return utils.EntityDoesNotBelongToUserError{}
 		}
 
+		originalState := list.SharingState
+
 		sharingState := models.SharingStatePrivate
 		switch params.SharingState {
 		case "friends":
 			sharingState = models.SharingStateFriends
+			if originalState == models.SharingStatePrivate {
+				targetUsersIds, err = operations.GetFriendIds(ctx, tx, userId)
+				if err != nil {
+					return err
+				}
+			}
 		case "friends-of-friends":
 			sharingState = models.SharingStateFriendsOfFriends
+			if originalState != models.SharingStateFriendsOfFriends {
+				ownerFriendIds, err := operations.GetFriendIds(ctx, tx, userId)
+				if err != nil {
+					return err
+				}
+				for _, friendId := range ownerFriendIds {
+					friendOfFriendIds, err := operations.GetFriendIds(ctx, tx, friendId)
+					if err != nil {
+						return err
+					}
+					targetUsersIds = append(targetUsersIds, friendOfFriendIds...)
+					if originalState == models.SharingStatePrivate {
+						targetUsersIds = append(targetUsersIds, friendId)
+					}
+				}
+			}
 		}
 
 		list.Name = params.Name
@@ -125,8 +175,6 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 		}
 		for _, newId := range params.ThingIds {
 			if _, ok := oldThingIds[newId]; !ok {
-				// the newId does not exist yet
-				newIdsInParameters = append(newIdsInParameters, newId)
 				allThingIds = append(allThingIds, newId)
 			}
 		}
@@ -162,6 +210,13 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 	})
 	if err != nil {
 		return nil, err
+	}
+	for _, targetUserId := range targetUsersIds {
+		ls.ns.ListShared(ctx, ListSharedParams{
+			ListId:       outerList.ID,
+			SharedId:     outerList.OwnerID,
+			TargetUserId: targetUserId,
+		})
 	}
 	return ls.GetList(ctx, outerList.ID, outerList.OwnerID)
 }
