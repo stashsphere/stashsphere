@@ -115,6 +115,7 @@ type UpdateListParams struct {
 func (ls *ListService) UpdateList(ctx context.Context, listId string, userId string, params UpdateListParams) (*models.List, error) {
 	var outerList *models.List
 	targetUsersIds := []string{}
+	thingsAddedTargetUserIds := []string{}
 	err := utils.Tx(ctx, ls.db, func(tx *sql.Tx) error {
 		list, err := models.Lists(qm.Load(models.ListRels.Things), models.ListWhere.ID.EQ(listId)).One(ctx, tx)
 		if err != nil {
@@ -173,9 +174,35 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 			oldThingIds[oldThing.ID] = true
 			allThingIds = append(allThingIds, oldThing.ID)
 		}
+		hasNewThings := false
 		for _, newId := range params.ThingIds {
 			if _, ok := oldThingIds[newId]; !ok {
 				allThingIds = append(allThingIds, newId)
+				hasNewThings = true
+			}
+		}
+
+		// Notify users if new things were added to an already-shared list
+		if hasNewThings && originalState != models.SharingStatePrivate {
+			switch originalState {
+			case models.SharingStateFriends:
+				thingsAddedTargetUserIds, err = operations.GetFriendIds(ctx, tx, userId)
+				if err != nil {
+					return err
+				}
+			case models.SharingStateFriendsOfFriends:
+				ownerFriendIds, err := operations.GetFriendIds(ctx, tx, userId)
+				if err != nil {
+					return err
+				}
+				for _, friendId := range ownerFriendIds {
+					friendOfFriendIds, err := operations.GetFriendIds(ctx, tx, friendId)
+					if err != nil {
+						return err
+					}
+					thingsAddedTargetUserIds = append(thingsAddedTargetUserIds, friendOfFriendIds...)
+					thingsAddedTargetUserIds = append(thingsAddedTargetUserIds, friendId)
+				}
 			}
 		}
 
@@ -215,6 +242,13 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 		ls.ns.ListShared(ctx, ListSharedParams{
 			ListId:       outerList.ID,
 			SharedId:     outerList.OwnerID,
+			TargetUserId: targetUserId,
+		})
+	}
+	for _, targetUserId := range thingsAddedTargetUserIds {
+		ls.ns.ThingsAddedToList(ctx, ThingsAddedToListParams{
+			ListId:       outerList.ID,
+			OwnerId:      outerList.OwnerID,
 			TargetUserId: targetUserId,
 		})
 	}

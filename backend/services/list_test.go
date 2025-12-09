@@ -454,6 +454,80 @@ func TestListCannotAddOthersThings(t *testing.T) {
 	assert.ErrorIs(t, err, utils.EntityDoesNotBelongToUserError{})
 }
 
+func TestThingsAddedToSharedListNotification(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	is, err := services.NewTmpImageService(db)
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		os.Remove(is.StorePath())
+	})
+
+	userService := services.NewUserService(db, false, "")
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
+	listService := services.NewListService(db, notificationService)
+
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	bob, err := userService.CreateUser(context.Background(), *bobParams)
+	assert.NoError(t, err)
+
+	// bob is a friend of alice
+	createFriendShip(t, db, alice.ID, bob.ID)
+
+	// alice creates a thing
+	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thingParams.OwnerId = alice.ID
+	thing1, err := thingService.CreateThing(context.Background(), *thingParams)
+	assert.NoError(t, err)
+
+	// alice creates a shared list with thing1
+	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	listParams.OwnerId = alice.ID
+	listParams.ThingIds = []string{thing1.ID}
+	listParams.SharingState = models.SharingStateFriends.String()
+	list, err := listService.CreateList(context.Background(), *listParams)
+	assert.NoError(t, err)
+
+	// bob should receive a ListShared notification
+	assert.Len(t, emailService.Mails, 1, "bob should receive a ListShared notification")
+	assert.Equal(t, bobParams.Email, emailService.Mails[0].To)
+	assert.Contains(t, emailService.Mails[0].Subject, "A list has been shared with you")
+	emailService.Clear()
+
+	// alice creates another thing and adds it to the list
+	thing2Params := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thing2Params.OwnerId = alice.ID
+	thing2, err := thingService.CreateThing(context.Background(), *thing2Params)
+	assert.NoError(t, err)
+
+	// alice updates the list to add thing2
+	_, err = listService.UpdateList(context.Background(), list.ID, alice.ID, services.UpdateListParams{
+		Name:         list.Name,
+		ThingIds:     []string{thing1.ID, thing2.ID},
+		SharingState: models.SharingStateFriends.String(),
+	})
+	assert.NoError(t, err)
+
+	// bob should receive a ThingsAddedToList notification (not ListShared)
+	assert.Len(t, emailService.Mails, 1, "bob should receive a ThingsAddedToList notification")
+	assert.Equal(t, bobParams.Email, emailService.Mails[0].To)
+	assert.Contains(t, emailService.Mails[0].Subject, "added things to a list")
+}
+
 func TestRemoveThingFromListRemovesFromCart(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)
