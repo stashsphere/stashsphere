@@ -56,7 +56,12 @@ func createTestUser(t *testing.T, ctx context.Context, db *sql.DB) *models.User 
 }
 
 func createTestThing(t *testing.T, ctx context.Context, db *sql.DB, is *services.ImageService, ownerId string) *models.Thing {
-	thingService := services.NewThingService(db, is)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
 	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
 	thingParams.OwnerId = ownerId
 	thingParams.Properties = []operations.CreatePropertyParams{}
@@ -66,7 +71,12 @@ func createTestThing(t *testing.T, ctx context.Context, db *sql.DB, is *services
 }
 
 func createThingWithProperties(t *testing.T, ctx context.Context, db *sql.DB, is *services.ImageService, ownerId string, properties []operations.CreatePropertyParams) *models.Thing {
-	thingService := services.NewThingService(db, is)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
 	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
 	thingParams.OwnerId = ownerId
 	thingParams.Properties = properties

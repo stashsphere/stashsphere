@@ -333,17 +333,17 @@ func TestListCreationWithThings(t *testing.T) {
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)
 
-	thingService := services.NewThingService(db, is)
-	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
-	thingParams.OwnerId = testUser.ID
-	thing, err := thingService.CreateThing(context.Background(), *thingParams)
-	assert.NoError(t, err)
-
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
 	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
+	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thingParams.OwnerId = testUser.ID
+	thing, err := thingService.CreateThing(context.Background(), *thingParams)
+	assert.NoError(t, err)
+
 	listService := services.NewListService(db, notificationService)
 
 	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
@@ -376,7 +376,12 @@ func TestListUpdateWithThings(t *testing.T) {
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)
 
-	thingService := services.NewThingService(db, is)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
 	thing1Params := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
 	thing1Params.OwnerId = testUser.ID
 	thing1, err := thingService.CreateThing(context.Background(), *thing1Params)
@@ -387,11 +392,6 @@ func TestListUpdateWithThings(t *testing.T) {
 	thing2, err := thingService.CreateThing(context.Background(), *thing2Params)
 	assert.NoError(t, err)
 
-	emailService := services.TestEmailService{}
-	notificationService := services.NewNotificationService(db, services.NotificationData{
-		FrontendUrl:  "https://example.com",
-		InstanceName: "StashsphereTest",
-	}, &emailService)
 	listService := services.NewListService(db, notificationService)
 
 	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
@@ -434,17 +434,17 @@ func TestListCannotAddOthersThings(t *testing.T) {
 	bob, err := userService.CreateUser(context.Background(), *bobParams)
 	assert.NoError(t, err)
 
-	thingService := services.NewThingService(db, is)
-	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
-	thingParams.OwnerId = bob.ID
-	bobsThing, err := thingService.CreateThing(context.Background(), *thingParams)
-	assert.NoError(t, err)
-
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
 	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
+	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thingParams.OwnerId = bob.ID
+	bobsThing, err := thingService.CreateThing(context.Background(), *thingParams)
+	assert.NoError(t, err)
+
 	listService := services.NewListService(db, notificationService)
 
 	listParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
@@ -474,7 +474,7 @@ func TestRemoveThingFromListRemovesFromCart(t *testing.T) {
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
 	}, &emailService)
-	thingService := services.NewThingService(db, is)
+	thingService := services.NewThingService(db, is, notificationService)
 	listService := services.NewListService(db, notificationService)
 	cartService := services.NewCartService(db)
 

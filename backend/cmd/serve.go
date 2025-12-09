@@ -171,7 +171,7 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	thingService := services.NewThingService(db, imageService)
+	thingService := services.NewThingService(db, imageService, notificationService)
 	listService := services.NewListService(db, notificationService)
 	propertyService := services.NewPropertyService(db)
 	searchService := services.NewSearchService(db, thingService, listService)

@@ -128,13 +128,12 @@ func TestImageAccessSharedThing(t *testing.T) {
 	_, _, err = imageService.ImageGet(context.Background(), bob.ID, pngImage.Hash)
 	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{}, "bob does not have access yet")
 
-	thingService := services.NewThingService(db, imageService)
-
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
 	}, &emailService)
+	thingService := services.NewThingService(db, imageService, notificationService)
 	shareService := services.NewShareService(db, notificationService)
 
 	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
@@ -221,7 +220,12 @@ func TestDeleteImageInUse(t *testing.T) {
 	t.Cleanup(func() {
 		os.Remove(imageService.StorePath())
 	})
-	thingService := services.NewThingService(db, imageService)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, imageService, notificationService)
 	pngFile, err := testcommon.Assets.Open("assets/test.png")
 	assert.NoError(t, err)
 

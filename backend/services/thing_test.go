@@ -33,7 +33,12 @@ func TestThingCreation(t *testing.T) {
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)
 
-	thingService := services.NewThingService(db, is)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
 	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
 	thingParams.OwnerId = testUser.ID
 	thing, err := thingService.CreateThing(context.Background(), *thingParams)
@@ -64,7 +69,12 @@ func TestThingAccess(t *testing.T) {
 	mallory, err := userService.CreateUser(context.Background(), *malloryParams)
 	assert.NoError(t, err)
 
-	thingService := services.NewThingService(db, is)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
 	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
 	thingParams.OwnerId = alice.ID
 	thing, err := thingService.CreateThing(context.Background(), *thingParams)
@@ -95,7 +105,7 @@ func TestThingAccessShareThing(t *testing.T) {
 		InstanceName: "StashsphereTest",
 	}, &emailService)
 	shareService := services.NewShareService(db, notificationService)
-	thingService := services.NewThingService(db, is)
+	thingService := services.NewThingService(db, is, notificationService)
 
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	alice, err := userService.CreateUser(context.Background(), *aliceParams)
@@ -141,7 +151,12 @@ func TestThingQuantity(t *testing.T) {
 	})
 
 	userService := services.NewUserService(db, false, "")
-	thingService := services.NewThingService(db, is)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
 
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	alice, err := userService.CreateUser(context.Background(), *aliceParams)
@@ -209,7 +224,12 @@ func TestSharingState(t *testing.T) {
 	})
 
 	userService := services.NewUserService(db, false, "")
-	thingService := services.NewThingService(db, is)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
 
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	alice, err := userService.CreateUser(context.Background(), *aliceParams)
@@ -287,7 +307,12 @@ func TestDeletion(t *testing.T) {
 	anotherUser, err := userService.CreateUser(context.Background(), *anotherUserParams)
 	assert.NoError(t, err)
 
-	thingService := services.NewThingService(db, is)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
 	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
 	thingParams.OwnerId = testUser.ID
 	thing, err := thingService.CreateThing(context.Background(), *thingParams)
@@ -318,13 +343,13 @@ func TestThingDeletionRemovesFromCart(t *testing.T) {
 	})
 
 	userService := services.NewUserService(db, false, "")
-	thingService := services.NewThingService(db, is)
 	cartService := services.NewCartService(db)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
 	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
 	shareService := services.NewShareService(db, notificationService)
 
 	// Create users: alice (owner), bob (recipient)
@@ -377,4 +402,103 @@ func TestThingDeletionRemovesFromCart(t *testing.T) {
 	_, err = thingService.GetThing(context.Background(), thing.ID, alice.ID)
 	assert.Error(t, err, "thing should be deleted")
 	assert.ErrorIs(t, err, utils.NotFoundError{EntityName: "Thing"}, "should return NotFoundError")
+}
+
+func TestThingSharedWithFriendsNotification(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	is, err := services.NewTmpImageService(db)
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		os.Remove(is.StorePath())
+	})
+
+	userService := services.NewUserService(db, false, "")
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
+
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	bob, err := userService.CreateUser(context.Background(), *bobParams)
+	assert.NoError(t, err)
+
+	// bob is a friend of alice
+	createFriendShip(t, db, alice.ID, bob.ID)
+
+	// alice creates a thing shared with friends
+	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thingParams.OwnerId = alice.ID
+	thingParams.SharingState = models.SharingStateFriends.String()
+	_, err = thingService.CreateThing(context.Background(), *thingParams)
+	assert.NoError(t, err)
+
+	// bob should receive an email notification
+	assert.Len(t, emailService.Mails, 1, "bob should receive a notification email")
+	assert.Equal(t, bobParams.Email, emailService.Mails[0].To)
+}
+
+func TestThingUpdateToSharedNotification(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	is, err := services.NewTmpImageService(db)
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		os.Remove(is.StorePath())
+	})
+
+	userService := services.NewUserService(db, false, "")
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
+
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	bob, err := userService.CreateUser(context.Background(), *bobParams)
+	assert.NoError(t, err)
+
+	// bob is a friend of alice
+	createFriendShip(t, db, alice.ID, bob.ID)
+
+	// alice creates a private thing
+	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thingParams.OwnerId = alice.ID
+	thingParams.SharingState = "private"
+	thing, err := thingService.CreateThing(context.Background(), *thingParams)
+	assert.NoError(t, err)
+
+	// no emails should be sent for a private thing
+	assert.Len(t, emailService.Mails, 0, "no notification for private thing")
+
+	// alice updates the thing to share with friends
+	_, err = thingService.EditThing(context.Background(), thing.ID, alice.ID, services.UpdateThingParams{
+		SharingState: models.SharingStateFriends.String(),
+	})
+	assert.NoError(t, err)
+
+	// bob should now receive an email notification
+	assert.Len(t, emailService.Mails, 1, "bob should receive a notification email when thing is shared")
+	assert.Equal(t, bobParams.Email, emailService.Mails[0].To)
 }

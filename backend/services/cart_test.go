@@ -28,13 +28,13 @@ func TestCartCreation(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 	userService := services.NewUserService(db, false, "")
-	thingService := services.NewThingService(db, is)
 	cartService := services.NewCartService(db)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
 		InstanceName: "StashsphereTest",
 	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
 	shareService := services.NewShareService(db, notificationService)
 
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)

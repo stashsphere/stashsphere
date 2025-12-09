@@ -17,10 +17,11 @@ import (
 type ThingService struct {
 	db           *sql.DB
 	imageService *ImageService
+	ns           *NotificationService
 }
 
-func NewThingService(db *sql.DB, imageService *ImageService) *ThingService {
-	return &ThingService{db, imageService}
+func NewThingService(db *sql.DB, imageService *ImageService, ns *NotificationService) *ThingService {
+	return &ThingService{db, imageService, ns}
 }
 
 type CreateThingParams struct {
@@ -37,6 +38,8 @@ type CreateThingParams struct {
 
 func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParams) (*models.Thing, error) {
 	var outerThing *models.Thing
+	targetUsersIds := []string{}
+
 	err := utils.Tx(ctx, ts.db, func(tx *sql.Tx) error {
 		for _, imageId := range params.ImagesIds {
 			res, err := operations.ImageBelongsToUser(ctx, tx, params.OwnerId, imageId)
@@ -57,8 +60,24 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 		switch params.SharingState {
 		case "friends":
 			sharingState = models.SharingStateFriends
+			targetUsersIds, err = operations.GetFriendIds(ctx, tx, params.OwnerId)
+			if err != nil {
+				return err
+			}
 		case "friends-of-friends":
 			sharingState = models.SharingStateFriendsOfFriends
+			ownerFriendIds, err := operations.GetFriendIds(ctx, tx, params.OwnerId)
+			if err != nil {
+				return err
+			}
+			for _, friendId := range ownerFriendIds {
+				friendOfFriendIds, err := operations.GetFriendIds(ctx, tx, friendId)
+				if err != nil {
+					return err
+				}
+				targetUsersIds = append(targetUsersIds, friendOfFriendIds...)
+				targetUsersIds = append(targetUsersIds, friendId)
+			}
 		}
 
 		thing := &models.Thing{
@@ -115,6 +134,14 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 	if err != nil {
 		return nil, err
 	}
+
+	for _, targetUserId := range targetUsersIds {
+		ts.ns.ThingShared(ctx, ThingSharedParams{
+			ThingId:      outerThing.ID,
+			SharerId:     outerThing.OwnerID,
+			TargetUserId: targetUserId,
+		})
+	}
 	return ts.GetThing(ctx, outerThing.ID, outerThing.OwnerID)
 }
 
@@ -135,6 +162,7 @@ type UpdateThingParams struct {
 
 func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId string, params UpdateThingParams) (*models.Thing, error) {
 	var outerThing *models.Thing
+	targetUsersIds := []string{}
 	err := utils.Tx(ctx, ts.db, func(tx *sql.Tx) error {
 		thing, err := models.Things(
 			qm.Load(models.ThingRels.Properties),
@@ -152,12 +180,36 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 			return utils.EntityDoesNotBelongToUserError{}
 		}
 
+		originalState := thing.SharingState
+
 		sharingState := models.SharingStatePrivate
 		switch params.SharingState {
 		case "friends":
 			sharingState = models.SharingStateFriends
+			if originalState == models.SharingStatePrivate {
+				targetUsersIds, err = operations.GetFriendIds(ctx, tx, userId)
+				if err != nil {
+					return err
+				}
+			}
 		case "friends-of-friends":
 			sharingState = models.SharingStateFriendsOfFriends
+			if originalState != models.SharingStateFriendsOfFriends {
+				ownerFriendIds, err := operations.GetFriendIds(ctx, tx, userId)
+				if err != nil {
+					return err
+				}
+				for _, friendId := range ownerFriendIds {
+					friendOfFriendIds, err := operations.GetFriendIds(ctx, tx, friendId)
+					if err != nil {
+						return err
+					}
+					targetUsersIds = append(targetUsersIds, friendOfFriendIds...)
+					if originalState == models.SharingStatePrivate {
+						targetUsersIds = append(targetUsersIds, friendId)
+					}
+				}
+			}
 		}
 
 		thing.PrivateNote = params.PrivateNote
@@ -232,6 +284,13 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 	})
 	if err != nil {
 		return nil, err
+	}
+	for _, targetUserId := range targetUsersIds {
+		ts.ns.ThingShared(ctx, ThingSharedParams{
+			ThingId:      outerThing.ID,
+			SharerId:     outerThing.OwnerID,
+			TargetUserId: targetUserId,
+		})
 	}
 	return ts.GetThing(ctx, thingId, outerThing.OwnerID)
 }
