@@ -24,14 +24,16 @@ const FriendRequestNotificationComponent = ({
 }) => {
   const fontColor = notification.acknowledged ? 'text-display-light' : 'text-display';
   return (
-    <div className="flex flex-row items-center gap-1">
-      <UserNameAndUserId
-        userId={notification.content.senderId}
-        textColor={fontColor}
-        imageBorderColor="border-display"
-      />
-      <div className={fontColor}>wants to be your friend.</div>
-    </div>
+    <a href="/friends">
+      <div className="flex flex-row items-center gap-1">
+        <UserNameAndUserId
+          userId={notification.content.senderId}
+          textColor={fontColor}
+          imageBorderColor="border-display"
+        />
+        <div className={fontColor}>wants to be your friend.</div>
+      </div>
+    </a>
   );
 };
 
