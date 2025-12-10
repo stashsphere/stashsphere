@@ -247,3 +247,7 @@ export type AutoCompleteResult = {
   completionType: 'name' | 'value';
   values: string[];
 };
+
+export type InstanceInfo = {
+  inviteRequired: boolean;
+};

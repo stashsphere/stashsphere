@@ -1,10 +1,13 @@
-import { FormEvent, useContext, useState } from 'react';
+import { FormEvent, useContext, useEffect, useState } from 'react';
 import { PrimaryButton } from '../components/shared';
 import { AxiosContext } from '../context/axios';
 import { useNavigate } from 'react-router';
+import { InstanceInfo } from '../api/resources';
+import { getInstanceInfo } from '../api/info';
 
 export const Register = () => {
   const axiosInstance = useContext(AxiosContext);
+  const [instanceInfo, setInstanceInfo] = useState<InstanceInfo | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,6 +17,15 @@ export const Register = () => {
 
   const [error, setError] = useState<string | undefined>(undefined);
   const submitable = password === passwordConfirm && password.length > 0;
+
+  useEffect(() => {
+    if (axiosInstance === null) {
+      return;
+    }
+    getInstanceInfo(axiosInstance)
+      .then(setInstanceInfo)
+      .catch((e) => console.error(e));
+  }, [axiosInstance]);
 
   const register = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -42,6 +54,8 @@ export const Register = () => {
       setError('Could not register user.');
     }
   };
+
+  const inviteRequired = instanceInfo === null ? true : instanceInfo.inviteRequired;
 
   return (
     <div className="flex items-center justify-center">
@@ -100,19 +114,23 @@ export const Register = () => {
               className="mt-1 p-2 w-full border border-secondary rounded-sm text-display"
             />
           </div>
-          <div className="mb-4">
-            <label htmlFor="invite_code" className="block text-primary text-sm font-medium">
-              Invite Code
-            </label>
-            <input
-              type="text"
-              id="invite_code"
-              name="invite_code"
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value)}
-              className="mt-1 p-2 w-full border border-secondary rounded-sm text-display"
-            />
-          </div>
+          {inviteRequired ? (
+            <div className="mb-4">
+              <label htmlFor="invite_code" className="block text-primary text-sm font-medium">
+                Invite Code
+              </label>
+              <input
+                type="text"
+                id="invite_code"
+                name="invite_code"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                className="mt-1 p-2 w-full border border-secondary rounded-sm text-display"
+              />
+            </div>
+          ) : (
+            <></>
+          )}
 
           <PrimaryButton type="submit" disabled={!submitable}>
             Register User
