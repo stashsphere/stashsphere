@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	ErrInventoryValidation        = "inventory-validation"
+	ErrStashSphereValidation      = "stashsphere-validation"
 	ErrParameterError             = "parameter-error"
 	ErrNotFoundError              = "not-found"
 	ErrWrongInviteCode            = "wrong-invite-code"
@@ -27,11 +27,11 @@ type StashsphereError interface {
 	ErrorType() string
 }
 
-type StashsphereValidationError struct {
+type StashSphereValidationError struct {
 	Errors map[string]string
 }
 
-func (ie StashsphereValidationError) Error() string {
+func (ie StashSphereValidationError) Error() string {
 	buff := bytes.NewBufferString("")
 
 	for k, v := range ie.Errors {
@@ -45,6 +45,8 @@ func (ie StashsphereValidationError) Error() string {
 
 }
 
+func (ie StashSphereValidationError) ErrorType() string { return ErrStashSphereValidation }
+
 type ParameterError struct {
 	Err error
 }
@@ -53,6 +55,8 @@ func (r ParameterError) Error() string {
 	return fmt.Sprintf("ParameterError: %v", r.Err)
 }
 
+func (r ParameterError) ErrorType() string { return ErrParameterError }
+
 type NotFoundError struct {
 	EntityName string
 }
@@ -60,6 +64,8 @@ type NotFoundError struct {
 func (r NotFoundError) Error() string {
 	return fmt.Sprintf("%s not found", r.EntityName)
 }
+
+func (r NotFoundError) ErrorType() string { return ErrNotFoundError }
 
 type WrongInviteCodeError struct{}
 

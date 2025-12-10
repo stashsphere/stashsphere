@@ -25,7 +25,7 @@ func CreateStashSphereHTTPErrorHandler(echoInstance *echo.Echo) func(err error, 
 		switch e := err.(type) {
 		case utils.StashsphereError:
 			switch e.ErrorType() {
-			case utils.ErrInventoryValidation:
+			case utils.ErrStashSphereValidation:
 				statusCode = http.StatusBadRequest
 				message = e.Error()
 			case utils.ErrParameterError:
