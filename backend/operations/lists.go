@@ -116,3 +116,24 @@ func GetSharedListIdsForUser(ctx context.Context, exec boil.ContextExecutor, use
 	}
 	return sharedListIds, nil
 }
+
+func GetDirectShareTargetUserIds(ctx context.Context, exec boil.ContextExecutor, listId string) ([]string, error) {
+	type UserIdRow struct {
+		TargetUserId string `boil:"target_user_id"`
+	}
+	var userIdRows []UserIdRow
+	err := models.NewQuery(
+		qm.Distinct("target_user_id"),
+		qm.From("shares_lists"),
+		qm.InnerJoin("shares on share_id = id"),
+		qm.Where("list_id=?", listId),
+	).Bind(ctx, exec, &userIdRows)
+	if err != nil {
+		return nil, err
+	}
+	userIds := make([]string, len(userIdRows))
+	for i, row := range userIdRows {
+		userIds[i] = row.TargetUserId
+	}
+	return userIds, nil
+}

@@ -183,12 +183,17 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 		}
 
 		// Notify users if new things were added to an already-shared list
-		if hasNewThings && originalState != models.SharingStatePrivate {
+		if hasNewThings {
+			userIdSet := make(map[string]bool)
+
 			switch originalState {
 			case models.SharingStateFriends:
-				thingsAddedTargetUserIds, err = operations.GetFriendIds(ctx, tx, userId)
+				friendIds, err := operations.GetFriendIds(ctx, tx, userId)
 				if err != nil {
 					return err
+				}
+				for _, id := range friendIds {
+					userIdSet[id] = true
 				}
 			case models.SharingStateFriendsOfFriends:
 				ownerFriendIds, err := operations.GetFriendIds(ctx, tx, userId)
@@ -200,9 +205,24 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 					if err != nil {
 						return err
 					}
-					thingsAddedTargetUserIds = append(thingsAddedTargetUserIds, friendOfFriendIds...)
-					thingsAddedTargetUserIds = append(thingsAddedTargetUserIds, friendId)
+					for _, id := range friendOfFriendIds {
+						userIdSet[id] = true
+					}
+					userIdSet[friendId] = true
 				}
+			}
+
+			// Also notify users with direct shares
+			directShareUserIds, err := operations.GetDirectShareTargetUserIds(ctx, tx, list.ID)
+			if err != nil {
+				return err
+			}
+			for _, id := range directShareUserIds {
+				userIdSet[id] = true
+			}
+
+			for id := range userIdSet {
+				thingsAddedTargetUserIds = append(thingsAddedTargetUserIds, id)
 			}
 		}
 
