@@ -209,19 +209,28 @@ export type ThingSharedNotification = BaseNotification & {
   };
 };
 
+export type ThingsAddedToListNotification = BaseNotification & {
+  contentType: 'THINGS_ADDED_TO_LIST';
+  content: {
+    listId: string;
+    addedById: string;
+  };
+};
+
 export type UnknownNotification = BaseNotification & {
   contentType: string;
   content: unknown;
 };
 
-export type StashsphereNotification =
+export type StashSphereNotification =
   | FriendRequestNotification
   | ListSharedNotification
   | ThingSharedNotification
-  | FriendRequestReactionNotification;
+  | FriendRequestReactionNotification
+  | ThingsAddedToListNotification;
 
 export interface PagedNotifications extends Paged {
-  notifications: StashsphereNotification[];
+  notifications: StashSphereNotification[];
 }
 
 export type CartEntry = {

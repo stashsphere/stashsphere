@@ -1,12 +1,13 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import {
   FriendRequestNotification,
-  StashsphereNotification,
+  StashSphereNotification,
   ListSharedNotification,
   UnknownNotification,
   ThingSharedNotification,
   FriendRequest,
   FriendRequestReactionNotification,
+  ThingsAddedToListNotification,
 } from '../api/resources';
 import { AxiosContext } from '../context/axios';
 import { acknowledgeNotification } from '../api/notification';
@@ -139,6 +140,30 @@ const ThingSharedNotificationComponent = ({
   );
 };
 
+const ThingsAddedToListNotificationComponent = ({
+  notification,
+}: {
+  notification: ThingsAddedToListNotification;
+}) => {
+  const fontColor = notification.acknowledged ? 'text-display-light' : 'text-display';
+
+  return (
+    <div className="flex flex-row items-center gap-1">
+      <UserNameAndUserId
+        userId={notification.content.addedById}
+        textColor={fontColor}
+        imageBorderColor="border-display"
+      />
+      <div className={fontColor}>
+        added things to a{' '}
+        <a className="text-accent" href={`/lists/${notification.content.listId}`}>
+          list you have access to.
+        </a>{' '}
+      </div>
+    </div>
+  );
+};
+
 const UnknownNotificationComponent = ({ notification }: { notification: UnknownNotification }) => {
   return (
     <span className="overflow-auto text-display">
@@ -151,7 +176,7 @@ export const NotificationItem = ({
   notification,
   onAcknowledge,
 }: {
-  notification: StashsphereNotification;
+  notification: StashSphereNotification;
   onAcknowledge: () => void;
 }) => {
   const axiosInstance = useContext(AxiosContext);
@@ -176,6 +201,8 @@ export const NotificationItem = ({
         return <ThingSharedNotificationComponent notification={notification} />;
       case 'FRIEND_REQUEST_REACTION':
         return <FriendRequestReactionNotificationComponent notification={notification} />;
+      case 'THINGS_ADDED_TO_LIST':
+        return <ThingsAddedToListNotificationComponent notification={notification} />;
       default:
         return <UnknownNotificationComponent notification={notification} />;
     }
