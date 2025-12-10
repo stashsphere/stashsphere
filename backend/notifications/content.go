@@ -50,7 +50,8 @@ func (n ListShared) ContentType() string {
 }
 
 type ThingsAddedToList struct {
-	ListId string `json:"listId"`
+	ListId    string `json:"listId"`
+	AddedById string `json:"addedById"`
 }
 
 func (n ThingsAddedToList) ContentType() string {

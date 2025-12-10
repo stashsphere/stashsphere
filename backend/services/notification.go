@@ -517,7 +517,8 @@ func (ns *NotificationService) thingsAddedToList(ctx context.Context, params thi
 	_, err := ns.CreateNotification(ctx, CreateNotification{
 		RecipientId: params.TargetUserId,
 		Content: notifications.ThingsAddedToList{
-			ListId: params.ListId,
+			ListId:    params.ListId,
+			AddedById: params.OwnerId,
 		},
 	})
 	if err != nil {
