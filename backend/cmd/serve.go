@@ -226,6 +226,7 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 	friendHandler := handlers.NewFriendHandler(friendService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	cartHandler := handlers.NewCartHandler(cartService)
+	infoHandler := handlers.NewInfoHandler(config.Invites.Enabled)
 
 	a := e.Group("/api")
 	userGroup := a.Group("/user")
@@ -328,6 +329,15 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 			},
 		),
 		commonUserOptions,
+	)
+	fuegoecho.GetEcho(engine, a, "/info", infoHandler.InfoHandlerGet,
+		option.Summary("Get Instance Info"),
+		option.Description("Get public information about this instance"),
+		option.Tags("Info"),
+		option.AddResponse(200, "Instance info", fuego.Response{
+			Type:         handlers.InfoGetResponse{},
+			ContentTypes: []string{"application/json"},
+		}),
 	)
 	fuegoecho.GetEcho(engine, userGroup, "/profile", profileHandler.ProfileHandlerGet,
 		option.Summary("Get Profile"),
