@@ -30,6 +30,7 @@ export const PrimaryButton = ({ children, className, disabled, ...rest }: Button
         ' ',
         className || ''
       )}
+      disabled={disabled}
       {...rest}
     >
       {children}
@@ -55,6 +56,7 @@ export const SecondaryButton = ({ children, className, disabled, ...rest }: Butt
         ' ',
         className || ''
       )}
+      disabled={disabled}
       {...rest}
     >
       {children}
@@ -80,6 +82,7 @@ export const AccentButton = ({ children, className, disabled, ...rest }: ButtonP
         ' ',
         className || ''
       )}
+      disabled={disabled}
       {...rest}
     >
       {children}
