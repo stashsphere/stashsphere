@@ -502,3 +502,89 @@ func TestThingUpdateToSharedNotification(t *testing.T) {
 	assert.Len(t, emailService.Mails, 1, "bob should receive a notification email when thing is shared")
 	assert.Equal(t, bobParams.Email, emailService.Mails[0].To)
 }
+
+func TestGetThingsForUserSearchTerm(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	is, err := services.NewTmpImageService(db)
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		os.Remove(is.StorePath())
+	})
+
+	userService := services.NewUserService(db, false, "")
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
+
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	// Create things with different names
+	thing1Params := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thing1Params.OwnerId = alice.ID
+	thing1Params.Name = "Red Hammer"
+	_, err = thingService.CreateThing(context.Background(), *thing1Params)
+	assert.NoError(t, err)
+
+	thing2Params := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thing2Params.OwnerId = alice.ID
+	thing2Params.Name = "Red Screwdriver"
+	_, err = thingService.CreateThing(context.Background(), *thing2Params)
+	assert.NoError(t, err)
+
+	thing3Params := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thing3Params.OwnerId = alice.ID
+	thing3Params.Name = "Blue Wrench"
+	_, err = thingService.CreateThing(context.Background(), *thing3Params)
+	assert.NoError(t, err)
+
+	// Search for "Red" - should return 2 things
+	_, _, things, err := thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
+		UserId:     alice.ID,
+		SearchTerm: "Red",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, things, 2, "should find 2 things starting with 'Red'")
+
+	// Search for "Blue" - should return 1 thing
+	_, _, things, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
+		UserId:     alice.ID,
+		SearchTerm: "Blue",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, things, 1, "should find 1 thing starting with 'Blue'")
+
+	// Search for "Green" - should return 0 things
+	_, _, things, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
+		UserId:     alice.ID,
+		SearchTerm: "Green",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, things, 0, "should find 0 things starting with 'Green'")
+
+	// Empty search term - should return all 3 things
+	_, _, things, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
+		UserId:     alice.ID,
+		SearchTerm: "",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, things, 3, "empty search term should return all things")
+
+	// Case insensitive search - "red" should also match
+	_, _, things, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
+		UserId:     alice.ID,
+		SearchTerm: "red",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, things, 2, "search should be case insensitive")
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"math"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -353,10 +354,11 @@ type GetThingsForUserParams struct {
 	Page           uint64
 	Paginate       bool
 	FilterOwnerIds []string
+	SearchTerm     string
 }
 
 func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsForUserParams) (uint64, uint64, models.ThingSlice, error) {
-	userId, perPage, page, paginate, filterUserIds := params.UserId, params.PerPage, params.Page, params.Paginate, params.FilterOwnerIds
+	userId, perPage, page, paginate, filterUserIds, searchTerm := params.UserId, params.PerPage, params.Page, params.Paginate, params.FilterOwnerIds, params.SearchTerm
 
 	tx, err := ts.db.BeginTx(ctx, &sql.TxOptions{
 		ReadOnly: true,
@@ -385,6 +387,11 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 			filterUserInterfaceIds[i] = u
 		}
 		searchCond = qm.Expr(searchCond, qm.AndIn("owner_id in ?", filterUserInterfaceIds...))
+	}
+
+	if len(searchTerm) > 0 {
+		likeNameExpr := fmt.Sprintf("%s%%", searchTerm)
+		searchCond = qm.Expr(searchCond, qm.And("name ILIKE ?", likeNameExpr))
 	}
 
 	thingCount, err := models.Things(searchCond).Count(ctx, tx)

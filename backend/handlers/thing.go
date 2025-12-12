@@ -28,6 +28,7 @@ type ThingsParams struct {
 	Page           uint64   `query:"page"`
 	PerPage        uint64   `query:"perPage"`
 	FilterOwnerIds []string `query:"filterOwnerId"`
+	SearchTerm     string   `query:"searchTerm"`
 }
 
 func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
@@ -53,6 +54,7 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 			Page:           params.Page,
 			Paginate:       true,
 			FilterOwnerIds: params.FilterOwnerIds,
+			SearchTerm:     params.SearchTerm,
 		},
 	)
 	if err != nil {
