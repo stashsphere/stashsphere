@@ -16,7 +16,7 @@ export const Register = () => {
   const navigate = useNavigate();
 
   const [error, setError] = useState<string | undefined>(undefined);
-  const submitable = password === passwordConfirm && password.length > 0;
+  const submittable = name.length >= 1 && password.length >= 3 && password === passwordConfirm;
 
   useEffect(() => {
     if (axiosInstance === null) {
@@ -132,7 +132,7 @@ export const Register = () => {
             <></>
           )}
 
-          <PrimaryButton type="submit" disabled={!submitable}>
+          <PrimaryButton type="submit" disabled={!submittable}>
             Register User
           </PrimaryButton>
           {error && <p className="text-warning">{error}</p>}
