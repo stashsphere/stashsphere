@@ -1,5 +1,5 @@
-import { FormEvent, ReactNode, useEffect, useState } from 'react';
-import { ThingInfo } from './shared';
+import { ReactNode } from 'react';
+import { SelectableThing } from './shared';
 import { SharingState, Thing } from '../api/resources';
 
 export type ListEditorData = {
@@ -10,76 +10,67 @@ export type ListEditorData = {
 
 type ListEditorProps = {
   children?: ReactNode;
-  list?: ListEditorData;
+  list: ListEditorData;
   selectableThings: Thing[];
   onChange: (list: ListEditorData) => void;
 };
 
 export const ListEditor = ({ children, list, onChange, selectableThings }: ListEditorProps) => {
-  const [name, setName] = useState('');
-  const [selectedThingIDs, setSelectedThingIDs] = useState<string[]>([]);
-  const [sharingState, setSharingState] = useState<SharingState>('private');
-
-  useEffect(() => {
-    if (!list) {
-      return;
-    }
-    setName(list.name);
-    setSelectedThingIDs(list.selectedThingIDs);
-    setSharingState(list.sharingState);
-  }, [list]);
-
-  const onSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    const data = {
-      name,
-      selectedThingIDs,
-      sharingState,
-    };
-    onChange(data);
-  };
-
   const onThingSelect = (thingID: string, isChecked: boolean) => {
+    const selectedThingIDs = list.selectedThingIDs;
     if (isChecked) {
-      setSelectedThingIDs([...selectedThingIDs, thingID]);
+      onChange({
+        ...list,
+        selectedThingIDs: [...selectedThingIDs, thingID],
+      });
     } else {
       const index = selectedThingIDs.indexOf(thingID);
       if (index > -1) {
         const updatedSelectedThingIDs = [...selectedThingIDs];
         updatedSelectedThingIDs.splice(index, 1);
-        setSelectedThingIDs(updatedSelectedThingIDs);
+        onChange({
+          ...list,
+          selectedThingIDs: updatedSelectedThingIDs,
+        });
       }
     }
   };
 
+  const onNameChange = (value: string) => {
+    onChange({
+      ...list,
+      name: value,
+    });
+  };
+
   return (
-    <form onSubmit={onSubmit}>
-      <div className="mb-4">
-        <label htmlFor="email" className="block text-primary text-sm font-medium">
-          Name
-        </label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1 p-2 text-display border border-gray-300 rounded-sm"
-        />
-      </div>
-      {selectableThings.map((thing) => (
-        <div className="flex flex-row border border-gray-300">
-          <div className="px-4 border border-r-gray-300">
-            <input
-              type="checkbox"
-              checked={selectedThingIDs.includes(thing.id)}
-              onChange={(e) => onThingSelect(thing.id, e.target.checked)}
-            />
-          </div>
-          <ThingInfo thing={thing} key={thing.id} />
+    <div>
+      <div className="mb-4 flex justify-between">
+        <div>
+          <label htmlFor="email" className="block text-primary text-sm font-medium">
+            Name
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={list.name}
+            onChange={(e) => onNameChange(e.target.value)}
+            className="mt-1 p-2 text-display border border-gray-300 rounded-sm"
+          />
         </div>
-      ))}
-      {children}
-    </form>
+        <div className="flex flex-col justify-end">{children}</div>
+      </div>
+      <div className="flex flex-wrap gap-4">
+        {selectableThings.map((thing) => (
+          <SelectableThing
+            key={thing.id}
+            thing={thing}
+            selected={list.selectedThingIDs.includes(thing.id)}
+            onChange={(sel) => onThingSelect(thing.id, sel)}
+          />
+        ))}
+      </div>
+    </div>
   );
 };

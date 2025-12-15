@@ -122,7 +122,7 @@ export interface List {
   things: Thing[];
   actions: ThingActions;
   shares: Share[];
-  sharingState: SharingState | null;
+  sharingState: SharingState;
 }
 
 export interface PagedLists extends Paged {

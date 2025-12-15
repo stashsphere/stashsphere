@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { List, PagedThings } from '../../api/resources';
 import { useNavigate, useParams } from 'react-router';
 import { AxiosContext } from '../../context/axios';
@@ -11,6 +11,12 @@ import { AuthContext } from '../../context/auth';
 
 export const EditList = () => {
   const [list, setList] = useState<null | List>(null);
+  const [editedData, setEditedData] = useState<ListEditorData>({
+    name: '',
+    selectedThingIDs: [],
+    sharingState: 'private',
+  });
+
   const axiosInstance = useContext(AxiosContext);
   const navigate = useNavigate();
   const { listId } = useParams();
@@ -29,55 +35,60 @@ export const EditList = () => {
   }, [axiosInstance, listId]);
 
   useEffect(() => {
+    if (list === null) {
+      return;
+    }
+    setEditedData({
+      name: list.name,
+      selectedThingIDs: list.things.map((thing) => thing.id),
+      sharingState: list.sharingState,
+    });
+  }, [list]);
+
+  useEffect(() => {
     if (axiosInstance === null) {
       return;
     }
-    getThings(axiosInstance, currentPage, 10, [])
+    if (authCtx.profile === null) {
+      return;
+    }
+    getThings(axiosInstance, currentPage, 10, [authCtx.profile.id])
       .then(setSelectableThingsPages)
       .catch((reason) => {
         console.log(reason);
       });
-  }, [axiosInstance, currentPage]);
+  }, [authCtx.profile, axiosInstance, currentPage]);
 
-  const edit = async (data: ListEditorData) => {
+  const edit = async () => {
     if (!axiosInstance || !listId) {
       return;
     }
     const params = {
-      name: data.name,
-      thingIds: data.selectedThingIDs,
-      sharingState: data.sharingState,
+      name: editedData.name,
+      thingIds: editedData.selectedThingIDs,
+      sharingState: editedData.sharingState,
     };
     const list = await updateList(axiosInstance, listId, params);
     navigate(`/lists/${list.id}`);
   };
 
-  const data = {
-    name: list?.name || '',
-    selectedThingIDs: list?.things.map((thing) => thing.id) || [],
-    sharingState: list?.sharingState || 'private',
-  };
-
-  // TODO: Move to backend
-  const selectableThings = useMemo(() => {
-    if (selectableThingsPages === undefined) {
-      return [];
-    }
-    return selectableThingsPages.things.filter((t) => t.owner.id === authCtx.profile?.id);
-  }, [authCtx.profile?.id, selectableThingsPages]);
-
   return (
-    <ListEditor onChange={edit} list={data} selectableThings={selectableThings}>
+    <div>
+      <ListEditor
+        onChange={setEditedData}
+        list={editedData}
+        selectableThings={selectableThingsPages?.things || []}
+      >
+        <div className="flex gap-4">
+          <YellowButton onClick={() => edit()}>Save</YellowButton>
+          <GrayButton>Abort</GrayButton>
+        </div>
+      </ListEditor>
       <Pages
         currentPage={currentPage}
         onPageChange={(n) => setCurrentPage(n)}
         pages={selectableThingsPages?.totalPageCount || 0}
       />
-
-      <div className="flex gap-4">
-        <YellowButton type="submit">Save</YellowButton>
-        <GrayButton>Abort</GrayButton>
-      </div>
-    </ListEditor>
+    </div>
   );
 };
