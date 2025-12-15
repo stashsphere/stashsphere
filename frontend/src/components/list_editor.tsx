@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useCallback } from 'react';
 import { SelectableThing } from './shared';
 import { SharingState, Thing } from '../api/resources';
 
@@ -16,32 +16,38 @@ type ListEditorProps = {
 };
 
 export const ListEditor = ({ children, list, onChange, selectableThings }: ListEditorProps) => {
-  const onThingSelect = (thingID: string, isChecked: boolean) => {
-    const selectedThingIDs = list.selectedThingIDs;
-    if (isChecked) {
-      onChange({
-        ...list,
-        selectedThingIDs: [...selectedThingIDs, thingID],
-      });
-    } else {
-      const index = selectedThingIDs.indexOf(thingID);
-      if (index > -1) {
-        const updatedSelectedThingIDs = [...selectedThingIDs];
-        updatedSelectedThingIDs.splice(index, 1);
+  const onThingSelect = useCallback(
+    (thingID: string, isChecked: boolean) => {
+      const selectedThingIDs = list.selectedThingIDs;
+      if (isChecked) {
         onChange({
           ...list,
-          selectedThingIDs: updatedSelectedThingIDs,
+          selectedThingIDs: [...selectedThingIDs, thingID],
         });
+      } else {
+        const index = selectedThingIDs.indexOf(thingID);
+        if (index > -1) {
+          const updatedSelectedThingIDs = [...selectedThingIDs];
+          updatedSelectedThingIDs.splice(index, 1);
+          onChange({
+            ...list,
+            selectedThingIDs: updatedSelectedThingIDs,
+          });
+        }
       }
-    }
-  };
+    },
+    [list, onChange]
+  );
 
-  const onNameChange = (value: string) => {
-    onChange({
-      ...list,
-      name: value,
-    });
-  };
+  const onNameChange = useCallback(
+    (value: string) => {
+      onChange({
+        ...list,
+        name: value,
+      });
+    },
+    [list, onChange]
+  );
 
   return (
     <div>
@@ -67,7 +73,7 @@ export const ListEditor = ({ children, list, onChange, selectableThings }: ListE
             key={thing.id}
             thing={thing}
             selected={list.selectedThingIDs.includes(thing.id)}
-            onChange={(sel) => onThingSelect(thing.id, sel)}
+            onSelect={onThingSelect}
           />
         ))}
       </div>

@@ -28,9 +28,6 @@ export const CreateList = () => {
     if (!axiosInstance) {
       return;
     }
-    if (!editedData) {
-      return;
-    }
     const list = await createList(axiosInstance, {
       name: editedData.name,
       thingIds: editedData.selectedThingIDs,
@@ -61,7 +58,7 @@ export const CreateList = () => {
         onChange={setEditedData}
         selectableThings={selectableThingsPages?.things || []}
       >
-        <PrimaryButton onClick={() => create()}>Create</PrimaryButton>
+        <PrimaryButton onClick={create}>Create</PrimaryButton>
       </ListEditor>
       <Pages
         currentPage={currentPage}

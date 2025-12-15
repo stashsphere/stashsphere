@@ -1,13 +1,17 @@
+import { useCallback } from 'react';
 import { Thing } from '../../api/resources';
 import { Icon, ImageComponent } from '.';
 
 type SelectableThingProps = {
   thing: Thing;
   selected: boolean;
-  onChange: (selected: boolean) => void;
+  onSelect: (thingId: string, selected: boolean) => void;
 };
 
-export const SelectableThing = ({ thing, selected, onChange }: SelectableThingProps) => {
+export const SelectableThing = ({ thing, selected, onSelect }: SelectableThingProps) => {
+  const handleClick = useCallback(() => {
+    onSelect(thing.id, !selected);
+  }, [thing.id, selected, onSelect]);
   const firstImage = thing.images[0];
   const firstImageContent = firstImage ? (
     <ImageComponent
@@ -26,7 +30,7 @@ export const SelectableThing = ({ thing, selected, onChange }: SelectableThingPr
       className={`relative flex flex-col gap-2 items-start border rounded-md p-2 cursor-pointer transition-colors ${
         selected ? 'bg-accent/10 border-accent' : 'border-secondary'
       }`}
-      onClick={() => onChange(!selected)}
+      onClick={handleClick}
     >
       {selected && (
         <div className="absolute top-2 right-2">

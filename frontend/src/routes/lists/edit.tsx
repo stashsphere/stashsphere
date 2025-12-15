@@ -80,7 +80,7 @@ export const EditList = () => {
         selectableThings={selectableThingsPages?.things || []}
       >
         <div className="flex gap-4">
-          <YellowButton onClick={() => edit()}>Save</YellowButton>
+          <YellowButton onClick={edit}>Save</YellowButton>
           <GrayButton>Abort</GrayButton>
         </div>
       </ListEditor>
