@@ -17,3 +17,4 @@ export { Labeled } from './labeled';
 export { Modal } from './modal';
 export { ThingInfo } from './thing_info';
 export { SelectableThing } from './selectable_thing';
+export { FetchedSelectableThing } from './fetched_selectable_thing';
