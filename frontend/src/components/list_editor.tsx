@@ -1,5 +1,5 @@
 import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { SelectableThing } from './shared';
+import { FetchedSelectableThing, SelectableThing } from './shared';
 import { PagedThings, SharingState } from '../api/resources';
 import { getThings } from '../api/things';
 import { Pages } from './pages';
@@ -22,6 +22,7 @@ export const ListEditor = ({ children, list, onChange }: ListEditorProps) => {
   const authCtx = useContext(AuthContext);
   const axiosInstance = useContext(AxiosContext);
   const [currentPage, setCurrentPage] = useState(0);
+  const [textFilter, setTextFilter] = useState('');
 
   const [selectableThingsPages, setSelectableThingsPages] = useState<PagedThings | undefined>(
     undefined
@@ -61,12 +62,12 @@ export const ListEditor = ({ children, list, onChange }: ListEditorProps) => {
     if (authCtx.profile === null) {
       return;
     }
-    getThings(axiosInstance, currentPage, 10, [authCtx.profile.id])
+    getThings(axiosInstance, currentPage, 10, [authCtx.profile.id], textFilter)
       .then(setSelectableThingsPages)
       .catch((reason) => {
         console.log(reason);
       });
-  }, [authCtx.profile, axiosInstance, currentPage]);
+  }, [authCtx.profile, axiosInstance, currentPage, textFilter]);
 
   const selectableThings = useMemo(() => {
     return selectableThingsPages?.things || [];
@@ -90,21 +91,51 @@ export const ListEditor = ({ children, list, onChange }: ListEditorProps) => {
         </div>
         <div className="flex flex-col justify-end">{children}</div>
       </div>
-      <div className="flex flex-wrap gap-4">
-        {selectableThings.map((thing) => (
-          <SelectableThing
-            key={thing.id}
-            thing={thing}
-            selected={list.selectedThingIDs.includes(thing.id)}
-            onSelect={onThingSelect}
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <h3 className="text-primary text-sm font-medium mb-2">Search</h3>
+          <div className="flex flex-wrap gap-4">
+            {selectableThings.map((thing) => (
+              <SelectableThing
+                key={thing.id}
+                thing={thing}
+                selected={list.selectedThingIDs.includes(thing.id)}
+                onSelect={onThingSelect}
+              />
+            ))}
+          </div>
+          <input
+            type="text"
+            id="textFilter"
+            name="textFilter"
+            value={textFilter}
+            placeholder="Filter things"
+            onChange={(e) => setTextFilter(e.target.value)}
+            className="my-2 p-2 text-display border border-gray-300 rounded-sm w-full"
           />
-        ))}
+          <Pages
+            currentPage={currentPage}
+            onPageChange={(n) => setCurrentPage(n)}
+            pages={selectableThingsPages?.totalPageCount || 0}
+          />
+        </div>
+
+        <div className="flex-1">
+          <h3 className="text-primary text-sm font-medium mb-2">
+            Selected ({list.selectedThingIDs.length})
+          </h3>
+          <div className="flex flex-wrap gap-4">
+            {list.selectedThingIDs.map((thingId) => (
+              <FetchedSelectableThing
+                key={thingId}
+                thingId={thingId}
+                selected={true}
+                onSelect={onThingSelect}
+              />
+            ))}
+          </div>
+        </div>
       </div>
-      <Pages
-        currentPage={currentPage}
-        onPageChange={(n) => setCurrentPage(n)}
-        pages={selectableThingsPages?.totalPageCount || 0}
-      />
     </div>
   );
 };
