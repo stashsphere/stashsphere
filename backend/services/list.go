@@ -291,6 +291,7 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 	if err != nil {
 		return 0, 0, nil, err
 	}
+	defer tx.Rollback()
 
 	sharedListIds, err := operations.GetSharedListIdsForUser(ctx, tx, userId)
 	if err != nil {

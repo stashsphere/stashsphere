@@ -308,6 +308,7 @@ func (ts *ThingService) GetSummaryForUser(ctx context.Context, userId string) (*
 	if err != nil {
 		return nil, err
 	}
+	defer tx.Rollback()
 
 	sharedThingIds, err := operations.GetSharedThingIdsForUser(ctx, tx, userId)
 	if err != nil {
@@ -366,6 +367,7 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 	if err != nil {
 		return 0, 0, nil, err
 	}
+	defer tx.Rollback()
 
 	sharedThingIds, err := operations.GetSharedThingIdsForUser(ctx, tx, userId)
 	if err != nil {
