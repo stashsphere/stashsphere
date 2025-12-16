@@ -37,10 +37,10 @@ export const SelectableThing = ({ thing, selected, onSelect }: SelectableThingPr
           <Icon icon="mdi--check-circle" className="text-accent" size="small" />
         </div>
       )}
-      <div className="flex w-48 h-48 items-center justify-center bg-brand-900 p-2 rounded-md">
+      <div className="flex w-40 h-40 items-center justify-center bg-brand-900 p-2 rounded-md">
         {firstImageContent}
       </div>
-      <h3 className="text-display text-sm w-48 truncate">{thing.name}</h3>
+      <h3 className="text-display text-sm w-40 truncate">{thing.name}</h3>
     </div>
   );
 };

@@ -18,10 +18,13 @@ type ListEditorProps = {
   onChange: (list: ListEditorData) => void;
 };
 
+const thingsPerPage = 10;
+
 export const ListEditor = ({ children, list, onChange }: ListEditorProps) => {
   const authCtx = useContext(AuthContext);
   const axiosInstance = useContext(AxiosContext);
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedPage, setSelectedPage] = useState(0);
   const [textFilter, setTextFilter] = useState('');
 
   const [selectableThingsPages, setSelectableThingsPages] = useState<PagedThings | undefined>(
@@ -62,7 +65,7 @@ export const ListEditor = ({ children, list, onChange }: ListEditorProps) => {
     if (authCtx.profile === null) {
       return;
     }
-    getThings(axiosInstance, currentPage, 10, [authCtx.profile.id], textFilter)
+    getThings(axiosInstance, currentPage, thingsPerPage, [authCtx.profile.id], textFilter)
       .then(setSelectableThingsPages)
       .catch((reason) => {
         console.log(reason);
@@ -72,6 +75,13 @@ export const ListEditor = ({ children, list, onChange }: ListEditorProps) => {
   const selectableThings = useMemo(() => {
     return selectableThingsPages?.things || [];
   }, [selectableThingsPages?.things]);
+
+  const selectedThingIDsPage = useMemo(() => {
+    const start = selectedPage * thingsPerPage;
+    return list.selectedThingIDs.slice(start, start + thingsPerPage);
+  }, [list.selectedThingIDs, selectedPage]);
+
+  const selectedTotalPages = Math.ceil(list.selectedThingIDs.length / thingsPerPage);
 
   return (
     <div>
@@ -91,48 +101,61 @@ export const ListEditor = ({ children, list, onChange }: ListEditorProps) => {
         </div>
         <div className="flex flex-col justify-end">{children}</div>
       </div>
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <h3 className="text-primary text-sm font-medium mb-2">Search</h3>
-          <div className="flex flex-wrap gap-4">
-            {selectableThings.map((thing) => (
-              <SelectableThing
-                key={thing.id}
-                thing={thing}
-                selected={list.selectedThingIDs.includes(thing.id)}
-                onSelect={onThingSelect}
-              />
-            ))}
+      <div className="flex gap-4 items-stretch">
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <h3 className="text-primary text-sm font-medium mb-2">Search</h3>
+            <div className="flex flex-wrap gap-4 content-start">
+              {selectableThings.map((thing) => (
+                <SelectableThing
+                  key={thing.id}
+                  thing={thing}
+                  selected={list.selectedThingIDs.includes(thing.id)}
+                  onSelect={onThingSelect}
+                />
+              ))}
+            </div>
           </div>
-          <input
-            type="text"
-            id="textFilter"
-            name="textFilter"
-            value={textFilter}
-            placeholder="Filter things"
-            onChange={(e) => setTextFilter(e.target.value)}
-            className="my-2 p-2 text-display border border-gray-300 rounded-sm w-full"
-          />
-          <Pages
-            currentPage={currentPage}
-            onPageChange={(n) => setCurrentPage(n)}
-            pages={selectableThingsPages?.totalPageCount || 0}
-          />
+          <div>
+            <input
+              type="text"
+              id="textFilter"
+              name="textFilter"
+              value={textFilter}
+              placeholder="Filter things"
+              onChange={(e) => setTextFilter(e.target.value)}
+              className="my-2 p-2 text-display border border-gray-300 rounded-sm w-2/3"
+            />
+            <Pages
+              currentPage={currentPage}
+              onPageChange={(n) => setCurrentPage(n)}
+              pages={selectableThingsPages?.totalPageCount || 0}
+            />
+          </div>
         </div>
 
-        <div className="flex-1">
-          <h3 className="text-primary text-sm font-medium mb-2">
-            Selected ({list.selectedThingIDs.length})
-          </h3>
-          <div className="flex flex-wrap gap-4">
-            {list.selectedThingIDs.map((thingId) => (
-              <FetchedSelectableThing
-                key={thingId}
-                thingId={thingId}
-                selected={true}
-                onSelect={onThingSelect}
-              />
-            ))}
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <h3 className="text-primary text-sm font-medium mb-2">
+              Selected ({list.selectedThingIDs.length})
+            </h3>
+            <div className="flex flex-wrap gap-4 content-start">
+              {selectedThingIDsPage.map((thingId) => (
+                <FetchedSelectableThing
+                  key={thingId}
+                  thingId={thingId}
+                  selected={true}
+                  onSelect={onThingSelect}
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <Pages
+              currentPage={selectedPage}
+              onPageChange={(n) => setSelectedPage(n)}
+              pages={selectedTotalPages}
+            />
           </div>
         </div>
       </div>
