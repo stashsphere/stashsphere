@@ -5,9 +5,10 @@ export const getThings = async (
   axios: Axios,
   currentPage: number,
   perPage: number,
-  ownerIds: string[]
+  ownerIds: string[],
+  searchTerm: string | undefined
 ) => {
-  const response = await axios.get(`/things?page=${currentPage}`, {
+  const response = await axios.get(`/things`, {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -15,6 +16,7 @@ export const getThings = async (
       page: currentPage,
       filterOwnerId: ownerIds,
       perPage: perPage,
+      searchTerm: searchTerm,
     },
     paramsSerializer: {
       indexes: null,
