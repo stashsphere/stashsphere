@@ -1,6 +1,10 @@
-import { ReactNode, useCallback } from 'react';
+import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { SelectableThing } from './shared';
-import { SharingState, Thing } from '../api/resources';
+import { PagedThings, SharingState } from '../api/resources';
+import { getThings } from '../api/things';
+import { Pages } from './pages';
+import { AuthContext } from '../context/auth';
+import { AxiosContext } from '../context/axios';
 
 export type ListEditorData = {
   name: string;
@@ -11,43 +15,62 @@ export type ListEditorData = {
 type ListEditorProps = {
   children?: ReactNode;
   list: ListEditorData;
-  selectableThings: Thing[];
   onChange: (list: ListEditorData) => void;
 };
 
-export const ListEditor = ({ children, list, onChange, selectableThings }: ListEditorProps) => {
-  const onThingSelect = useCallback(
-    (thingID: string, isChecked: boolean) => {
-      const selectedThingIDs = list.selectedThingIDs;
-      if (isChecked) {
-        onChange({
-          ...list,
-          selectedThingIDs: [...selectedThingIDs, thingID],
-        });
-      } else {
-        const index = selectedThingIDs.indexOf(thingID);
-        if (index > -1) {
-          const updatedSelectedThingIDs = [...selectedThingIDs];
-          updatedSelectedThingIDs.splice(index, 1);
-          onChange({
-            ...list,
-            selectedThingIDs: updatedSelectedThingIDs,
-          });
-        }
-      }
-    },
-    [list, onChange]
+export const ListEditor = ({ children, list, onChange }: ListEditorProps) => {
+  const authCtx = useContext(AuthContext);
+  const axiosInstance = useContext(AxiosContext);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const [selectableThingsPages, setSelectableThingsPages] = useState<PagedThings | undefined>(
+    undefined
   );
 
-  const onNameChange = useCallback(
-    (value: string) => {
+  const onThingSelect = (thingID: string, isChecked: boolean) => {
+    const selectedThingIDs = list.selectedThingIDs;
+    if (isChecked) {
       onChange({
         ...list,
-        name: value,
+        selectedThingIDs: [...selectedThingIDs, thingID],
       });
-    },
-    [list, onChange]
-  );
+    } else {
+      const index = selectedThingIDs.indexOf(thingID);
+      if (index > -1) {
+        const updatedSelectedThingIDs = [...selectedThingIDs];
+        updatedSelectedThingIDs.splice(index, 1);
+        onChange({
+          ...list,
+          selectedThingIDs: updatedSelectedThingIDs,
+        });
+      }
+    }
+  };
+
+  const onNameChange = (value: string) => {
+    onChange({
+      ...list,
+      name: value,
+    });
+  };
+
+  useEffect(() => {
+    if (axiosInstance === null) {
+      return;
+    }
+    if (authCtx.profile === null) {
+      return;
+    }
+    getThings(axiosInstance, currentPage, 10, [authCtx.profile.id])
+      .then(setSelectableThingsPages)
+      .catch((reason) => {
+        console.log(reason);
+      });
+  }, [authCtx.profile, axiosInstance, currentPage]);
+
+  const selectableThings = useMemo(() => {
+    return selectableThingsPages?.things || [];
+  }, [selectableThingsPages?.things]);
 
   return (
     <div>
@@ -77,6 +100,11 @@ export const ListEditor = ({ children, list, onChange, selectableThings }: ListE
           />
         ))}
       </div>
+      <Pages
+        currentPage={currentPage}
+        onPageChange={(n) => setCurrentPage(n)}
+        pages={selectableThingsPages?.totalPageCount || 0}
+      />
     </div>
   );
 };
