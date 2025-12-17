@@ -686,6 +686,88 @@ func TestThingsAddedToDirectlySharedListNotification(t *testing.T) {
 	assert.Contains(t, emailService.Mails[0].Subject, "added things to a list")
 }
 
+func TestGetListsForUserThingInMultipleListsHasImages(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	imageService, err := services.NewTmpImageService(db)
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		os.Remove(imageService.StorePath())
+	})
+
+	userService := services.NewUserService(db, false, "")
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, imageService, notificationService)
+	listService := services.NewListService(db, notificationService)
+
+	// Create a user
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	// Create an image
+	pngFile, err := testcommon.Assets.Open("assets/test.png")
+	assert.NoError(t, err)
+	image, err := imageService.CreateImage(context.Background(), alice.ID, "test.png", pngFile)
+	assert.NoError(t, err)
+
+	// Create a thing with the image attached
+	thingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	thingParams.OwnerId = alice.ID
+	thingParams.ImagesIds = []string{image.ID}
+	thing, err := thingService.CreateThing(context.Background(), *thingParams)
+	assert.NoError(t, err)
+
+	// Create two lists, both containing the same thing
+	list1Params := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	list1Params.OwnerId = alice.ID
+	list1Params.ThingIds = []string{thing.ID}
+	list1, err := listService.CreateList(context.Background(), *list1Params)
+	assert.NoError(t, err)
+
+	list2Params := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	list2Params.OwnerId = alice.ID
+	list2Params.ThingIds = []string{thing.ID}
+	list2, err := listService.CreateList(context.Background(), *list2Params)
+	assert.NoError(t, err)
+
+	// Fetch all lists via GetListsForUser
+	_, _, lists, err := listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+		UserId:   alice.ID,
+		PerPage:  50,
+		Page:     0,
+		Paginate: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, lists, 2, "should return both lists")
+
+	// Verify both lists contain the thing with images
+	// Due to SQLBoiler bug, without the fix, one of the lists would have empty ImagesThings
+	for _, list := range lists {
+		assert.Len(t, list.R.Things, 1, "each list should have one thing")
+		thingInList := list.R.Things[0]
+		assert.Equal(t, thing.ID, thingInList.ID)
+		assert.Len(t, thingInList.R.ImagesThings, 1,
+			"thing in list %s (id: %s) should have images populated", list.Name, list.ID)
+		assert.Equal(t, image.ID, thingInList.R.ImagesThings[0].ImageID,
+			"image ID should match for thing in list %s", list.Name)
+	}
+
+	// Also verify the list IDs are correct
+	listIds := []string{lists[0].ID, lists[1].ID}
+	assert.Contains(t, listIds, list1.ID)
+	assert.Contains(t, listIds, list2.ID)
+}
+
 func TestThingsAddedToListDeduplicatesNotifications(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)

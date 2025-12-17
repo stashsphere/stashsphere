@@ -333,6 +333,27 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 		return 0, 0, nil, err
 	}
 
+	// Fix SQLBoiler bug: when the same Thing appears in multiple Lists,
+	// duplicate Thing instances don't get their ImagesThings populated
+	// (SQLBoiler breaks after the first match when assigning nested relations)
+	imagesByThingId := make(map[string]models.ImagesThingSlice)
+	for _, list := range lists {
+		for _, thing := range list.R.Things {
+			if len(thing.R.ImagesThings) > 0 {
+				imagesByThingId[thing.ID] = thing.R.ImagesThings
+			}
+		}
+	}
+	for _, list := range lists {
+		for _, thing := range list.R.Things {
+			if len(thing.R.ImagesThings) == 0 {
+				if images, ok := imagesByThingId[thing.ID]; ok {
+					thing.R.ImagesThings = images
+				}
+			}
+		}
+	}
+
 	totalPages := uint64(math.Ceil(float64(listCount) / float64(perPage)))
 
 	return uint64(listCount), totalPages, lists, nil
