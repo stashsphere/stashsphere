@@ -45,15 +45,22 @@ export const EditList = () => {
       thingIds: editedData.selectedThingIDs,
       sharingState: editedData.sharingState,
     };
-    const list = await updateList(axiosInstance, listId, params);
-    navigate(`/lists/${list.id}`);
+    await updateList(axiosInstance, listId, params);
+    navigate(`/lists/${listId}`);
+  };
+
+  const abort = () => {
+    if (!listId) {
+      return;
+    }
+    navigate(`/lists/${listId}`);
   };
 
   return (
     <ListEditor onChange={setEditedData} list={editedData}>
       <div className="flex gap-4">
         <YellowButton onClick={edit}>Save</YellowButton>
-        <GrayButton>Abort</GrayButton>
+        <GrayButton onClick={abort}>Abort</GrayButton>
       </div>
     </ListEditor>
   );
