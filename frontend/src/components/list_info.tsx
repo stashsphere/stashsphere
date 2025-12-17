@@ -6,9 +6,10 @@ import { UserNameAndUserId } from './shared/user';
 
 type ListInfoProps = {
   list: List;
+  compact?: boolean;
 };
 
-export const ListInfo = ({ list }: ListInfoProps) => {
+export const ListInfo = ({ list, compact = false }: ListInfoProps) => {
   const images = useMemo(() => {
     return list.things.map((thing) => thing.images[0]).filter((e) => e !== undefined);
   }, [list]);
@@ -24,11 +25,15 @@ export const ListInfo = ({ list }: ListInfoProps) => {
   }, [list]);
 
   return (
-    <div className="flex flex-col gap-4 flex-start items-start border border-secondary rounded-md p-1 justify-between">
-      <div className="flex w-80 min-h-60 items-center justify-center">
-        <ImageGrid images={images} />
+    <div
+      className={`flex flex-col gap-4 flex-start items-start border border-secondary rounded-md p-1 justify-between ${compact ? 'w-60' : 'w-80'}`}
+    >
+      <div
+        className={`flex items-center justify-center ${compact ? 'w-60 min-h-44' : 'w-80 min-h-60'}`}
+      >
+        <ImageGrid images={images} compact={compact} />
       </div>
-      <div className="w-80">
+      <div className={compact ? 'w-60' : 'w-80'}>
         <a href={`/lists/${list.id}`}>
           <h2 className="text-display text-xl mb-2">{list.name}</h2>
           <div className="flex flex-row gap-2 items-center">

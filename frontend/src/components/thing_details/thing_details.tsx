@@ -7,6 +7,7 @@ import { Icon } from '../shared';
 import { SharingStateComponent } from '../shared/sharing_state';
 import { UserNameAndUserId } from '../shared/user';
 import CartButton from '../shared/cart_button';
+import { FetchedListInfo } from '../fetched_list_info';
 
 interface ThingDetailsProps {
   thing: Thing;
@@ -121,13 +122,11 @@ export const ThingDetails = ({ thing, onDelete }: ThingDetailsProps) => {
           <div>
             <Headline type="h2">Lists</Headline>
             {thing.lists.length === 0 ? <p className="text-display">Not in any lists</p> : null}
-            {thing.lists.map((list) => (
-              <ul key={list.id}>
-                <li className="text-display">
-                  <a href={`/lists/${list.id}`}>{list.name}</a>
-                </li>
-              </ul>
-            ))}
+            <div className="flex flex-row gap-4 flex-wrap">
+              {thing.lists.map((list) => (
+                <FetchedListInfo listId={list.id} key={list.id} compact />
+              ))}
+            </div>
           </div>
           {thing.privateNote !== null && (
             <div>
