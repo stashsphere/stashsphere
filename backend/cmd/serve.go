@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-fuego/fuego"
 	"github.com/go-fuego/fuego/extra/fuegoecho"
@@ -34,7 +35,6 @@ import (
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
 	"github.com/stashsphere/backend/utils"
-	"github.com/volatiletech/sqlboiler/v4/boil"
 
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"

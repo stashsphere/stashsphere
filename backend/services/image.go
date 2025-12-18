@@ -13,14 +13,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rakyll/magicmime"
 	"github.com/rs/zerolog/log"
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/utils"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 type ImageService struct {

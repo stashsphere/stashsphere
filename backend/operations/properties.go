@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/stashsphere/backend/models"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 type CreatePropertyFloatParams struct {

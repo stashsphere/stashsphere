@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/utils"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func FindUserByID(ctx context.Context, exec boil.ContextExecutor, userId string) (*models.User, error) {

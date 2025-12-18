@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/operations"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 type PropertyService struct {

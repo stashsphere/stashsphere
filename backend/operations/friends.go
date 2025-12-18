@@ -3,8 +3,8 @@ package operations
 import (
 	"context"
 
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries"
 )
 
 func GetFriendIds(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {

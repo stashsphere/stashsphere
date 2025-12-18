@@ -3,10 +3,10 @@ package operations
 import (
 	"context"
 
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/stashsphere/backend/models"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func GetListUnchecked(ctx context.Context, exec boil.ContextExecutor, listId string) (*models.List, error) {
