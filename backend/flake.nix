@@ -2,39 +2,49 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
-  outputs = { self, nixpkgs }:
+  outputs =
+    { self, nixpkgs }:
     let
       # from https://github.com/NixOS/templates/blob/master/go-hello/flake.nix
       lastModifiedDate = self.lastModifiedDate or self.lastModified or "19700101";
 
       version = builtins.substring 0 8 lastModifiedDate;
 
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
 
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-      nixpkgsFor = forAllSystems (system: import nixpkgs {
-        inherit system;
-        overlays = [
-          self.overlay
-          (final: prev: {stashsphereVersion = version; })
-        ];
-      });
+      nixpkgsFor = forAllSystems (
+        system:
+        import nixpkgs {
+          inherit system;
+          overlays = [
+            self.overlay
+            (final: prev: { stashsphereVersion = version; })
+          ];
+        }
+      );
     in
     {
       overlay = import ./nix/overlay.nix;
-      packages = forAllSystems
-        (system:
-          {
-            inherit (nixpkgsFor.${system}) stashsphere;
-            default = (nixpkgsFor.${system}).stashsphere;
-          });
-      devShells = forAllSystems (system:
+      packages = forAllSystems (system: {
+        inherit (nixpkgsFor.${system}) stashsphere;
+        default = (nixpkgsFor.${system}).stashsphere;
+      });
+      devShells = forAllSystems (
+        system:
         let
           pkgs = nixpkgsFor.${system};
 
           go-migrate-pg = pkgs.go-migrate.overrideAttrs (oldAttrs: {
             tags = [ "postgres" ];
+          });
+
+          sqlboiler-fixed = pkgs.sqlboiler.overrideAttrs (oldAttrs: {
+            patches = [ ./nix/patches/0001-sqlboiler-manytomany.patch ];
           });
         in
         {
@@ -45,7 +55,7 @@
               gopls
               bashInteractive
               file
-              sqlboiler
+              sqlboiler-fixed
               go-migrate-pg
               postgresql
             ];
@@ -57,10 +67,11 @@
               "PGDATABASE" = "stashsphere";
             };
           };
-        });
+        }
+      );
 
       checks = forAllSystems (system: {
-        nixos-test = nixpkgsFor.${system}.callPackage ./nix/nixos-test.nix {};
+        nixos-test = nixpkgsFor.${system}.callPackage ./nix/nixos-test.nix { };
       });
     };
 }

@@ -1,0 +1,20 @@
+diff --git a/templates/main/09_relationship_to_many_eager.go.tpl b/templates/main/09_relationship_to_many_eager.go.tpl
+index 81643be..1d6ec27 100644
+--- a/templates/main/09_relationship_to_many_eager.go.tpl
++++ b/templates/main/09_relationship_to_many_eager.go.tpl
+@@ -175,7 +175,6 @@ func ({{$ltable.DownSingular}}L) Load{{$relAlias.Local}}({{if $.NoContext}}e boi
+ 				}
+ 				foreign.R.{{$relAlias.Foreign}} = append(foreign.R.{{$relAlias.Foreign}}, local)
+ 				{{end -}}
+-				break
+ 			}
+ 		}
+ 	}
+@@ -194,7 +193,6 @@ func ({{$ltable.DownSingular}}L) Load{{$relAlias.Local}}({{if $.NoContext}}e boi
+ 				}
+ 				foreign.R.{{$relAlias.Foreign}} = local
+ 				{{end -}}
+-				break
+ 			}
+ 		}
+ 	}
