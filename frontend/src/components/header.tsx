@@ -49,7 +49,7 @@ const NameAndLogo = () => {
       <div className="flex items-center">
         <img src={stashsphereLogo} alt="StashSphere" className="h-12" />
       </div>
-      <span className="py-4 px-2 text-onprimary font-goldman font-bold text-xl">stashsphere</span>
+      <span className="py-4 px-2 text-onprimary font-goldman font-bold text-xl">StashSphere</span>
     </div>
   );
 };
