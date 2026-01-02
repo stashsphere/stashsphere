@@ -3,12 +3,16 @@ import { ThingEditor, ThingEditorData, ThingImage } from '../../components/thing
 import { AxiosContext } from '../../context/axios';
 import { useNavigate, useParams } from 'react-router';
 import { getThing, updateThing } from '../../api/things';
-import { Thing } from '../../api/resources';
+import { List, Thing } from '../../api/resources';
 import { createImage, modifyImage } from '../../api/image';
 import { GrayButton, PrimaryButton } from '../../components/shared';
+import { getLists, updateList, updateListParamsFromList } from '../../api/lists';
+import { AuthContext } from '../../context/auth';
 
 export const EditThing = () => {
+  const authContext = useContext(AuthContext);
   const [thing, setThing] = useState<null | Thing>(null);
+  const [lists, setLists] = useState<List[]>([]);
   const axiosInstance = useContext(AxiosContext);
   const navigate = useNavigate();
   const { thingId } = useParams();
@@ -20,6 +24,18 @@ export const EditThing = () => {
     }
     getThing(axiosInstance, thingId).then(setThing);
   }, [axiosInstance, thingId]);
+
+  useEffect(() => {
+    if (!axiosInstance) {
+      return;
+    }
+    if (!authContext.profile) {
+      return;
+    }
+    getLists(axiosInstance, 0, 0, [authContext.profile.id], false).then((lists) =>
+      setLists(lists.lists)
+    );
+  }, [authContext.profile, axiosInstance]);
 
   const edit = async () => {
     if (!axiosInstance || !thingId) {
@@ -54,9 +70,34 @@ export const EditThing = () => {
       quantityUnit: editedData.quantityUnit,
       sharingState: editedData.sharingState,
     };
-    const thing = await updateThing(axiosInstance, thingId, params);
-    console.log('Updated', thing);
-    navigate(`/things/${thing.id}`);
+    const updatedThing = await updateThing(axiosInstance, thingId, params);
+
+    // TODO move to backend transaction:
+    const originalListIds = new Set(thing?.lists.map((l) => l.id) || []);
+    const newListIds = new Set(editedData.listIds);
+
+    const listsToAdd = editedData.listIds.filter((id) => !originalListIds.has(id));
+    const listsToRemove = [...originalListIds].filter((id) => !newListIds.has(id));
+
+    for (const listId of listsToAdd) {
+      const list = lists.find((l) => l.id === listId);
+      if (list) {
+        const listParams = updateListParamsFromList(list);
+        listParams.thingIds = [...listParams.thingIds, thingId];
+        await updateList(axiosInstance, listId, listParams);
+      }
+    }
+
+    for (const listId of listsToRemove) {
+      const list = lists.find((l) => l.id === listId);
+      if (list) {
+        const listParams = updateListParamsFromList(list);
+        listParams.thingIds = listParams.thingIds.filter((id) => id !== thingId);
+        await updateList(axiosInstance, listId, listParams);
+      }
+    }
+
+    navigate(`/things/${updatedThing.id}`);
   };
 
   const data = useMemo(() => {
@@ -72,11 +113,12 @@ export const EditThing = () => {
       quantity: thing?.quantity || 0,
       quantityUnit: thing?.quantityUnit || '',
       sharingState: thing?.sharingState || 'private',
+      listIds: thing?.lists.map((e) => e.id) || [],
     };
   }, [thing]);
 
   return (
-    <ThingEditor onChange={setEditedData} thing={data}>
+    <ThingEditor onChange={setEditedData} thing={data} lists={lists}>
       <div className="flex gap-4">
         <PrimaryButton onClick={() => edit()}>Save</PrimaryButton>
         <GrayButton>Abort</GrayButton>

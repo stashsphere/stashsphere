@@ -15,7 +15,7 @@ export const Lists = () => {
     if (axiosInstance === null) {
       return;
     }
-    getLists(axiosInstance, currentPage)
+    getLists(axiosInstance, currentPage, 20, [], true)
       .then(setLists)
       .catch((reason) => {
         console.error(reason);

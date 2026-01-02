@@ -1,8 +1,8 @@
 import { ChangeEvent, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import PropertyEditor from './property_editor';
-import { Property, ReducedImage, Image, SharingState } from '../../api/resources';
+import { Property, ReducedImage, Image, SharingState, List } from '../../api/resources';
 import { ConfigContext } from '../../context/config';
-import { PrimaryButton, SecondaryButton } from '../shared';
+import { PrimaryButton, SecondaryButton, SelectableList } from '../shared';
 import { Icon, Headline, Modal } from '../shared';
 import { ImageBrowserGrid } from './image_browser_grid';
 import QuantityEditor from './quantity_editor';
@@ -18,11 +18,15 @@ export type ThingEditorData = {
   quantity: number;
   quantityUnit: string;
   sharingState: SharingState;
+  // lists this thing is part of
+  listIds: string[];
 };
 
 type ThingEditorProps = {
   children?: ReactNode;
   thing?: ThingEditorData;
+  // all lists that this thing can be part of
+  lists: List[];
   onChange: (thing: ThingEditorData) => void;
 };
 
@@ -38,7 +42,7 @@ export type ThingUrlImage = {
 };
 export type ThingImage = ThingUrlImage | ThingFileImage;
 
-export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => {
+export const ThingEditor = ({ children, thing, lists, onChange }: ThingEditorProps) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [privateNote, setPrivateNote] = useState('');
@@ -50,6 +54,7 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
   const [quantityUnit, setQuantityUnit] = useState('');
   const [sharingState, setSharingState] = useState<SharingState>('private');
   const [onlyUnassignedImages, setOnlyUnassignedImages] = useState(true);
+  const [listIds, setListIds] = useState<string[]>([]);
 
   const config = useContext(ConfigContext);
 
@@ -65,6 +70,7 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
     setQuantity(thing.quantity);
     setQuantityUnit(thing.quantityUnit);
     setSharingState(thing.sharingState);
+    setListIds(thing.listIds);
   }, [thing]);
 
   useEffect(() => {
@@ -77,6 +83,7 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
       quantity,
       quantityUnit,
       sharingState,
+      listIds,
     };
     onChange(data);
   }, [
@@ -89,6 +96,7 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
     quantity,
     quantityUnit,
     sharingState,
+    listIds,
   ]);
 
   const imageUrl = useMemo(
@@ -193,6 +201,14 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
   };
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const onListSelect = (listId: string, isSelected: boolean) => {
+    if (isSelected) {
+      setListIds([...listIds, listId]);
+    } else {
+      setListIds(listIds.filter((id) => id !== listId));
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -332,6 +348,28 @@ export const ThingEditor = ({ children, thing, onChange }: ThingEditorProps) => 
               rows={3}
               placeholder="Private notes (visible to you only)..."
             />
+          </div>
+
+          <div className="border-t border-gray-200 my-2"></div>
+
+          <div>
+            <Headline type="h2">Lists</Headline>
+            {lists.length > 0 ? (
+              <div className="flex flex-wrap gap-4 content-start">
+                {lists.map((list) => (
+                  <SelectableList
+                    key={list.id}
+                    list={list}
+                    selected={listIds.includes(list.id)}
+                    onSelect={onListSelect}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-secondary text-sm">
+                No lists available. Create a list first to add this thing to it.
+              </p>
+            )}
           </div>
 
           {children}

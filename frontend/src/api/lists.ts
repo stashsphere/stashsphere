@@ -1,10 +1,22 @@
 import { Axios } from 'axios';
 import { List, PagedLists, SharingState } from './resources';
 
-export const getLists = async (axios: Axios, currentPage: number) => {
-  const response = await axios.get(`/lists?page=${currentPage}`, {
+export const getLists = async (
+  axios: Axios,
+  currentPage: number,
+  perPage: number,
+  ownerIds: string[],
+  paginate: boolean | undefined
+) => {
+  const response = await axios.get(`/lists`, {
     headers: {
       'Content-Type': 'application/json',
+    },
+    params: {
+      currentPage,
+      filterOwnerId: ownerIds,
+      perPage: perPage,
+      paginate: paginate,
     },
   });
 

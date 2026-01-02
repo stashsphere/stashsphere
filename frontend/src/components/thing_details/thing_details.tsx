@@ -119,6 +119,14 @@ export const ThingDetails = ({ thing, onDelete }: ThingDetailsProps) => {
             <Headline type="h2">Description</Headline>
             <div className="text-display">{thing.description}</div>
           </div>
+          {thing.privateNote !== null && (
+            <div>
+              <Headline type="h2">Private Note</Headline>
+              {thing.privateNote.length > 0 && (
+                <div className="bg-warning text-display rounded-sm p-2">{thing.privateNote}</div>
+              )}
+            </div>
+          )}
           <div>
             <Headline type="h2">Lists</Headline>
             {thing.lists.length === 0 ? <p className="text-display">Not in any lists</p> : null}
@@ -128,14 +136,6 @@ export const ThingDetails = ({ thing, onDelete }: ThingDetailsProps) => {
               ))}
             </div>
           </div>
-          {thing.privateNote !== null && (
-            <div>
-              <Headline type="h2">Private Note</Headline>
-              {thing.privateNote.length > 0 && (
-                <div className="bg-warning text-display rounded-sm p-2">{thing.privateNote}</div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
