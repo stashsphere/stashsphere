@@ -1,0 +1,67 @@
+import { useContext, useEffect, useState } from 'react';
+import { List } from '../../api/resources';
+import { useNavigate, useParams } from 'react-router';
+import { AxiosContext } from '../../context/axios';
+import { getList, updateList } from '../../api/lists';
+import { ListEditor, ListEditorData } from '../../components/list_editor';
+import { GrayButton, YellowButton } from '../../components/shared';
+
+export const EditList = () => {
+  const [list, setList] = useState<null | List>(null);
+  const [editedData, setEditedData] = useState<ListEditorData>({
+    name: '',
+    selectedThingIDs: [],
+    sharingState: 'private',
+  });
+
+  const axiosInstance = useContext(AxiosContext);
+  const navigate = useNavigate();
+  const { listId } = useParams();
+
+  useEffect(() => {
+    if (!axiosInstance || listId == undefined) {
+      return;
+    }
+    getList(axiosInstance, listId).then(setList);
+  }, [axiosInstance, listId]);
+
+  useEffect(() => {
+    if (list === null) {
+      return;
+    }
+    setEditedData({
+      name: list.name,
+      selectedThingIDs: list.things.map((thing) => thing.id),
+      sharingState: list.sharingState,
+    });
+  }, [list]);
+
+  const edit = async () => {
+    if (!axiosInstance || !listId) {
+      return;
+    }
+    const params = {
+      name: editedData.name,
+      thingIds: editedData.selectedThingIDs,
+      sharingState: editedData.sharingState,
+    };
+    await updateList(axiosInstance, listId, params);
+    navigate(`/lists/${listId}`);
+  };
+
+  const abort = () => {
+    if (!listId) {
+      return;
+    }
+    navigate(`/lists/${listId}`);
+  };
+
+  return (
+    <ListEditor onChange={setEditedData} list={editedData}>
+      <div className="flex gap-4">
+        <YellowButton onClick={edit}>Save</YellowButton>
+        <GrayButton onClick={abort}>Abort</GrayButton>
+      </div>
+    </ListEditor>
+  );
+};
