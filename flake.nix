@@ -32,7 +32,8 @@
       overlay = import ./nix/overlay.nix;
       packages = forAllSystems (system: {
         inherit (nixpkgsFor.${system}) stashsphere;
-        default = (nixpkgsFor.${system}).stashsphere;
+        backend = (nixpkgsFor.${system}).stashsphere;
+        frontend = (nixpkgsFor.${system}).stashsphere-frontend;
       });
       devShells = forAllSystems (
         system:
@@ -46,9 +47,22 @@
           sqlboiler-fixed = pkgs.sqlboiler.overrideAttrs (oldAttrs: {
             patches = [ ./nix/patches/0001-sqlboiler-manytomany.patch ];
           });
+
+          create-logo-and-favicon = pkgs.writeShellApplication {
+            name = "create-logo-and-favicon";
+
+            runtimeInputs = [ pkgs.imagemagick ];
+
+            text = ''
+              set -x
+              magick -density 300 -define icon:auto-resize=256,128,96,64,48,32,16 -background none "$1" public/favicon.ico
+              magick -background none -size 256x256 "$1" src/assets/stashsphere-logo-256.png
+              cp "$1" public/icon.svg
+            '';
+          };
         in
         {
-          default = pkgs.mkShell {
+          backend = pkgs.mkShell {
             name = "default";
             buildInputs = with pkgs; [
               go
@@ -67,11 +81,20 @@
               "PGDATABASE" = "stashsphere";
             };
           };
+          frontend = pkgs.mkShell {
+            name = "default";
+            buildInputs = with pkgs; [
+              create-logo-and-favicon
+              nodePackages.npm
+              nodejs_22
+              pnpm
+            ];
+          };
         }
       );
 
       checks = forAllSystems (system: {
-        nixos-test = nixpkgsFor.${system}.callPackage ./nix/nixos-test.nix { };
+        nixos-test = nixpkgsFor.${system}.callPackage ./backend/nix/nixos-test.nix { };
       });
     };
 }
