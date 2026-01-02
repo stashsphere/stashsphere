@@ -29,6 +29,7 @@ type ThingsParams struct {
 	PerPage        uint64   `query:"perPage"`
 	FilterOwnerIds []string `query:"filterOwnerId"`
 	SearchTerm     string   `query:"searchTerm"`
+	Paginate       *bool    `query:"paginate"`
 }
 
 func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
@@ -46,13 +47,16 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 	if params.PerPage == 0 {
 		params.PerPage = 50
 	}
-
+	paginate := true
+	if params.Paginate != nil && *params.Paginate == false {
+		paginate = false
+	}
 	totalCount, totalPageCount, things, err := th.thingService.GetThingsForUser(c.Request().Context(),
 		services.GetThingsForUserParams{
 			UserId:         authCtx.User.UserId,
 			PerPage:        params.PerPage,
 			Page:           params.Page,
-			Paginate:       true,
+			Paginate:       paginate,
 			FilterOwnerIds: params.FilterOwnerIds,
 			SearchTerm:     params.SearchTerm,
 		},
