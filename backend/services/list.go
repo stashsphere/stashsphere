@@ -276,14 +276,15 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 }
 
 type GetListsForUserParams struct {
-	UserId   string
-	PerPage  uint64
-	Page     uint64
-	Paginate bool
+	UserId         string
+	PerPage        uint64
+	Page           uint64
+	Paginate       bool
+	FilterOwnerIds []string
 }
 
 func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUserParams) (uint64, uint64, models.ListSlice, error) {
-	userId, perPage, page, paginate := params.UserId, params.PerPage, params.Page, params.Paginate
+	userId, perPage, page, paginate, filterUserIds := params.UserId, params.PerPage, params.Page, params.Paginate, params.FilterOwnerIds
 
 	tx, err := ls.db.BeginTx(ctx, &sql.TxOptions{
 		ReadOnly: true,
@@ -306,6 +307,14 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 		models.ListWhere.OwnerID.EQ(userId),
 		qm.OrIn("id in ?", interfaceIds...),
 	)
+
+	if len(filterUserIds) > 0 {
+		filterUserInterfaceIds := make([]interface{}, len(filterUserIds))
+		for i, u := range filterUserIds {
+			filterUserInterfaceIds[i] = u
+		}
+		searchCond = qm.Expr(searchCond, qm.AndIn("owner_id in ?", filterUserInterfaceIds...))
+	}
 
 	listCount, err := models.Lists(searchCond).Count(ctx, tx)
 	if err != nil {

@@ -768,6 +768,109 @@ func TestGetListsForUserThingInMultipleListsHasImages(t *testing.T) {
 	assert.Contains(t, listIds, list2.ID)
 }
 
+func TestGetListsForUserFilterOwnerIds(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	userService := services.NewUserService(db, false, "")
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	listService := services.NewListService(db, notificationService)
+
+	// Create three users
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	bob, err := userService.CreateUser(context.Background(), *bobParams)
+	assert.NoError(t, err)
+
+	charlieParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	charlie, err := userService.CreateUser(context.Background(), *charlieParams)
+	assert.NoError(t, err)
+
+	// alice is friends with bob and charlie
+	createFriendShip(t, db, alice.ID, bob.ID)
+	createFriendShip(t, db, alice.ID, charlie.ID)
+
+	// alice creates a private list
+	aliceListParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	aliceListParams.OwnerId = alice.ID
+	aliceList, err := listService.CreateList(context.Background(), *aliceListParams)
+	assert.NoError(t, err)
+
+	// bob creates a list shared with friends
+	bobListParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	bobListParams.OwnerId = bob.ID
+	bobListParams.SharingState = models.SharingStateFriends.String()
+	bobList, err := listService.CreateList(context.Background(), *bobListParams)
+	assert.NoError(t, err)
+
+	// charlie creates a list shared with friends
+	charlieListParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	charlieListParams.OwnerId = charlie.ID
+	charlieListParams.SharingState = models.SharingStateFriends.String()
+	charlieList, err := listService.CreateList(context.Background(), *charlieListParams)
+	assert.NoError(t, err)
+
+	// alice should see all 3 lists without filter
+	_, _, lists, err := listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+		UserId:   alice.ID,
+		PerPage:  50,
+		Page:     0,
+		Paginate: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, lists, 3, "alice should see all 3 lists without filter")
+
+	// filter by bob's ID - should only return bob's list
+	_, _, lists, err = listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+		UserId:         alice.ID,
+		PerPage:        50,
+		Page:           0,
+		Paginate:       true,
+		FilterOwnerIds: []string{bob.ID},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, lists, 1, "filter by bob should return 1 list")
+	assert.Equal(t, bobList.ID, lists[0].ID)
+
+	// filter by charlie's ID - should only return charlie's list
+	_, _, lists, err = listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+		UserId:         alice.ID,
+		PerPage:        50,
+		Page:           0,
+		Paginate:       true,
+		FilterOwnerIds: []string{charlie.ID},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, lists, 1, "filter by charlie should return 1 list")
+	assert.Equal(t, charlieList.ID, lists[0].ID)
+
+	// filter by bob and charlie - should return both their lists but not alice's
+	_, _, lists, err = listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+		UserId:         alice.ID,
+		PerPage:        50,
+		Page:           0,
+		Paginate:       true,
+		FilterOwnerIds: []string{bob.ID, charlie.ID},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, lists, 2, "filter by bob and charlie should return 2 lists")
+	listIds := []string{lists[0].ID, lists[1].ID}
+	assert.Contains(t, listIds, bobList.ID)
+	assert.Contains(t, listIds, charlieList.ID)
+	assert.NotContains(t, listIds, aliceList.ID)
+}
+
 func TestThingsAddedToListDeduplicatesNotifications(t *testing.T) {
 	db, tearDownFunc, err := testcommon.CreateTestSchema()
 	assert.NoError(t, err)

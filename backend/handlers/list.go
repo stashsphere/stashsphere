@@ -78,8 +78,10 @@ func (lh *ListHandler) ListHandlerShow(c echo.Context) error {
 }
 
 type ListsParams struct {
-	Page    uint64 `query:"page"`
-	PerPage uint64 `query:"perPage"`
+	Page           uint64   `query:"page"`
+	PerPage        uint64   `query:"perPage"`
+	FilterOwnerIds []string `query:"filterOwnerId"`
+	Paginate       *bool    `query:"paginate"`
 }
 
 func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
@@ -97,12 +99,17 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 	if params.PerPage == 0 {
 		params.PerPage = 50
 	}
+	paginate := true
+	if params.Paginate != nil && *params.Paginate == true {
+		paginate = true
+	}
 	totalCount, totalPageCount, lists, err := lh.listService.GetListsForUser(c.Request().Context(),
 		services.GetListsForUserParams{
-			UserId:   authCtx.User.UserId,
-			PerPage:  params.PerPage,
-			Page:     params.Page,
-			Paginate: true,
+			UserId:         authCtx.User.UserId,
+			PerPage:        params.PerPage,
+			Page:           params.Page,
+			FilterOwnerIds: params.FilterOwnerIds,
+			Paginate:       paginate,
 		},
 	)
 	if err != nil {
