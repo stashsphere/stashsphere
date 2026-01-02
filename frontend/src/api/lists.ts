@@ -18,6 +18,9 @@ export const getLists = async (
       perPage: perPage,
       paginate: paginate,
     },
+    paramsSerializer: {
+      indexes: null,
+    },
   });
 
   if (response.status != 200) {
