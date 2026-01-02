@@ -72,6 +72,7 @@
               sqlboiler-fixed
               go-migrate-pg
               postgresql
+              nodePackages.npm
             ];
             env = {
               "PGHOST" = "127.0.0.1";
