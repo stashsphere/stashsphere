@@ -1,4 +1,4 @@
-# StashSphere
+# StashSphere Backend
 
 ## Config
 
