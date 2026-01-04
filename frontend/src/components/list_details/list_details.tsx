@@ -39,7 +39,7 @@ const ListActions = ({ list, onDeleteClick }: { list: List; onDeleteClick: () =>
               icon="mdi--share-variant"
               size="medium"
               className="text-onneutral"
-              tooltip="Share this thing"
+              tooltip="Share this list"
             />
           </a>
         )}
@@ -49,7 +49,7 @@ const ListActions = ({ list, onDeleteClick }: { list: List; onDeleteClick: () =>
               icon="mdi--pencil"
               size="medium"
               className="text-onneutral"
-              tooltip="Edit this thing"
+              tooltip="Edit this list"
             />
           </a>
         )}
@@ -59,7 +59,7 @@ const ListActions = ({ list, onDeleteClick }: { list: List; onDeleteClick: () =>
               icon="mdi--trash-can"
               size="medium"
               className="text-danger"
-              tooltip="Delete this List"
+              tooltip="Delete this list"
             />
           </div>
         )}
