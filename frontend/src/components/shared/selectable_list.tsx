@@ -25,9 +25,9 @@ export const SelectableList = ({ list, selected, onSelect }: SelectableListProps
 
   const previewContent =
     previewImages.length > 0 ? (
-      <div className="grid grid-cols-2 gap-1 w-full h-full">
+      <div className="grid grid-cols-2 grid-rows-2 gap-1 w-full h-full">
         {previewImages.map((image) => (
-          <div key={image.id} className="flex items-center justify-center">
+          <div key={image.id} className="flex items-center justify-center overflow-hidden">
             <ImageComponent
               image={image}
               defaultWidth={128}
