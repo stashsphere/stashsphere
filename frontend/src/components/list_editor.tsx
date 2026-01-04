@@ -81,6 +81,11 @@ export const ListEditor = ({ children, list, onChange }: ListEditorProps) => {
     return list.selectedThingIDs.slice(start, start + thingsPerPage);
   }, [list.selectedThingIDs, selectedPage]);
 
+  const onTextFilterChange = (filter: string) => {
+    setCurrentPage(0);
+    setTextFilter(filter);
+  };
+
   const selectedTotalPages = Math.ceil(list.selectedThingIDs.length / thingsPerPage);
 
   return (
@@ -123,7 +128,7 @@ export const ListEditor = ({ children, list, onChange }: ListEditorProps) => {
               name="textFilter"
               value={textFilter}
               placeholder="Filter things"
-              onChange={(e) => setTextFilter(e.target.value)}
+              onChange={(e) => onTextFilterChange(e.target.value)}
               className="my-2 p-2 text-display border border-gray-300 rounded-sm w-2/3"
             />
             <Pages
