@@ -3,25 +3,46 @@ package operations
 import (
 	"context"
 	"crypto/ed25519"
-	"database/sql"
 	"time"
 
+	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stashsphere/backend/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func AuthenticateUser(db *sql.DB, ctx context.Context, email string, password string) (*models.User, error) {
-	user, err := models.Users(models.UserWhere.Email.EQ(email)).One(ctx, db)
+func AuthenticateUser(user *models.User, password string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func AuthenticateUserByEmail(exec boil.ContextExecutor, ctx context.Context, email string, password string) (*models.User, error) {
+	user, err := models.Users(models.UserWhere.Email.EQ(email)).One(ctx, exec)
 	if err != nil {
 		return nil, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	err = AuthenticateUser(user, password)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func AuthenticateUserByID(ctx context.Context, exec boil.ContextExecutor, userId string, password string) (*models.User, error) {
+	user, err := models.Users(models.UserWhere.ID.EQ(userId)).One(ctx, exec)
 	if err != nil {
 		return nil, err
 	}
 
+	err = AuthenticateUser(user, password)
+	if err != nil {
+		return nil, err
+	}
 	return user, nil
 }
 

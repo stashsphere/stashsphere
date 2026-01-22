@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
@@ -130,6 +131,29 @@ func (us *UserService) UpdateUser(ctx context.Context, params UpdateUserParams) 
 	}
 
 	return us.FindUserByID(ctx, params.UserId)
+}
+
+type UpdatePasswordParams struct {
+	UserId      string
+	OldPassword string
+	NewPassword string
+}
+
+func (us *UserService) UpdatePassword(ctx context.Context, params UpdatePasswordParams) error {
+	err := utils.Tx(ctx, us.db, func(tx *sql.Tx) error {
+		user, err := operations.AuthenticateUserByID(ctx, tx, params.UserId, params.OldPassword)
+		if err != nil {
+			return utils.ParameterError{Err: errors.New("Incorrect old password.")}
+		}
+		passwordHash, err := operations.HashPassword(params.NewPassword)
+		if err != nil {
+			return err
+		}
+		user.PasswordHash = string(passwordHash)
+		_, err = user.Update(ctx, tx, boil.Infer())
+		return err
+	})
+	return err
 }
 
 func (us *UserService) GetAllUsers(ctx context.Context) (models.UserSlice, error) {

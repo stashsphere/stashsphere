@@ -33,7 +33,7 @@ func NewAuthService(db *sql.DB, privateKey ed25519.PrivateKey, publicKey ed25519
 }
 
 func (as *AuthService) AuthorizeUser(ctx context.Context, email string, password string) (*models.User, string, string, string, string, error) {
-	user, err := operations.AuthenticateUser(as.db, ctx, email, password)
+	user, err := operations.AuthenticateUserByEmail(as.db, ctx, email, password)
 	if err != nil {
 		return nil, "", "", "", "", err
 	}

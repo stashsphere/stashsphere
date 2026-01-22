@@ -48,3 +48,36 @@ func (ph *UserHandler) Get(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, resources.UserProfileFromModel(user))
 }
+
+type PatchPasswordParams struct {
+	OldPassword string `json:"oldPassword" validate:"required"`
+	NewPassword string `json:"newPassword" validate:"gt=3"`
+}
+
+func (ph *UserHandler) PatchPassword(c echo.Context) error {
+	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
+	if !ok {
+		return utils.NoAuthContextError{}
+	}
+	if !authCtx.Authenticated {
+		return utils.NotAuthenticatedError{}
+	}
+
+	var params PatchPasswordParams
+	if err := c.Bind(&params); err != nil {
+		return err
+	}
+	if err := c.Validate(params); err != nil {
+		return err
+	}
+
+	err := ph.userService.UpdatePassword(c.Request().Context(), services.UpdatePasswordParams{
+		UserId:      authCtx.User.UserId,
+		OldPassword: params.OldPassword,
+		NewPassword: params.NewPassword,
+	})
+	if err != nil {
+		return err
+	}
+	return c.NoContent(http.StatusOK)
+}

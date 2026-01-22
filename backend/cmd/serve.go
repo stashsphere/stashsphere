@@ -399,6 +399,43 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 		),
 		commonUserOptions,
 	)
+	fuegoecho.PatchEcho(engine, userGroup, "/password", userHandler.PatchPassword,
+		option.Summary("Update Password"),
+		option.Description("Update current authenticated user's password"),
+		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
+		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
+		option.RequestBody(
+			fuego.RequestBody{
+				Type:         handlers.PatchPasswordParams{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			200,
+			"Password updated successfully",
+			fuego.Response{
+				Type:         utils.NoContent{},
+				ContentTypes: []string{""},
+			},
+		),
+		option.AddResponse(
+			400,
+			"Invalid parameters or old password incorrect",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			401,
+			"Not authenticated",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		commonUserOptions,
+	)
 
 	// users group
 	commonUsersOptions := option.Group(

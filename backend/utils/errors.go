@@ -16,7 +16,7 @@ const (
 	ErrEntityInUse                = "entity-in-use"
 	ErrFriendRequestNotPending    = "friend-request-not-pending"
 	ErrNoAuthContext              = "no-auth-context"
-	ErrNotAuthenticated           = "not_authenticated"
+	ErrNotAuthenticated           = "not-authenticated"
 	ErrIllegalMimeType            = "illegal-mime-type"
 	ErrPendingFriendRequestExists = "pending-friend-request-exists"
 	ErrFriendShipExists           = "friend-ship-exists"
