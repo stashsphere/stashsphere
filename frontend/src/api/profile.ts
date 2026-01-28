@@ -31,3 +31,16 @@ export const patchProfile = async (axios: Axios, params: ProfileUpdateParams) =>
   const profile = response.data as Profile;
   return profile;
 };
+
+export type UpdatePasswordParams = {
+  oldPassword: string;
+  newPassword: string;
+};
+
+export const updatePassword = async (axios: Axios, params: UpdatePasswordParams) => {
+  await axios.patch('/user/password', params, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+};
