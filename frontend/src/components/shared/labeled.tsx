@@ -5,6 +5,12 @@ type LabeledProps = {
   children: ReactNode;
 };
 
+const isEmpty = (children: ReactNode): boolean => {
+  if (children === null || children === undefined) return true;
+  if (typeof children === 'string' && children.trim() === '') return true;
+  return false;
+};
+
 export const Labeled = ({ label, children }: LabeledProps) => {
   return (
     <div className="border shadow-xs flex flex-col p-1 border-secondary rounded-sm">
@@ -13,7 +19,11 @@ export const Labeled = ({ label, children }: LabeledProps) => {
           {label}
         </span>
       </div>
-      {children}
+      {isEmpty(children) ? (
+        <span className="italic text-secondary/60">not provided</span>
+      ) : (
+        children
+      )}
     </div>
   );
 };
