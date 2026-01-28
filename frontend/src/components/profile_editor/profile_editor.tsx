@@ -174,48 +174,54 @@ export const ProfileEditor = ({ children, profile, onUpdateProfile }: Props) => 
         />
       </div>
       <Headline type="h2">Image</Headline>
-      {image && previewUrl && (
-        <div className="relative group w-64 h-64">
-          <div className="aspect-square relative overflow-hidden rounded-sm border border-gray-300">
-            <img
-              className={`w-full h-full object-cover -rotate-${image.rotation}`}
-              src={previewUrl}
-              alt="Preview"
-            />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1">
-              <button
-                onClick={() => rotateLeft()}
-                className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
-              >
-                <Icon icon="mdi--rotate-left" className="text-white text-xs" />
-              </button>
-              <button
-                onClick={() => removeFile()}
-                className="p-1 bg-red-500/80 rounded-full hover:bg-red-500 transition-colors"
-              >
-                <Icon icon="mdi--trash" className="text-white text-xs" />
-              </button>
-              <button
-                onClick={() => rotateRight()}
-                className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
-              >
-                <Icon icon="mdi--rotate-right" className="text-white text-xs" />
-              </button>
+      <div className="flex flex-col gap-4 mb-6">
+        {image && previewUrl && (
+          <div className="relative group w-64 h-64">
+            <div className="aspect-square relative overflow-hidden rounded-sm border border-gray-300">
+              <img
+                className={`w-full h-full object-cover -rotate-${image.rotation}`}
+                src={previewUrl}
+                alt="Preview"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1">
+                <button
+                  onClick={() => rotateLeft()}
+                  className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
+                >
+                  <Icon icon="mdi--rotate-left" className="text-white text-xs" />
+                </button>
+                <button
+                  onClick={() => removeFile()}
+                  className="p-1 bg-red-500/80 rounded-full hover:bg-red-500 transition-colors"
+                >
+                  <Icon icon="mdi--trash" className="text-white text-xs" />
+                </button>
+                <button
+                  onClick={() => rotateRight()}
+                  className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
+                >
+                  <Icon icon="mdi--rotate-right" className="text-white text-xs" />
+                </button>
+              </div>
             </div>
           </div>
+        )}
+        <div className="flex gap-4">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            onChange={onFileChange}
+            multiple
+            hidden
+          />
+          <PrimaryButton onClick={() => setShowImageBrowser(true)}>
+            Select from Gallery
+          </PrimaryButton>
+          <PrimaryButton onClick={() => inputRef.current?.click()}>
+            Upload from Device
+          </PrimaryButton>
         </div>
-      )}
-      <div className="flex gap-4">
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          onChange={onFileChange}
-          multiple
-          hidden
-        />
-        <PrimaryButton onClick={() => setShowImageBrowser(true)}>Select from Gallery</PrimaryButton>
-        <PrimaryButton onClick={() => inputRef.current?.click()}>Upload from Device</PrimaryButton>
       </div>
 
       <Modal
