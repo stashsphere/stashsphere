@@ -1,6 +1,6 @@
 import { FormEvent, useContext, useState } from 'react';
 import { AxiosContext } from '../../context/axios';
-import { PrimaryButton } from '../../components/shared';
+import { PrimaryButton, PasswordInput, usePasswordValidation } from '../../components/shared';
 import { updatePassword } from '../../api/profile';
 
 export const Account = () => {
@@ -11,22 +11,14 @@ export const Account = () => {
   const [error, setError] = useState<string | undefined>(undefined);
   const [success, setSuccess] = useState(false);
 
+  const { isValid: isPasswordValid } = usePasswordValidation(newPassword, confirmPassword, 8);
+
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(undefined);
     setSuccess(false);
 
     if (axiosInstance === null) {
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('New passwords do not match.');
-      return;
-    }
-
-    if (newPassword.length < 1) {
-      setError('New password cannot be empty.');
       return;
     }
 
@@ -61,33 +53,18 @@ export const Account = () => {
                 className="mt-1 p-2 w-full border border-secondary rounded-sm text-display"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="newPassword" className="block text-primary text-sm font-medium">
-                New Password
-              </label>
-              <input
-                type="password"
-                id="newPassword"
-                name="newPassword"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="mt-1 p-2 w-full border border-secondary rounded-sm text-display"
-              />
-            </div>
-            <div className="mb-4">
-              <label htmlFor="confirmPassword" className="block text-primary text-sm font-medium">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 p-2 w-full border border-secondary rounded-sm text-display"
-              />
-            </div>
-            <PrimaryButton type="submit">Update Password</PrimaryButton>
+            <PasswordInput
+              password={newPassword}
+              confirmPassword={confirmPassword}
+              onPasswordChange={setNewPassword}
+              onConfirmPasswordChange={setConfirmPassword}
+              passwordLabel="New Password"
+              confirmLabel="Confirm New Password"
+              minLength={8}
+            />
+            <PrimaryButton type="submit" disabled={!isPasswordValid}>
+              Update Password
+            </PrimaryButton>
             {error && <p className="text-warning mt-2">{error}</p>}
             {success && <p className="text-success mt-2">Password updated successfully.</p>}
           </form>

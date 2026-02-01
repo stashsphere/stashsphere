@@ -1,5 +1,5 @@
 import { FormEvent, useContext, useEffect, useState } from 'react';
-import { PrimaryButton } from '../components/shared';
+import { PrimaryButton, PasswordInput, usePasswordValidation } from '../components/shared';
 import { AxiosContext } from '../context/axios';
 import { useNavigate } from 'react-router';
 import { InstanceInfo } from '../api/resources';
@@ -16,7 +16,8 @@ export const Register = () => {
   const navigate = useNavigate();
 
   const [error, setError] = useState<string | undefined>(undefined);
-  const submittable = name.length >= 1 && password.length >= 3 && password === passwordConfirm;
+  const { isValid: isPasswordValid } = usePasswordValidation(password, passwordConfirm, 8);
+  const submittable = name.length >= 1 && email.length >= 1 && isPasswordValid;
 
   useEffect(() => {
     if (axiosInstance === null) {
@@ -88,32 +89,15 @@ export const Register = () => {
               className="mt-1 p-2 w-full border border-secondary rounded-sm text-display"
             />
           </div>
-          <div className="mb-4">
-            <label htmlFor="password" className="block text-primary text-sm font-medium">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 p-2 w-full border border-secondary rounded-sm text-display"
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="password_confirm" className="block text-primary text-sm font-medium">
-              Password (confirm)
-            </label>
-            <input
-              type="password"
-              id="password_confirm"
-              name="password_confirm"
-              value={passwordConfirm}
-              onChange={(e) => setPasswordConfirm(e.target.value)}
-              className="mt-1 p-2 w-full border border-secondary rounded-sm text-display"
-            />
-          </div>
+          <PasswordInput
+            password={password}
+            confirmPassword={passwordConfirm}
+            onPasswordChange={setPassword}
+            onConfirmPasswordChange={setPasswordConfirm}
+            passwordLabel="Password"
+            confirmLabel="Password (confirm)"
+            minLength={8}
+          />
           {inviteRequired ? (
             <div className="mb-4">
               <label htmlFor="invite_code" className="block text-primary text-sm font-medium">

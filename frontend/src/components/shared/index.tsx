@@ -19,3 +19,5 @@ export { ThingInfo } from './thing_info';
 export { SelectableThing } from './selectable_thing';
 export { FetchedSelectableThing } from './fetched_selectable_thing';
 export { SelectableList } from './selectable_list';
+export { PasswordInput } from './password_input';
+export { usePasswordValidation } from './usePasswordValidation';
