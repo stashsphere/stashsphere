@@ -15,7 +15,8 @@ type StashSphereServeConfig struct {
 	ListenAddress string `koanf:"listenAddress"`
 
 	Auth struct {
-		PrivateKey string `koanf:"privateKey"`
+		PrivateKey           string `koanf:"privateKey"`
+		DisableSecureCookies bool   `koanf:"disableSecureCookies"`
 	} `koanf:"auth"`
 
 	Image struct {

@@ -19,9 +19,10 @@ type AuthService struct {
 	accessTokenLifeTime  time.Duration
 	refreshTokenLifeTime time.Duration
 	cookieDomain         string
+	secureCookies        bool
 }
 
-func NewAuthService(db *sql.DB, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey, accessTokenLifeTime time.Duration, refreshTokenLifetime time.Duration, cookieDomain string) *AuthService {
+func NewAuthService(db *sql.DB, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey, accessTokenLifeTime time.Duration, refreshTokenLifetime time.Duration, cookieDomain string, secureCookies bool) *AuthService {
 	return &AuthService{
 		db,
 		privateKey,
@@ -29,6 +30,7 @@ func NewAuthService(db *sql.DB, privateKey ed25519.PrivateKey, publicKey ed25519
 		accessTokenLifeTime,
 		refreshTokenLifetime,
 		cookieDomain,
+		secureCookies,
 	}
 }
 
@@ -49,17 +51,17 @@ func (as *AuthService) AuthorizeUser(ctx context.Context, email string, password
 }
 
 func (as *AuthService) SetAuthCookies(ctx echo.Context, accessToken string, infoToken string, refreshToken string, refreshInfoToken string) {
-	operations.SetAccessTokenCookie(ctx, as.cookieDomain, accessToken, int(as.accessTokenLifeTime.Seconds()), false)
-	operations.SetInfoTokenCookie(ctx, as.cookieDomain, infoToken, int(as.accessTokenLifeTime.Seconds()), false)
-	operations.SetRefreshTokenCookie(ctx, as.cookieDomain, refreshToken, int(as.refreshTokenLifeTime.Seconds()), false)
-	operations.SetRefreshIntoTokenCookie(ctx, as.cookieDomain, refreshInfoToken, int(as.refreshTokenLifeTime.Seconds()), false)
+	operations.SetAccessTokenCookie(ctx, as.cookieDomain, accessToken, int(as.accessTokenLifeTime.Seconds()), as.secureCookies)
+	operations.SetInfoTokenCookie(ctx, as.cookieDomain, infoToken, int(as.accessTokenLifeTime.Seconds()), as.secureCookies)
+	operations.SetRefreshTokenCookie(ctx, as.cookieDomain, refreshToken, int(as.refreshTokenLifeTime.Seconds()), as.secureCookies)
+	operations.SetRefreshIntoTokenCookie(ctx, as.cookieDomain, refreshInfoToken, int(as.refreshTokenLifeTime.Seconds()), as.secureCookies)
 }
 
 func (as *AuthService) ClearAuthCookies(ctx echo.Context) {
-	operations.SetAccessTokenCookie(ctx, as.cookieDomain, "", -1, false)
-	operations.SetInfoTokenCookie(ctx, as.cookieDomain, "", -1, false)
-	operations.SetRefreshTokenCookie(ctx, as.cookieDomain, "", -1, false)
-	operations.SetRefreshIntoTokenCookie(ctx, as.cookieDomain, "", -1, false)
+	operations.SetAccessTokenCookie(ctx, as.cookieDomain, "", -1, as.secureCookies)
+	operations.SetInfoTokenCookie(ctx, as.cookieDomain, "", -1, as.secureCookies)
+	operations.SetRefreshTokenCookie(ctx, as.cookieDomain, "", -1, as.secureCookies)
+	operations.SetRefreshIntoTokenCookie(ctx, as.cookieDomain, "", -1, as.secureCookies)
 }
 
 func (as *AuthService) AuthorizeUserWithRefreshToken(ctx context.Context, value string) (*models.User, string, string, string, string, error) {

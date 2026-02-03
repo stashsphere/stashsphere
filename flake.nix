@@ -80,6 +80,7 @@
               "PGUSER" = "stashsphere";
               "PGPASSWORD" = "secret";
               "PGDATABASE" = "stashsphere";
+              "STASHSPHERE_DISABLE_SECURE_COOKIES" = "true";
             };
           };
           frontend = pkgs.mkShell {

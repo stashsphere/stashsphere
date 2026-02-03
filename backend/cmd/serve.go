@@ -154,7 +154,7 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 		}
 		return name
 	})
-	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, 24*7*time.Hour, config.Domains.ApiDomain)
+	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, 24*7*time.Hour, config.Domains.ApiDomain, !config.Auth.DisableSecureCookies)
 	userService := services.NewUserService(db, config.Invites.Enabled, config.Invites.InviteCode)
 
 	emailService := services.NewEmailService(config.Email)
@@ -1546,6 +1546,7 @@ var serveCommand = &cobra.Command{
 		configPaths, _ := cmd.Flags().GetStringSlice("conf")
 		debug, _ := cmd.Flags().GetBool("debug")
 		serveOpenAPI, _ := cmd.Flags().GetBool("serve-openapi")
+		disableSecureCookies, _ := cmd.Flags().GetBool("disable-secure-cookies")
 
 		var config config.StashSphereServeConfig
 
@@ -1597,6 +1598,17 @@ var serveCommand = &cobra.Command{
 			k.UnmarshalWithConf("", &config, koanf.UnmarshalConf{Tag: "koanf", FlatPaths: false})
 		}
 
+		// Flag takes precedence, then ENV, then config file
+		if disableSecureCookies {
+			config.Auth.DisableSecureCookies = true
+		} else if os.Getenv("STASHSPHERE_DISABLE_SECURE_COOKIES") == "true" {
+			config.Auth.DisableSecureCookies = true
+		}
+
+		if config.Auth.DisableSecureCookies {
+			log.Warn().Msg("Secure cookies are disabled. Do not use in production.")
+		}
+
 		return Serve(config, debug, serveOpenAPI)
 	},
 }
@@ -1605,5 +1617,6 @@ func init() {
 	serveCommand.Flags().StringSlice("conf", []string{"stashsphere.yaml"}, "path to one or more .yaml config files")
 	serveCommand.Flags().Bool("debug", false, "enable debug mode")
 	serveCommand.Flags().Bool("serve-openapi", false, "enable serving OpenAPI/Swagger UI at /swagger")
+	serveCommand.Flags().Bool("disable-secure-cookies", false, "disable the Secure flag on auth cookies (for local development over HTTP)")
 	rootCmd.AddCommand(serveCommand)
 }
