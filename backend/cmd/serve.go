@@ -230,6 +230,10 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 
 	a := e.Group("/api")
 	userGroup := a.Group("/user")
+
+	// Rate-limited group for public auth endpoints (5 requests per minute)
+	authRateLimiter := middleware.NewRateLimiterMemoryStore(5.0 / 60.0)
+	rateLimitedAuthGroup := userGroup.Group("", middleware.RateLimiter(authRateLimiter))
 	usersGroup := a.Group("/users")
 	thingsGroup := a.Group("/things")
 	listsGroup := a.Group("/lists")
@@ -244,7 +248,7 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 	commonUserOptions := option.Group(
 		option.Tags("Auth"),
 	)
-	fuegoecho.PostEcho(engine, userGroup, "/login", loginHandler.LoginHandlerPost,
+	fuegoecho.PostEcho(engine, rateLimitedAuthGroup, "/login", loginHandler.LoginHandlerPost,
 		option.Summary("Login"),
 		option.Description("Login and obtain cookies / JWT"),
 		option.RequestBody(
@@ -264,7 +268,7 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 		option.ResponseHeader("Set-Cookie", "JWT Cookies", fuego.ParamExample("all tokens", "stashsphere-access=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ2R1l6emg1Rzk0RklCSWtrOUZmX1kiLCJlbWFpbCI6InRlc3RAa2xhbmRlc3QuaW4iLCJuYW1lIjoiVGVzdGVyIiwiaXNzIjoiaW52ZW50b3J5Iiwic3ViIjoiYWNjZXNzIiwiZXhwIjoxNzY0MzU1NDU1LCJuYmYiOjE3NjQzMzM4NTUsImlhdCI6MTc2NDMzMzg1NX0.FYxYK-ROe2cN4Iu1oGjbUlz0FM5Y4h2yPGQ2Vli_fY1_iUPgQvw31wgOJfJ-md-Fj1oIdWJ5zmjsbgqdhHfABA; Path=/; Max-Age=21600; HttpOnly; SameSite=Strictstashsphere-info=eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VySWQiOiJ2R1l6emg1Rzk0RklCSWtrOUZmX1kiLCJlbWFpbCI6InRlc3RAa2xhbmRlc3QuaW4iLCJuYW1lIjoiVGVzdGVyIiwiaXNzIjoiaW52ZW50b3J5Iiwic3ViIjoiYWNjZXNzIiwiZXhwIjoxNzY0MzU1NDU1LCJuYmYiOjE3NjQzMzM4NTUsImlhdCI6MTc2NDMzMzg1NX0.; Path=/; Max-Age=21600; SameSite=Strictstashsphere-refresh=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ2R1l6emg1Rzk0RklCSWtrOUZmX1kiLCJpc3MiOiJpbnZlbnRvcnkiLCJzdWIiOiJyZWZyZXNoIiwiZXhwIjoxNzY0OTM4NjU1LCJuYmYiOjE3NjQzMzM4NTUsImlhdCI6MTc2NDMzMzg1NX0.2KAKPkjEPItcEfuwO3gXgyMljLQMTmbhDTEaj8xuupxurKQO145PJjl-L0giv6sQr31SQB_OfNRq_BAWej6iCQ; Path=/api/user/refresh; Max-Age=604800; HttpOnly; SameSite=Strictstashsphere-refresh-info=eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VySWQiOiJ2R1l6emg1Rzk0RklCSWtrOUZmX1kiLCJpc3MiOiJpbnZlbnRvcnkiLCJzdWIiOiJyZWZyZXNoIiwiZXhwIjoxNzY0OTM4NjU1LCJuYmYiOjE3NjQzMzM4NTUsImlhdCI6MTc2NDMzMzg1NX0.; Path=/; Max-Age=604800; SameSite=Strict")),
 		commonUserOptions,
 	)
-	fuegoecho.PostEcho(engine, userGroup, "/refresh", loginHandler.LoginHandlerRefreshPost,
+	fuegoecho.PostEcho(engine, rateLimitedAuthGroup, "/refresh", loginHandler.LoginHandlerRefreshPost,
 		option.Summary("Refresh Access Token"),
 		option.Description("Refresh access token using refresh token cookie. Requires stashsphere-refresh cookie."),
 		option.Cookie("stashsphere-refresh", "JWT refresh token", param.Required()),
@@ -303,7 +307,7 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 		option.ResponseHeader("Set-Cookie", "Cleared JWT Cookies", param.Example("expired cookies", "stashsphere-access=; Max-Age=0; stashsphere-refresh=; Max-Age=0")),
 		commonUserOptions,
 	)
-	fuegoecho.PostEcho(engine, userGroup, "/register", registerHandler.RegisterHandlerPost,
+	fuegoecho.PostEcho(engine, rateLimitedAuthGroup, "/register", registerHandler.RegisterHandlerPost,
 		option.Summary("Register"),
 		option.Description("Register a new user account"),
 		option.RequestBody(
