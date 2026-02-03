@@ -19,13 +19,16 @@ func NewLoginHandler(authService *services.AuthService) *LoginHandler {
 }
 
 type LoginPostParams struct {
-	Email    string `json:"email" form:"email"`
-	Password string `json:"password" form:"password"`
+	Email    string `json:"email" validate:"min=1"`
+	Password string `json:"password" validate:"min=1"`
 }
 
 func (lh *LoginHandler) LoginHandlerPost(c echo.Context) error {
 	loginParams := LoginPostParams{}
 	if err := c.Bind(&loginParams); err != nil {
+		return utils.ParameterError{Err: err}
+	}
+	if err := c.Validate(loginParams); err != nil {
 		return utils.ParameterError{Err: err}
 	}
 	_, accessToken, infoToken, refreshToken, refreshInfoToken, err := lh.authService.AuthorizeUser(c.Request().Context(), loginParams.Email, loginParams.Password)
