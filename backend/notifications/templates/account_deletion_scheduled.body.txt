@@ -1,0 +1,7 @@
+Hi {{.UserName}},
+
+Your account has been scheduled for deletion and will be permanently removed on {{.PurgeAt}}.
+
+If you did not request this or wish to keep your account, you can cancel the deletion by visiting {{.FrontendUrl}} and going to your profile settings.
+
+All your data, including things, lists, images, and friendships will be permanently deleted and cannot be recovered.

@@ -27,7 +27,7 @@ func TestCartCreation(t *testing.T) {
 	t.Cleanup(func() {
 		os.Remove(is.StorePath())
 	})
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	cartService := services.NewCartService(db)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{

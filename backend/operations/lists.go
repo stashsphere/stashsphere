@@ -9,6 +9,53 @@ import (
 	"github.com/stashsphere/backend/models"
 )
 
+// DeleteList deletes a list and cleans up related shares.
+// The list must be loaded with Things and Shares relations.
+func DeleteList(ctx context.Context, exec boil.ContextExecutor, list *models.List) error {
+	shareIds := []string{}
+	for _, share := range list.R.Shares {
+		shareIds = append(shareIds, share.ID)
+	}
+
+	thingIds := []string{}
+	for _, thing := range list.R.Things {
+		thingIds = append(thingIds, thing.ID)
+	}
+
+	err := list.RemoveShares(ctx, exec, list.R.Shares...)
+	if err != nil {
+		return err
+	}
+
+	err = list.RemoveThings(ctx, exec, list.R.Things...)
+	if err != nil {
+		return err
+	}
+
+	for _, id := range shareIds {
+		share, err := models.Shares(models.ShareWhere.ID.EQ(id),
+			qm.Load(qm.Rels(models.ShareRels.Lists)),
+			qm.Load(qm.Rels(models.ShareRels.Things)),
+		).One(ctx, exec)
+		if err != nil {
+			return err
+		}
+		if len(share.R.Lists) == 0 && len(share.R.Things) == 0 {
+			_, err = share.Delete(ctx, exec)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	_, err = list.Delete(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	return RemoveForbiddenThingsFromCarts(ctx, exec, thingIds)
+}
+
 func GetListUnchecked(ctx context.Context, exec boil.ContextExecutor, listId string) (*models.List, error) {
 	list, err := models.Lists(
 		models.ListWhere.ID.EQ(listId),

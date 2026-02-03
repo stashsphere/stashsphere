@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
@@ -23,10 +24,11 @@ import (
 
 // User is an object representing the database table.
 type User struct {
-	ID           string `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Name         string `boil:"name" json:"name" toml:"name" yaml:"name"`
-	Email        string `boil:"email" json:"email" toml:"email" yaml:"email"`
-	PasswordHash string `boil:"password_hash" json:"password_hash" toml:"password_hash" yaml:"password_hash"`
+	ID           string    `boil:"id" json:"id" toml:"id" yaml:"id"`
+	Name         string    `boil:"name" json:"name" toml:"name" yaml:"name"`
+	Email        string    `boil:"email" json:"email" toml:"email" yaml:"email"`
+	PasswordHash string    `boil:"password_hash" json:"password_hash" toml:"password_hash" yaml:"password_hash"`
+	PurgeAt      null.Time `boil:"purge_at" json:"purge_at,omitempty" toml:"purge_at" yaml:"purge_at,omitempty"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -37,11 +39,13 @@ var UserColumns = struct {
 	Name         string
 	Email        string
 	PasswordHash string
+	PurgeAt      string
 }{
 	ID:           "id",
 	Name:         "name",
 	Email:        "email",
 	PasswordHash: "password_hash",
+	PurgeAt:      "purge_at",
 }
 
 var UserTableColumns = struct {
@@ -49,11 +53,13 @@ var UserTableColumns = struct {
 	Name         string
 	Email        string
 	PasswordHash string
+	PurgeAt      string
 }{
 	ID:           "users.id",
 	Name:         "users.name",
 	Email:        "users.email",
 	PasswordHash: "users.password_hash",
+	PurgeAt:      "users.purge_at",
 }
 
 // Generated where
@@ -63,11 +69,13 @@ var UserWhere = struct {
 	Name         whereHelperstring
 	Email        whereHelperstring
 	PasswordHash whereHelperstring
+	PurgeAt      whereHelpernull_Time
 }{
 	ID:           whereHelperstring{field: "\"users\".\"id\""},
 	Name:         whereHelperstring{field: "\"users\".\"name\""},
 	Email:        whereHelperstring{field: "\"users\".\"email\""},
 	PasswordHash: whereHelperstring{field: "\"users\".\"password_hash\""},
+	PurgeAt:      whereHelpernull_Time{field: "\"users\".\"purge_at\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -316,9 +324,9 @@ func (r *userR) GetOwnerThings() ThingSlice {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "name", "email", "password_hash"}
+	userAllColumns            = []string{"id", "name", "email", "password_hash", "purge_at"}
 	userColumnsWithoutDefault = []string{"id", "name", "email", "password_hash"}
-	userColumnsWithDefault    = []string{}
+	userColumnsWithDefault    = []string{"purge_at"}
 	userPrimaryKeyColumns     = []string{"id"}
 	userGeneratedColumns      = []string{}
 )

@@ -20,7 +20,7 @@ func TestFriendRequestCreationReject(t *testing.T) {
 	})
 	t.Cleanup(tearDownFunc)
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -90,7 +90,7 @@ func TestFriendRequestCreationAccept(t *testing.T) {
 	})
 	t.Cleanup(tearDownFunc)
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",

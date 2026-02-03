@@ -48,7 +48,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 }
 
 func createTestUser(t *testing.T, ctx context.Context, db *sql.DB) *models.User {
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(ctx, *testUserParams)
 	assert.NoError(t, err)

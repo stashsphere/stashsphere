@@ -28,6 +28,59 @@ func GetThingUnchecked(ctx context.Context, exec boil.ContextExecutor, thingId s
 	return thing, nil
 }
 
+// DeleteThing deletes a thing and cleans up related data.
+// The thing must be loaded with QuantityEntries, Properties, ImagesThings, Shares, and Lists relations.
+func DeleteThing(ctx context.Context, exec boil.ContextExecutor, thing *models.Thing) error {
+	shareIds := []string{}
+	for _, share := range thing.R.Shares {
+		shareIds = append(shareIds, share.ID)
+	}
+
+	_, err := thing.R.QuantityEntries.DeleteAll(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	_, err = thing.R.Properties.DeleteAll(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	_, err = thing.R.ImagesThings.DeleteAll(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	err = thing.RemoveShares(ctx, exec, thing.R.Shares...)
+	if err != nil {
+		return err
+	}
+
+	err = thing.RemoveLists(ctx, exec, thing.R.Lists...)
+	if err != nil {
+		return err
+	}
+
+	for _, id := range shareIds {
+		share, err := models.Shares(models.ShareWhere.ID.EQ(id),
+			qm.Load(qm.Rels(models.ShareRels.Lists)),
+			qm.Load(qm.Rels(models.ShareRels.Things)),
+		).One(ctx, exec)
+		if err != nil {
+			return err
+		}
+		if len(share.R.Lists) == 0 && len(share.R.Things) == 0 {
+			_, err = share.Delete(ctx, exec)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	_, err = thing.Delete(ctx, exec)
+	return err
+}
+
 // second order of sharing
 func getFriendOfFriendThings(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
 	sharedThingIds := make([]string, 0)

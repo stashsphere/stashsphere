@@ -567,3 +567,52 @@ func (ns *NotificationService) thingsAddedToList(ctx context.Context, params thi
 
 	return ns.emailService.Deliver(params.TargetUserEmail, subject.String(), body.String())
 }
+
+type AccountDeletionScheduledParams struct {
+	UserId    string
+	UserName  string
+	UserEmail string
+	PurgeAt   time.Time
+}
+
+func (ns *NotificationService) AccountDeletionScheduled(ctx context.Context, params AccountDeletionScheduledParams) error {
+	bodyTempl, err := template.ParseFS(templates.FS, "account_deletion_scheduled.body.txt")
+	if err != nil {
+		return err
+	}
+
+	subjectTempl, err := template.ParseFS(templates.FS, "account_deletion_scheduled.subject.txt")
+	if err != nil {
+		return err
+	}
+
+	type BodyData struct {
+		UserName    string
+		PurgeAt     string
+		FrontendUrl string
+	}
+
+	type SubjectData struct {
+		InstanceName string
+	}
+
+	var body bytes.Buffer
+	err = bodyTempl.Execute(&body, BodyData{
+		UserName:    params.UserName,
+		PurgeAt:     params.PurgeAt.Format("January 2, 2006 at 15:04 MST"),
+		FrontendUrl: ns.data.FrontendUrl,
+	})
+	if err != nil {
+		return err
+	}
+
+	var subject bytes.Buffer
+	err = subjectTempl.Execute(&subject, SubjectData{
+		InstanceName: ns.data.InstanceName,
+	})
+	if err != nil {
+		return err
+	}
+
+	return ns.emailService.Deliver(params.UserEmail, subject.String(), body.String())
+}

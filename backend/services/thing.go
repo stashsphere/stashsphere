@@ -442,55 +442,7 @@ func (ts *ThingService) DeleteThing(ctx context.Context, thingId string, userId 
 			return utils.EntityDoesNotBelongToUserError{}
 		}
 
-		shareIds := []string{}
-		for _, share := range thing.R.Shares {
-			shareIds = append(shareIds, share.ID)
-		}
-
-		_, err = thing.R.QuantityEntries.DeleteAll(ctx, tx)
-		if err != nil {
-			return err
-		}
-
-		_, err = thing.R.Properties.DeleteAll(ctx, tx)
-		if err != nil {
-			return err
-		}
-
-		_, err = thing.R.ImagesThings.DeleteAll(ctx, tx)
-		if err != nil {
-			return err
-		}
-
-		err = thing.RemoveShares(ctx, tx, thing.R.Shares...)
-		if err != nil {
-			return err
-		}
-
-		err = thing.RemoveLists(ctx, tx, thing.R.Lists...)
-		if err != nil {
-			return err
-		}
-
-		for _, id := range shareIds {
-			share, err := models.Shares(models.ShareWhere.ID.EQ(id),
-				qm.Load(qm.Rels(models.ShareRels.Lists)),
-				qm.Load(qm.Rels(models.ShareRels.Things)),
-			).One(ctx, tx)
-			if err != nil {
-				return err
-			}
-			if len(share.R.Lists) == 0 && len(share.R.Things) == 0 {
-				_, err = share.Delete(ctx, tx)
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		_, err = thing.Delete(ctx, tx)
-
-		return err
+		return operations.DeleteThing(ctx, tx, thing)
 	})
 	return err
 }

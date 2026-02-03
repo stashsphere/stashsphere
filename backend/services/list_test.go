@@ -21,7 +21,7 @@ func TestListCreation(t *testing.T) {
 	})
 	t.Cleanup(tearDownFunc)
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)
@@ -49,7 +49,7 @@ func TestListAccess(t *testing.T) {
 	})
 	t.Cleanup(tearDownFunc)
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	alice, err := userService.CreateUser(context.Background(), *aliceParams)
 	assert.NoError(t, err)
@@ -82,7 +82,7 @@ func TestListAccessShareList(t *testing.T) {
 	})
 	t.Cleanup(tearDownFunc)
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -127,7 +127,7 @@ func TestListSharingState(t *testing.T) {
 	})
 	t.Cleanup(tearDownFunc)
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -197,7 +197,7 @@ func TestListSharedWithFriendsNotification(t *testing.T) {
 	})
 	t.Cleanup(tearDownFunc)
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -236,7 +236,7 @@ func TestListUpdateToSharedNotification(t *testing.T) {
 	})
 	t.Cleanup(tearDownFunc)
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -286,7 +286,7 @@ func TestListDeletion(t *testing.T) {
 	})
 	t.Cleanup(tearDownFunc)
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	anotherUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
@@ -328,7 +328,7 @@ func TestListCreationWithThings(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)
@@ -371,7 +371,7 @@ func TestListUpdateWithThings(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)
@@ -425,7 +425,7 @@ func TestListCannotAddOthersThings(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	alice, err := userService.CreateUser(context.Background(), *aliceParams)
 	assert.NoError(t, err)
@@ -468,7 +468,7 @@ func TestThingsAddedToSharedListNotification(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -542,7 +542,7 @@ func TestRemoveThingFromListRemovesFromCart(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -619,7 +619,7 @@ func TestThingsAddedToDirectlySharedListNotification(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -700,7 +700,7 @@ func TestGetListsForUserThingInMultipleListsHasImages(t *testing.T) {
 		os.Remove(imageService.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -776,7 +776,7 @@ func TestGetListsForUserFilterOwnerIds(t *testing.T) {
 	})
 	t.Cleanup(tearDownFunc)
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -885,7 +885,7 @@ func TestThingsAddedToListDeduplicatesNotifications(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",

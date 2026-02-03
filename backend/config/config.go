@@ -9,6 +9,10 @@ type StashSphereDatabaseConfig struct {
 	SslMode  *string `koanf:"sslmode"`
 }
 
+type StashSphereUserDeletionConfig struct {
+	GracePeriodMinutes int `koanf:"gracePeriodMinutes"`
+}
+
 type StashSphereServeConfig struct {
 	Database StashSphereDatabaseConfig `koanf:"database"`
 
@@ -23,6 +27,8 @@ type StashSphereServeConfig struct {
 		Path      string `koanf:"path"`
 		CachePath string `koanf:"cachePath"`
 	} `koanf:"image"`
+
+	UserDeletion StashSphereUserDeletionConfig `koanf:"userDeletion"`
 
 	Invites struct {
 		Enabled    bool   `koanf:"enabled"`

@@ -1,6 +1,8 @@
 package resources
 
 import (
+	"time"
+
 	"github.com/stashsphere/backend/middleware"
 	"github.com/stashsphere/backend/models"
 )
@@ -12,6 +14,7 @@ type Profile struct {
 	Information *string       `json:"information"`
 	Email       string        `json:"email"`
 	Image       *ReducedImage `json:"image"`
+	PurgeAt     *time.Time    `json:"purgeAt"`
 }
 
 func ProfileFromUserContext(ctx *middleware.UserContext) Profile {
@@ -35,6 +38,11 @@ func ProfileFromModel(user *models.User) Profile {
 		information = &user.R.Profile.Information
 	}
 
+	var purgeAt *time.Time
+	if user.PurgeAt.Valid {
+		purgeAt = &user.PurgeAt.Time
+	}
+
 	return Profile{
 		ID:          user.ID,
 		Name:        user.Name,
@@ -42,6 +50,7 @@ func ProfileFromModel(user *models.User) Profile {
 		Image:       image,
 		FullName:    fullName,
 		Information: information,
+		PurgeAt:     purgeAt,
 	}
 }
 

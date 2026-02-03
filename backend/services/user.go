@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
@@ -15,13 +16,21 @@ import (
 )
 
 type UserService struct {
-	db             *sql.DB
-	inviteCode     string
-	inviteRequired bool
+	db                  *sql.DB
+	inviteCode          string
+	inviteRequired      bool
+	gracePeriodMinutes  int
+	notificationService *NotificationService
 }
 
-func NewUserService(db *sql.DB, inviteRequired bool, inviteCode string) *UserService {
-	return &UserService{db, inviteCode, inviteRequired}
+func NewUserService(db *sql.DB, inviteRequired bool, inviteCode string, gracePeriodMinutes int, notificationService *NotificationService) *UserService {
+	return &UserService{
+		db:                  db,
+		inviteCode:          inviteCode,
+		inviteRequired:      inviteRequired,
+		gracePeriodMinutes:  gracePeriodMinutes,
+		notificationService: notificationService,
+	}
 }
 
 type CreateUserParams struct {
@@ -166,3 +175,57 @@ func (us *UserService) GetAllUsers(ctx context.Context) (models.UserSlice, error
 	}
 	return users, nil
 }
+
+func (us *UserService) ScheduleDeletion(ctx context.Context, userId string, password string) (*models.User, error) {
+	_, err := operations.AuthenticateUserByID(ctx, us.db, userId, password)
+	if err != nil {
+		return nil, utils.ParameterError{Err: errors.New("Incorrect password.")}
+	}
+
+	existing, err := operations.FindUserByID(ctx, us.db, userId)
+	if err != nil {
+		return nil, err
+	}
+	if existing.PurgeAt.Valid {
+		return us.FindUserByID(ctx, userId)
+	}
+
+	purgeAt := time.Now().UTC().Add(time.Duration(us.gracePeriodMinutes) * time.Minute)
+
+	user, err := operations.ScheduleUserDeletion(ctx, us.db, userId, purgeAt)
+	if err != nil {
+		return nil, err
+	}
+
+	err = us.notificationService.AccountDeletionScheduled(ctx, AccountDeletionScheduledParams{
+		UserId:    userId,
+		UserName:  user.Name,
+		UserEmail: user.Email,
+		PurgeAt:   purgeAt,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return us.FindUserByID(ctx, userId)
+}
+
+func (us *UserService) CancelDeletion(ctx context.Context, userId string) (*models.User, error) {
+	user, err := operations.FindUserByID(ctx, us.db, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	if !user.PurgeAt.Valid {
+		return nil, utils.NotFoundError{EntityName: "scheduled deletion"}
+	}
+
+	user.PurgeAt = null.Time{}
+	_, err = user.Update(ctx, us.db, boil.Whitelist(models.UserColumns.PurgeAt))
+	if err != nil {
+		return nil, err
+	}
+
+	return us.FindUserByID(ctx, userId)
+}
+

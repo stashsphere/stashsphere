@@ -394,52 +394,7 @@ func (ts *ListService) DeleteList(ctx context.Context, listId string, userId str
 			return utils.EntityDoesNotBelongToUserError{}
 		}
 
-		shareIds := []string{}
-		for _, share := range list.R.Shares {
-			shareIds = append(shareIds, share.ID)
-		}
-
-		thingIds := []string{}
-		for _, thing := range list.R.Things {
-			thingIds = append(thingIds, thing.ID)
-		}
-
-		err = list.RemoveShares(ctx, tx, list.R.Shares...)
-		if err != nil {
-			return err
-		}
-
-		err = list.RemoveThings(ctx, tx, list.R.Things...)
-		if err != nil {
-			return err
-		}
-
-		for _, id := range shareIds {
-			share, err := models.Shares(models.ShareWhere.ID.EQ(id),
-				qm.Load(qm.Rels(models.ShareRels.Lists)),
-				qm.Load(qm.Rels(models.ShareRels.Things)),
-			).One(ctx, tx)
-			if err != nil {
-				return err
-			}
-			if len(share.R.Lists) == 0 && len(share.R.Things) == 0 {
-				_, err = share.Delete(ctx, tx)
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		_, err = list.Delete(ctx, tx)
-		if err != nil {
-			return err
-		}
-
-		err = operations.RemoveForbiddenThingsFromCarts(ctx, tx, thingIds)
-		if err != nil {
-			return err
-		}
-		return err
+		return operations.DeleteList(ctx, tx, list)
 	})
 	return err
 }

@@ -1,0 +1,1 @@
+[{{.InstanceName}}] Your account is scheduled for deletion

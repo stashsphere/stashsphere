@@ -35,6 +35,7 @@ import (
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
 	"github.com/stashsphere/backend/utils"
+	"github.com/stashsphere/backend/workers"
 
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
@@ -166,7 +167,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		return name
 	})
 	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, 24*7*time.Hour, config.Domains.ApiDomain, !config.Auth.DisableSecureCookies)
-	userService := services.NewUserService(db, config.Invites.Enabled, config.Invites.InviteCode)
 
 	emailService := services.NewEmailService(config.Email)
 	notificationService := services.NewNotificationService(db,
@@ -182,6 +182,13 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	if err != nil {
 		return nil, nil, err
 	}
+
+	gracePeriodMinutes := config.UserDeletion.GracePeriodMinutes
+	if gracePeriodMinutes == 0 {
+		gracePeriodMinutes = 1440 // default: 24 hours
+	}
+	userService := services.NewUserService(db, config.Invites.Enabled, config.Invites.InviteCode, gracePeriodMinutes, notificationService)
+
 	thingService := services.NewThingService(db, imageService, notificationService)
 	listService := services.NewListService(db, notificationService)
 	propertyService := services.NewPropertyService(db)
@@ -454,6 +461,52 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 			"Invalid parameters or old password incorrect",
 			fuego.Response{
 				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			401,
+			"Not authenticated",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		commonUserOptions,
+	)
+	fuegoecho.PostEcho(engine, userGroup, "/deletion", userHandler.ScheduleDeletion,
+		option.Summary("Schedule Account Deletion"),
+		option.Description("Schedule the current user's account for deletion after a grace period"),
+		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
+		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
+		option.AddResponse(
+			200,
+			"Deletion scheduled",
+			fuego.Response{
+				Type:         resources.Profile{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			401,
+			"Not authenticated",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		commonUserOptions,
+	)
+	fuegoecho.DeleteEcho(engine, userGroup, "/deletion", userHandler.CancelDeletion,
+		option.Summary("Cancel Account Deletion"),
+		option.Description("Cancel a previously scheduled account deletion"),
+		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
+		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
+		option.AddResponse(
+			200,
+			"Deletion cancelled",
+			fuego.Response{
+				Type:         resources.Profile{},
 				ContentTypes: []string{"application/json"},
 			},
 		),
@@ -1562,6 +1615,12 @@ func Serve(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool) 
 			log.Error().Err(err).Msg("failed to close database connection")
 		}
 	}()
+
+	// Start purge worker
+	purgeWorker := workers.NewPurgeWorker(db, config.Image.Path, 1*time.Minute)
+	purgeWorker.Start()
+	defer purgeWorker.Stop()
+
 	log.Info().Msgf("stashsphere listening on %s", config.ListenAddress)
 	return echo.Start(config.ListenAddress)
 }

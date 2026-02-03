@@ -28,7 +28,7 @@ func TestThingCreation(t *testing.T) {
 	t.Cleanup(func() {
 		os.Remove(is.StorePath())
 	})
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
 	assert.NoError(t, err)
@@ -60,7 +60,7 @@ func TestThingAccess(t *testing.T) {
 	t.Cleanup(func() {
 		os.Remove(is.StorePath())
 	})
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	alice, err := userService.CreateUser(context.Background(), *aliceParams)
 	assert.NoError(t, err)
@@ -98,7 +98,7 @@ func TestThingAccessShareThing(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -150,7 +150,7 @@ func TestThingQuantity(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -223,7 +223,7 @@ func TestSharingState(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -300,7 +300,7 @@ func TestDeletion(t *testing.T) {
 	t.Cleanup(func() {
 		os.Remove(is.StorePath())
 	})
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	testUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	anotherUserParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
 	testUser, err := userService.CreateUser(context.Background(), *testUserParams)
@@ -342,7 +342,7 @@ func TestThingDeletionRemovesFromCart(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	cartService := services.NewCartService(db)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
@@ -418,7 +418,7 @@ func TestThingSharedWithFriendsNotification(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -463,7 +463,7 @@ func TestThingUpdateToSharedNotification(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",
@@ -517,7 +517,7 @@ func TestGetThingsForUserSearchTerm(t *testing.T) {
 		os.Remove(is.StorePath())
 	})
 
-	userService := services.NewUserService(db, false, "")
+	userService := services.NewUserService(db, false, "", 60, nil)
 	emailService := services.TestEmailService{}
 	notificationService := services.NewNotificationService(db, services.NotificationData{
 		FrontendUrl:  "https://example.com",

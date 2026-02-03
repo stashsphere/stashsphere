@@ -81,3 +81,47 @@ func (ph *UserHandler) PatchPassword(c echo.Context) error {
 	}
 	return c.NoContent(http.StatusOK)
 }
+
+type ScheduleDeletionParams struct {
+	Password string `json:"password" validate:"required"`
+}
+
+func (ph *UserHandler) ScheduleDeletion(c echo.Context) error {
+	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
+	if !ok {
+		return utils.NoAuthContextError{}
+	}
+	if !authCtx.Authenticated {
+		return utils.NotAuthenticatedError{}
+	}
+
+	var params ScheduleDeletionParams
+	if err := c.Bind(&params); err != nil {
+		return err
+	}
+	if err := c.Validate(params); err != nil {
+		return err
+	}
+
+	user, err := ph.userService.ScheduleDeletion(c.Request().Context(), authCtx.User.UserId, params.Password)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, resources.ProfileFromModel(user))
+}
+
+func (ph *UserHandler) CancelDeletion(c echo.Context) error {
+	authCtx, ok := c.Get("auth").(*middleware.AuthContext)
+	if !ok {
+		return utils.NoAuthContextError{}
+	}
+	if !authCtx.Authenticated {
+		return utils.NotAuthenticatedError{}
+	}
+
+	user, err := ph.userService.CancelDeletion(c.Request().Context(), authCtx.User.UserId)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, resources.ProfileFromModel(user))
+}
