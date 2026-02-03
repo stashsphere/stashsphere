@@ -113,5 +113,5 @@ func CreateJWTRefreshTokenForUser(user *models.User, privateKey ed25519.PrivateK
 }
 
 func HashPassword(password string) ([]byte, error) {
-	return bcrypt.GenerateFromPassword([]byte(password), 0)
+	return bcrypt.GenerateFromPassword([]byte(password), 12)
 }
