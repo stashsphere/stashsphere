@@ -64,34 +64,6 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 }
 
 func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, openAPIPath string) (*echo.Echo, *fuego.Engine, *sql.DB, error) {
-	consoleOutput := zerolog.ConsoleWriter{Out: os.Stderr}
-	loggerOutput := consoleOutput
-	logger := zerolog.New(loggerOutput).With().Timestamp().Logger()
-	log.Logger = logger
-
-	boil.DebugMode = debug
-
-	if config.Auth.PrivateKey == "" {
-		log.Warn().Msg("No private key provided, generating one. Cookies won't work after restart")
-		generatedKey, err := crypto.GenerateEd25519StringKey()
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		config.Auth.PrivateKey = generatedKey
-	}
-
-	if config.Invites.Enabled {
-		log.Info().Msgf("Invite enabled and code required")
-	} else {
-		log.Info().Msgf("Invite disabled and no code required")
-	}
-
-	privateKey, err := crypto.LoadEd22519PrivateKeyFromString(config.Auth.PrivateKey)
-	if err != nil {
-		log.Fatal().Msgf("error loading private key from config: %v", err)
-	}
-	publicKey := privateKey.Public().(ed25519.PublicKey)
-
 	dbOptions := fmt.Sprintf("user=%s dbname=%s host=%s", config.Database.User, config.Database.Name, config.Database.Host)
 	if config.Database.Password != nil {
 		dbOptions = fmt.Sprintf("%s password=%s", dbOptions, *config.Database.Password)
@@ -107,6 +79,45 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
+	e, engine, err := SetupWithDB(db, config, debug, serveOpenAPI, openAPIPath)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return e, engine, db, nil
+}
+
+// SetupWithDB creates the Echo server with an existing database connection.
+// This is useful for testing with a test database.
+func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, openAPIPath string) (*echo.Echo, *fuego.Engine, error) {
+	consoleOutput := zerolog.ConsoleWriter{Out: os.Stderr}
+	loggerOutput := consoleOutput
+	logger := zerolog.New(loggerOutput).With().Timestamp().Logger()
+	log.Logger = logger
+
+	boil.DebugMode = debug
+
+	if config.Auth.PrivateKey == "" {
+		log.Warn().Msg("No private key provided, generating one. Cookies won't work after restart")
+		generatedKey, err := crypto.GenerateEd25519StringKey()
+		if err != nil {
+			return nil, nil, err
+		}
+		config.Auth.PrivateKey = generatedKey
+	}
+
+	if config.Invites.Enabled {
+		log.Info().Msgf("Invite enabled and code required")
+	} else {
+		log.Info().Msgf("Invite disabled and no code required")
+	}
+
+	privateKey, err := crypto.LoadEd22519PrivateKeyFromString(config.Auth.PrivateKey)
+	if err != nil {
+		log.Fatal().Msgf("error loading private key from config: %v", err)
+	}
+	publicKey := privateKey.Public().(ed25519.PublicKey)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -165,11 +176,11 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 		}, emailService)
 	imageService, err := services.NewImageService(db, config.Image.Path)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	cacheService, err := services.NewCacheService(config.Image.CachePath)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	thingService := services.NewThingService(db, imageService, notificationService)
 	listService := services.NewListService(db, notificationService)
@@ -232,8 +243,24 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 	userGroup := a.Group("/user")
 
 	// Rate-limited group for public auth endpoints (5 requests per minute)
-	authRateLimiter := middleware.NewRateLimiterMemoryStore(5.0 / 60.0)
-	rateLimitedAuthGroup := userGroup.Group("", middleware.RateLimiter(authRateLimiter))
+	authRateLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+		Rate:      5.0 / 60.0,
+		Burst:     5,
+		ExpiresIn: 3 * time.Minute,
+	})
+	rateLimitedAuthGroup := userGroup.Group("", middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Store: authRateLimiter,
+		IdentifierExtractor: func(c echo.Context) (string, error) {
+			println("Real-IP", c.RealIP())
+			// Check X-Real-IP header first (set by reverse proxy)
+			if ip := c.Request().Header.Get("X-Real-IP"); ip != "" {
+				println("X-Real-IP", ip)
+				return ip, nil
+			}
+			// Fall back to Echo's RealIP which checks X-Forwarded-For and RemoteAddr
+			return c.RealIP(), nil
+		},
+	}))
 	usersGroup := a.Group("/users")
 	thingsGroup := a.Group("/things")
 	listsGroup := a.Group("/lists")
@@ -1522,7 +1549,7 @@ func setup(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool, 
 
 	engine.RegisterOpenAPIRoutes(&fuegoecho.OpenAPIHandler{Echo: e})
 
-	return e, engine, db, nil
+	return e, engine, nil
 }
 
 func Serve(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool) error {
