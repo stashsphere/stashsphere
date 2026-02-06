@@ -141,6 +141,7 @@ export interface Profile {
   fullName: string;
   information: string;
   image: ReducedImage | null;
+  purgeAt: Date | null;
 }
 
 export interface Share {

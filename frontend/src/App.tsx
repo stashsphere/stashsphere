@@ -18,6 +18,7 @@ import { Lists } from './routes/lists/list';
 import { CreateList } from './routes/lists/create';
 import { ShowList } from './routes/lists/show';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Search } from './routes/search';
 import { getProfile } from './api/profile';
 import { Profile } from './api/resources';
@@ -41,6 +42,7 @@ import { CartContext } from './context/cart';
 import React from 'react';
 
 export const App = () => {
+  const navigate = useNavigate();
   const [config, setConfig] = useState<Config | null>(null);
   const [cookies] = useCookies(['stashsphere-info', 'stashsphere-refresh-info']);
   const infoCookie = cookies['stashsphere-info'] as string | undefined;
@@ -76,11 +78,17 @@ export const App = () => {
 
   useEffect(() => {
     if (infoCookie && axiosInstance) {
-      getProfile(axiosInstance).then(setProfile);
+      getProfile(axiosInstance)
+        .then(setProfile)
+        .catch((error) => {
+          if (error.response?.status === 404) {
+            navigate('/user/logout');
+          }
+        });
     } else {
       setProfile(null);
     }
-  }, [infoCookie, axiosInstance, profileKey]);
+  }, [infoCookie, axiosInstance, profileKey, navigate]);
 
   useEffect(() => {
     const callback = () => {

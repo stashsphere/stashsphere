@@ -1,15 +1,30 @@
 import { FormEvent, useContext, useState } from 'react';
 import { AxiosContext } from '../../context/axios';
-import { PrimaryButton, PasswordInput, usePasswordValidation } from '../../components/shared';
-import { updatePassword } from '../../api/profile';
+import { AuthContext } from '../../context/auth';
+import {
+  PrimaryButton,
+  DangerButton,
+  SecondaryButton,
+  Modal,
+  PasswordInput,
+  usePasswordValidation,
+} from '../../components/shared';
+import { updatePassword, scheduleDeletion, cancelDeletion } from '../../api/profile';
 
 export const Account = () => {
   const axiosInstance = useContext(AxiosContext);
+  const { profile, invalidateProfile } = useContext(AuthContext);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | undefined>(undefined);
   const [success, setSuccess] = useState(false);
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [confirmText, setConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState<string | undefined>(undefined);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const { isValid: isPasswordValid } = usePasswordValidation(newPassword, confirmPassword, 8);
 
@@ -31,6 +46,55 @@ export const Account = () => {
     } catch {
       setError('Failed to update password. Please check your current password.');
     }
+  };
+
+  const handleScheduleDeletion = async () => {
+    if (axiosInstance === null || confirmText !== 'YES' || !deletePassword) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    setDeleteError(undefined);
+
+    try {
+      await scheduleDeletion(axiosInstance, deletePassword);
+      invalidateProfile();
+      setDeleteModalOpen(false);
+      setConfirmText('');
+      setDeletePassword('');
+    } catch {
+      setDeleteError('Failed to schedule account deletion. Please check your password.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCancelDeletion = async () => {
+    if (axiosInstance === null) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    setDeleteError(undefined);
+
+    try {
+      await cancelDeletion(axiosInstance);
+      invalidateProfile();
+    } catch {
+      setDeleteError('Failed to cancel account deletion.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -69,7 +133,111 @@ export const Account = () => {
             {success && <p className="text-success mt-2">Password updated successfully.</p>}
           </form>
         </div>
+
+        <div className="max-w-md mt-8 pt-8 border-t border-gray-200">
+          <h2 className="text-danger text-xl font-semibold mb-4">Delete Account</h2>
+          {profile?.purgeAt ? (
+            <div>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-4 mb-4">
+                <p className="text-yellow-800">
+                  Your account is scheduled for deletion on{' '}
+                  <strong>{formatDate(profile.purgeAt)}</strong>.
+                </p>
+                <p className="text-yellow-700 text-sm mt-2">
+                  All your data will be permanently deleted at this time.
+                </p>
+              </div>
+              <SecondaryButton onClick={handleCancelDeletion} disabled={deleteLoading}>
+                {deleteLoading ? 'Canceling...' : 'Cancel Deletion'}
+              </SecondaryButton>
+              {deleteError && <p className="text-warning mt-2">{deleteError}</p>}
+            </div>
+          ) : (
+            <div>
+              <div className="bg-red-50 border border-red-200 rounded-sm p-4 mb-4">
+                <p className="text-red-700">
+                  Deletion is scheduled with a grace period during which you can cancel. After that,
+                  all your data will be permanently removed.
+                </p>
+              </div>
+              <DangerButton onClick={() => setDeleteModalOpen(true)}>Delete Account</DangerButton>
+            </div>
+          )}
+        </div>
       </div>
+
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setDeletePassword('');
+          setConfirmText('');
+          setDeleteError(undefined);
+        }}
+        title="Delete Account"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-sm p-4">
+            <p className="text-red-800 font-medium">
+              Are you sure you want to delete your account?
+            </p>
+            <p className="text-red-700 text-sm mt-2">
+              Your account will be scheduled for deletion. You can cancel the deletion until the
+              scheduled date, but once your account is purged, all your things, lists, images, and
+              other data will be permanently removed.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="deletePassword" className="block text-primary text-sm font-medium mb-2">
+              Enter your password
+            </label>
+            <input
+              type="password"
+              id="deletePassword"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="p-2 w-full border border-secondary rounded-sm text-display"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="confirmDelete" className="block text-primary text-sm font-medium mb-2">
+              Type <strong>YES</strong> to confirm
+            </label>
+            <input
+              type="text"
+              id="confirmDelete"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              className="p-2 w-full border border-secondary rounded-sm text-display"
+              placeholder="YES"
+            />
+          </div>
+
+          {deleteError && <p className="text-warning">{deleteError}</p>}
+
+          <div className="flex gap-2">
+            <DangerButton
+              onClick={handleScheduleDeletion}
+              disabled={confirmText !== 'YES' || !deletePassword || deleteLoading}
+            >
+              {deleteLoading ? 'Scheduling...' : 'Delete Account'}
+            </DangerButton>
+            <SecondaryButton
+              onClick={() => {
+                setDeleteModalOpen(false);
+                setDeletePassword('');
+                setConfirmText('');
+                setDeleteError(undefined);
+              }}
+            >
+              Cancel
+            </SecondaryButton>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

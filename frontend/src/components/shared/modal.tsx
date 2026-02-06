@@ -57,7 +57,7 @@ export function Modal({ isOpen, onClose, children, title, footer, size = 'md' }:
       <div
         className={`
           relative bg-white rounded-lg shadow-xl
-          h-[calc(100vh-1rem)] sm:h-[calc(100vh-2rem)]
+          max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)]
           ${sizeClasses[size]}
           flex flex-col
           overflow-hidden

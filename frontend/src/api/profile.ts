@@ -44,3 +44,27 @@ export const updatePassword = async (axios: Axios, params: UpdatePasswordParams)
     },
   });
 };
+
+export const scheduleDeletion = async (axios: Axios, password: string) => {
+  const response = await axios.post(
+    '/user/deletion',
+    { password },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  return response.data as Profile;
+};
+
+export const cancelDeletion = async (axios: Axios) => {
+  const response = await axios.delete('/user/deletion', {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  return response.data as Profile;
+};
