@@ -18,8 +18,10 @@ const (
 	ErrNoAuthContext              = "no-auth-context"
 	ErrNotAuthenticated           = "not-authenticated"
 	ErrIllegalMimeType            = "illegal-mime-type"
-	ErrPendingFriendRequestExists = "pending-friend-request-exists"
-	ErrFriendShipExists           = "friend-ship-exists"
+	ErrPendingFriendRequestExists  = "pending-friend-request-exists"
+	ErrFriendShipExists            = "friend-ship-exists"
+	ErrInvalidVerificationCode     = "invalid-verification-code"
+	ErrVerificationCodeExpired     = "verification-code-expired"
 )
 
 type StashsphereError interface {
@@ -116,3 +118,13 @@ type FriendShipExistsError struct{}
 
 func (r FriendShipExistsError) ErrorType() string { return ErrFriendShipExists }
 func (r FriendShipExistsError) Error() string     { return "Friendship already exists" }
+
+type InvalidVerificationCodeError struct{}
+
+func (r InvalidVerificationCodeError) ErrorType() string { return ErrInvalidVerificationCode }
+func (r InvalidVerificationCodeError) Error() string     { return "Invalid verification code" }
+
+type VerificationCodeExpiredError struct{}
+
+func (r VerificationCodeExpiredError) ErrorType() string { return ErrVerificationCodeExpired }
+func (r VerificationCodeExpiredError) Error() string     { return "Verification code has expired" }

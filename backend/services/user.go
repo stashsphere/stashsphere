@@ -10,6 +10,7 @@ import (
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/rs/zerolog/log"
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/utils"
@@ -34,10 +35,11 @@ func NewUserService(db *sql.DB, inviteRequired bool, inviteCode string, gracePer
 }
 
 type CreateUserParams struct {
-	Name       string
-	Email      string
-	Password   string
-	InviteCode string
+	Name                      string
+	Email                     string
+	Password                  string
+	InviteCode                string
+	SendEmailVerification     bool
 }
 
 func (us *UserService) CreateUser(ctx context.Context, params CreateUserParams) (*models.User, error) {
@@ -66,6 +68,13 @@ func (us *UserService) CreateUser(ctx context.Context, params CreateUserParams) 
 	if err != nil {
 		return nil, err
 	}
+
+	if params.SendEmailVerification {
+		if err := us.RequestEmailVerification(ctx, user.ID); err != nil {
+			log.Error().Err(err).Str("userId", user.ID).Msg("Failed to send verification email on registration")
+		}
+	}
+
 	return &user, nil
 }
 
@@ -227,5 +236,34 @@ func (us *UserService) CancelDeletion(ctx context.Context, userId string) (*mode
 	}
 
 	return us.FindUserByID(ctx, userId)
+}
+
+func (us *UserService) RequestEmailVerification(ctx context.Context, userId string) error {
+	user, err := operations.FindUserByID(ctx, us.db, userId)
+	if err != nil {
+		return err
+	}
+
+	validUntil := time.Now().Add(30 * time.Minute)
+	code, err := operations.CreateVerificationCode(ctx, us.db, user.ID, user.Email, validUntil)
+	if err != nil {
+		return err
+	}
+
+	return us.notificationService.EmailVerification(ctx, EmailVerificationParams{
+		UserName:  user.Name,
+		UserEmail: user.Email,
+		DigitCode: code,
+	})
+}
+
+func (us *UserService) VerifyEmail(ctx context.Context, userId string, email string, code string) error {
+	return utils.Tx(ctx, us.db, func(tx *sql.Tx) error {
+		return operations.VerifyCode(ctx, tx, userId, email, code)
+	})
+}
+
+func (us *UserService) GetEmailVerificationStatus(ctx context.Context, userId string) (*models.EmailVerification, error) {
+	return operations.GetEmailVerificationStatus(ctx, us.db, userId)
 }
 

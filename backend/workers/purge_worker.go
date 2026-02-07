@@ -81,4 +81,12 @@ func (pw *PurgeWorker) processPendingPurges() {
 
 		log.Info().Str("userId", user.ID).Msg("User account purged successfully")
 	}
+
+	// Purge expired verification codes (expired > 24 hours ago)
+	purgedCodes, err := operations.PurgeExpiredVerificationCodes(ctx, pw.db)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to purge expired verification codes")
+	} else if purgedCodes > 0 {
+		log.Info().Int64("count", purgedCodes).Msg("Purged expired verification codes")
+	}
 }

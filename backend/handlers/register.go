@@ -32,10 +32,11 @@ func (rh *RegisterHandler) RegisterHandlerPost(c echo.Context) error {
 		return &utils.ParameterError{Err: err}
 	}
 	_, err := rh.userService.CreateUser(c.Request().Context(), services.CreateUserParams{
-		Name:       registerParams.Name,
-		Email:      registerParams.Email,
-		Password:   registerParams.Password,
-		InviteCode: registerParams.InviteCode,
+		Name:                  registerParams.Name,
+		Email:                 registerParams.Email,
+		Password:              registerParams.Password,
+		InviteCode:            registerParams.InviteCode,
+		SendEmailVerification: true,
 	})
 	if err != nil {
 		return err

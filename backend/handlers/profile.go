@@ -26,11 +26,16 @@ func (ph *ProfileHandler) ProfileHandlerGet(c echo.Context) error {
 	if !authCtx.Authenticated {
 		return utils.NotAuthenticatedError{}
 	}
-	user, err := ph.userService.FindUserByID(c.Request().Context(), authCtx.User.UserId)
+	ctx := c.Request().Context()
+	user, err := ph.userService.FindUserByID(ctx, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ProfileFromModel(user))
+	verification, err := ph.userService.GetEmailVerificationStatus(ctx, authCtx.User.UserId)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, resources.ProfileFromModel(user).WithEmailVerification(verification))
 }
 
 type ProfileUpdateParams struct {

@@ -1,0 +1,8 @@
+Hi {{.UserName}},
+
+Your verification code is: {{.DigitCode}}
+
+This code expires in 30 minutes.
+
+You can also click the following link to verify your email:
+{{.VerificationUrl}}

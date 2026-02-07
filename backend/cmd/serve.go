@@ -244,6 +244,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	friendHandler := handlers.NewFriendHandler(friendService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	cartHandler := handlers.NewCartHandler(cartService)
+	emailVerificationHandler := handlers.NewEmailVerificationHandler(userService)
 	infoHandler := handlers.NewInfoHandler(config.Invites.Enabled)
 
 	a := e.Group("/api")
@@ -513,6 +514,68 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 			},
 		),
 		commonUserOptions,
+	)
+
+	commonEmailVerificationOptions := option.Group(
+		option.Tags("Email Verification"),
+		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
+		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
+	)
+	fuegoecho.PostEcho(engine, userGroup, "/email-verification/request", emailVerificationHandler.RequestVerification,
+		option.Summary("Request Email Verification"),
+		option.Description("Send a verification code to the authenticated user's email address"),
+		option.AddResponse(
+			200,
+			"Verification email sent",
+			fuego.Response{
+				Type:         utils.NoContent{},
+				ContentTypes: []string{""},
+			},
+		),
+		option.AddResponse(
+			401,
+			"Not authenticated",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		commonEmailVerificationOptions,
+	)
+	fuegoecho.PostEcho(engine, rateLimitedAuthGroup, "/email-verification/verify", emailVerificationHandler.VerifyEmail,
+		option.Summary("Verify Email"),
+		option.Description("Verify email address using the 8-digit code sent via email"),
+		option.RequestBody(
+			fuego.RequestBody{
+				Type:         handlers.VerifyEmailParams{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			200,
+			"Email verified successfully",
+			fuego.Response{
+				Type:         utils.NoContent{},
+				ContentTypes: []string{""},
+			},
+		),
+		option.AddResponse(
+			400,
+			"Invalid or expired verification code",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			401,
+			"Not authenticated",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		commonEmailVerificationOptions,
 	)
 
 	// users group

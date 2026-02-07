@@ -1,0 +1,1 @@
+[{{.InstanceName}}] Verify your email address

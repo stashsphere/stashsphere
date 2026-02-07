@@ -8,13 +8,14 @@ import (
 )
 
 type Profile struct {
-	ID          string        `json:"id"`
-	Name        string        `json:"name"`
-	FullName    *string       `json:"fullName"`
-	Information *string       `json:"information"`
-	Email       string        `json:"email"`
-	Image       *ReducedImage `json:"image"`
-	PurgeAt     *time.Time    `json:"purgeAt"`
+	ID            string        `json:"id"`
+	Name          string        `json:"name"`
+	FullName      *string       `json:"fullName"`
+	Information   *string       `json:"information"`
+	Email         string        `json:"email"`
+	Image         *ReducedImage `json:"image"`
+	PurgeAt       *time.Time    `json:"purgeAt"`
+	EmailVerified *bool         `json:"emailVerified,omitempty"`
 }
 
 func ProfileFromUserContext(ctx *middleware.UserContext) Profile {
@@ -52,6 +53,12 @@ func ProfileFromModel(user *models.User) Profile {
 		Information: information,
 		PurgeAt:     purgeAt,
 	}
+}
+
+func (p Profile) WithEmailVerification(verification *models.EmailVerification) Profile {
+	verified := verification != nil && verification.VerifiedAt.Valid
+	p.EmailVerified = &verified
+	return p
 }
 
 func ProfilesFromModelSlice(mProfiles models.UserSlice) []Profile {

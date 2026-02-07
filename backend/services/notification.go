@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"html/template"
 	"math"
 	"time"
@@ -601,6 +602,54 @@ func (ns *NotificationService) AccountDeletionScheduled(ctx context.Context, par
 		UserName:    params.UserName,
 		PurgeAt:     params.PurgeAt.Format("January 2, 2006 at 15:04 MST"),
 		FrontendUrl: ns.data.FrontendUrl,
+	})
+	if err != nil {
+		return err
+	}
+
+	var subject bytes.Buffer
+	err = subjectTempl.Execute(&subject, SubjectData{
+		InstanceName: ns.data.InstanceName,
+	})
+	if err != nil {
+		return err
+	}
+
+	return ns.emailService.Deliver(params.UserEmail, subject.String(), body.String())
+}
+
+type EmailVerificationParams struct {
+	UserName  string
+	UserEmail string
+	DigitCode string
+}
+
+func (ns *NotificationService) EmailVerification(ctx context.Context, params EmailVerificationParams) error {
+	bodyTempl, err := template.ParseFS(templates.FS, "email_verification.body.txt")
+	if err != nil {
+		return err
+	}
+
+	subjectTempl, err := template.ParseFS(templates.FS, "email_verification.subject.txt")
+	if err != nil {
+		return err
+	}
+
+	type BodyData struct {
+		UserName        string
+		DigitCode       string
+		VerificationUrl string
+	}
+
+	type SubjectData struct {
+		InstanceName string
+	}
+
+	var body bytes.Buffer
+	err = bodyTempl.Execute(&body, BodyData{
+		UserName:        params.UserName,
+		DigitCode:       params.DigitCode,
+		VerificationUrl: fmt.Sprintf("%s/user/verify-email#%s", ns.data.FrontendUrl, params.DigitCode),
 	})
 	if err != nil {
 		return err

@@ -82,6 +82,8 @@ var UserWhere = struct {
 var UserRels = struct {
 	Profile                string
 	CartEntries            string
+	EmailVerificationCodes string
+	EmailVerifications     string
 	ReceiverFriendRequests string
 	SenderFriendRequests   string
 	Friend1Friendships     string
@@ -95,6 +97,8 @@ var UserRels = struct {
 }{
 	Profile:                "Profile",
 	CartEntries:            "CartEntries",
+	EmailVerificationCodes: "EmailVerificationCodes",
+	EmailVerifications:     "EmailVerifications",
 	ReceiverFriendRequests: "ReceiverFriendRequests",
 	SenderFriendRequests:   "SenderFriendRequests",
 	Friend1Friendships:     "Friend1Friendships",
@@ -109,18 +113,20 @@ var UserRels = struct {
 
 // userR is where relationships are stored.
 type userR struct {
-	Profile                *Profile           `boil:"Profile" json:"Profile" toml:"Profile" yaml:"Profile"`
-	CartEntries            CartEntrySlice     `boil:"CartEntries" json:"CartEntries" toml:"CartEntries" yaml:"CartEntries"`
-	ReceiverFriendRequests FriendRequestSlice `boil:"ReceiverFriendRequests" json:"ReceiverFriendRequests" toml:"ReceiverFriendRequests" yaml:"ReceiverFriendRequests"`
-	SenderFriendRequests   FriendRequestSlice `boil:"SenderFriendRequests" json:"SenderFriendRequests" toml:"SenderFriendRequests" yaml:"SenderFriendRequests"`
-	Friend1Friendships     FriendshipSlice    `boil:"Friend1Friendships" json:"Friend1Friendships" toml:"Friend1Friendships" yaml:"Friend1Friendships"`
-	Friend2Friendships     FriendshipSlice    `boil:"Friend2Friendships" json:"Friend2Friendships" toml:"Friend2Friendships" yaml:"Friend2Friendships"`
-	OwnerImages            ImageSlice         `boil:"OwnerImages" json:"OwnerImages" toml:"OwnerImages" yaml:"OwnerImages"`
-	OwnerLists             ListSlice          `boil:"OwnerLists" json:"OwnerLists" toml:"OwnerLists" yaml:"OwnerLists"`
-	RecipientNotifications NotificationSlice  `boil:"RecipientNotifications" json:"RecipientNotifications" toml:"RecipientNotifications" yaml:"RecipientNotifications"`
-	OwnerShares            ShareSlice         `boil:"OwnerShares" json:"OwnerShares" toml:"OwnerShares" yaml:"OwnerShares"`
-	TargetUserShares       ShareSlice         `boil:"TargetUserShares" json:"TargetUserShares" toml:"TargetUserShares" yaml:"TargetUserShares"`
-	OwnerThings            ThingSlice         `boil:"OwnerThings" json:"OwnerThings" toml:"OwnerThings" yaml:"OwnerThings"`
+	Profile                *Profile                   `boil:"Profile" json:"Profile" toml:"Profile" yaml:"Profile"`
+	CartEntries            CartEntrySlice             `boil:"CartEntries" json:"CartEntries" toml:"CartEntries" yaml:"CartEntries"`
+	EmailVerificationCodes EmailVerificationCodeSlice `boil:"EmailVerificationCodes" json:"EmailVerificationCodes" toml:"EmailVerificationCodes" yaml:"EmailVerificationCodes"`
+	EmailVerifications     EmailVerificationSlice     `boil:"EmailVerifications" json:"EmailVerifications" toml:"EmailVerifications" yaml:"EmailVerifications"`
+	ReceiverFriendRequests FriendRequestSlice         `boil:"ReceiverFriendRequests" json:"ReceiverFriendRequests" toml:"ReceiverFriendRequests" yaml:"ReceiverFriendRequests"`
+	SenderFriendRequests   FriendRequestSlice         `boil:"SenderFriendRequests" json:"SenderFriendRequests" toml:"SenderFriendRequests" yaml:"SenderFriendRequests"`
+	Friend1Friendships     FriendshipSlice            `boil:"Friend1Friendships" json:"Friend1Friendships" toml:"Friend1Friendships" yaml:"Friend1Friendships"`
+	Friend2Friendships     FriendshipSlice            `boil:"Friend2Friendships" json:"Friend2Friendships" toml:"Friend2Friendships" yaml:"Friend2Friendships"`
+	OwnerImages            ImageSlice                 `boil:"OwnerImages" json:"OwnerImages" toml:"OwnerImages" yaml:"OwnerImages"`
+	OwnerLists             ListSlice                  `boil:"OwnerLists" json:"OwnerLists" toml:"OwnerLists" yaml:"OwnerLists"`
+	RecipientNotifications NotificationSlice          `boil:"RecipientNotifications" json:"RecipientNotifications" toml:"RecipientNotifications" yaml:"RecipientNotifications"`
+	OwnerShares            ShareSlice                 `boil:"OwnerShares" json:"OwnerShares" toml:"OwnerShares" yaml:"OwnerShares"`
+	TargetUserShares       ShareSlice                 `boil:"TargetUserShares" json:"TargetUserShares" toml:"TargetUserShares" yaml:"TargetUserShares"`
+	OwnerThings            ThingSlice                 `boil:"OwnerThings" json:"OwnerThings" toml:"OwnerThings" yaml:"OwnerThings"`
 }
 
 // NewStruct creates a new relationship struct
@@ -158,6 +164,38 @@ func (r *userR) GetCartEntries() CartEntrySlice {
 	}
 
 	return r.CartEntries
+}
+
+func (o *User) GetEmailVerificationCodes() EmailVerificationCodeSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEmailVerificationCodes()
+}
+
+func (r *userR) GetEmailVerificationCodes() EmailVerificationCodeSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.EmailVerificationCodes
+}
+
+func (o *User) GetEmailVerifications() EmailVerificationSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEmailVerifications()
+}
+
+func (r *userR) GetEmailVerifications() EmailVerificationSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.EmailVerifications
 }
 
 func (o *User) GetReceiverFriendRequests() FriendRequestSlice {
@@ -661,6 +699,34 @@ func (o *User) CartEntries(mods ...qm.QueryMod) cartEntryQuery {
 	return CartEntries(queryMods...)
 }
 
+// EmailVerificationCodes retrieves all the email_verification_code's EmailVerificationCodes with an executor.
+func (o *User) EmailVerificationCodes(mods ...qm.QueryMod) emailVerificationCodeQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"email_verification_codes\".\"user_id\"=?", o.ID),
+	)
+
+	return EmailVerificationCodes(queryMods...)
+}
+
+// EmailVerifications retrieves all the email_verification's EmailVerifications with an executor.
+func (o *User) EmailVerifications(mods ...qm.QueryMod) emailVerificationQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"email_verifications\".\"user_id\"=?", o.ID),
+	)
+
+	return EmailVerifications(queryMods...)
+}
+
 // ReceiverFriendRequests retrieves all the friend_request's FriendRequests with an executor via receiver_id column.
 func (o *User) ReceiverFriendRequests(mods ...qm.QueryMod) friendRequestQuery {
 	var queryMods []qm.QueryMod
@@ -1021,6 +1087,230 @@ func (userL) LoadCartEntries(ctx context.Context, e boil.ContextExecutor, singul
 				local.R.CartEntries = append(local.R.CartEntries, foreign)
 				if foreign.R == nil {
 					foreign.R = &cartEntryR{}
+				}
+				foreign.R.User = local
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadEmailVerificationCodes allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadEmailVerificationCodes(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`email_verification_codes`),
+		qm.WhereIn(`email_verification_codes.user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load email_verification_codes")
+	}
+
+	var resultSlice []*EmailVerificationCode
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice email_verification_codes")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on email_verification_codes")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for email_verification_codes")
+	}
+
+	if len(emailVerificationCodeAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.EmailVerificationCodes = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &emailVerificationCodeR{}
+			}
+			foreign.R.User = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.UserID {
+				local.R.EmailVerificationCodes = append(local.R.EmailVerificationCodes, foreign)
+				if foreign.R == nil {
+					foreign.R = &emailVerificationCodeR{}
+				}
+				foreign.R.User = local
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadEmailVerifications allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadEmailVerifications(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`email_verifications`),
+		qm.WhereIn(`email_verifications.user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load email_verifications")
+	}
+
+	var resultSlice []*EmailVerification
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice email_verifications")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on email_verifications")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for email_verifications")
+	}
+
+	if len(emailVerificationAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.EmailVerifications = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &emailVerificationR{}
+			}
+			foreign.R.User = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.UserID {
+				local.R.EmailVerifications = append(local.R.EmailVerifications, foreign)
+				if foreign.R == nil {
+					foreign.R = &emailVerificationR{}
 				}
 				foreign.R.User = local
 			}
@@ -2268,6 +2558,112 @@ func (o *User) AddCartEntries(ctx context.Context, exec boil.ContextExecutor, in
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &cartEntryR{
+				User: o,
+			}
+		} else {
+			rel.R.User = o
+		}
+	}
+	return nil
+}
+
+// AddEmailVerificationCodes adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.EmailVerificationCodes.
+// Sets related.R.User appropriately.
+func (o *User) AddEmailVerificationCodes(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*EmailVerificationCode) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.UserID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"email_verification_codes\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, emailVerificationCodePrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.UserID, rel.Email, rel.DigitCode}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.UserID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			EmailVerificationCodes: related,
+		}
+	} else {
+		o.R.EmailVerificationCodes = append(o.R.EmailVerificationCodes, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &emailVerificationCodeR{
+				User: o,
+			}
+		} else {
+			rel.R.User = o
+		}
+	}
+	return nil
+}
+
+// AddEmailVerifications adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.EmailVerifications.
+// Sets related.R.User appropriately.
+func (o *User) AddEmailVerifications(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*EmailVerification) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.UserID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"email_verifications\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, emailVerificationPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.UserID, rel.Email}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.UserID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			EmailVerifications: related,
+		}
+	} else {
+		o.R.EmailVerifications = append(o.R.EmailVerifications, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &emailVerificationR{
 				User: o,
 			}
 		} else {
