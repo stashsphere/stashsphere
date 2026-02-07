@@ -19,11 +19,7 @@ export const Labeled = ({ label, children }: LabeledProps) => {
           {label}
         </span>
       </div>
-      {isEmpty(children) ? (
-        <span className="italic text-secondary/60">not provided</span>
-      ) : (
-        children
-      )}
+      {isEmpty(children) ? <span className="italic text-secondary">not provided</span> : children}
     </div>
   );
 };

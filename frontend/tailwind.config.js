@@ -95,11 +95,11 @@ const stashsphereMidnightTheme = {
   neutral: stashsphereTheme.jasmine,
   danger: stashsphereTheme.dark_red,
   accent: stashsphereTheme.engineering_orange,
-  success: stashsphereTheme.light_green,
+  success: stashsphereTheme.light_green[200],
   warning: stashsphereTheme.carrot_orange,
   text: {
     primary: colors.gray[900],
-    neutral: colors.gray[700],
+    neutral: colors.gray[800],
   },
 };
 
