@@ -142,6 +142,7 @@ export interface Profile {
   information: string;
   image: ReducedImage | null;
   purgeAt: Date | null;
+  emailVerified?: boolean;
 }
 
 export interface Share {

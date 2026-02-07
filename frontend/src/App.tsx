@@ -34,6 +34,7 @@ import { ShowNotifications } from './routes/notifications';
 import { ShowUser } from './routes/users/show';
 import { UserLayout } from './components/user_layout';
 import { Account } from './routes/profile/account';
+import { VerifyEmail } from './routes/user/verify-email';
 import { jwtDecode } from 'jwt-decode';
 import { refreshTokens } from './api/auth';
 import { ShowCart } from './routes/cart';
@@ -172,6 +173,7 @@ export const App = () => {
                       <Route path="profile" element={<ShowProfile />} />
                       <Route path="account" element={<Account />} />
                       <Route path="profile/edit" element={<EditProfile />} />
+                      <Route path="verify-email" element={<VerifyEmail />} />
                     </Route>
 
                     <Route

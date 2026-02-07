@@ -122,6 +122,22 @@ export const DangerButton = ({ children, className, ...rest }: ButtonProps) => {
   );
 };
 
+export const WarningButton = ({ children, className, ...rest }: ButtonProps) => {
+  return (
+    <button
+      className={'bg-warning text-onwarning hover:bg-warning-hover rounded-sm py-2 px-4 focus:ring-3 focus:border-warning-hover'.concat(
+        ' ',
+        commonTextClass,
+        ' ',
+        className || ''
+      )}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+};
+
 // Color buttons
 
 export const BlueButton = ({ children, ...rest }: ButtonProps) => {

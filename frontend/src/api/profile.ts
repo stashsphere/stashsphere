@@ -68,3 +68,27 @@ export const cancelDeletion = async (axios: Axios) => {
 
   return response.data as Profile;
 };
+
+export const requestEmailVerification = async (axios: Axios) => {
+  await axios.post(
+    '/user/email-verification/request',
+    {},
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+};
+
+export const verifyEmail = async (axios: Axios, code: string) => {
+  await axios.post(
+    '/user/email-verification/verify',
+    { code },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+};

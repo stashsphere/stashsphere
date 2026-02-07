@@ -5,11 +5,19 @@ import {
   PrimaryButton,
   DangerButton,
   SecondaryButton,
+  WarningButton,
   Modal,
   PasswordInput,
   usePasswordValidation,
+  VerificationCodeForm,
 } from '../../components/shared';
-import { updatePassword, scheduleDeletion, cancelDeletion } from '../../api/profile';
+import {
+  updatePassword,
+  scheduleDeletion,
+  cancelDeletion,
+  requestEmailVerification,
+  verifyEmail,
+} from '../../api/profile';
 
 export const Account = () => {
   const axiosInstance = useContext(AxiosContext);
@@ -25,6 +33,13 @@ export const Account = () => {
   const [confirmText, setConfirmText] = useState('');
   const [deleteError, setDeleteError] = useState<string | undefined>(undefined);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [requesting, setRequesting] = useState(false);
+  const [requestError, setRequestError] = useState<string | undefined>(undefined);
+  const [requestSuccess, setRequestSuccess] = useState(false);
+  const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | undefined>(undefined);
 
   const { isValid: isPasswordValid } = usePasswordValidation(newPassword, confirmPassword, 8);
 
@@ -87,6 +102,40 @@ export const Account = () => {
     }
   };
 
+  const handleRequestVerification = async () => {
+    if (axiosInstance === null) return;
+
+    setRequesting(true);
+    setRequestError(undefined);
+    setRequestSuccess(false);
+
+    try {
+      await requestEmailVerification(axiosInstance);
+      setRequestSuccess(true);
+    } catch {
+      setRequestError('Failed to send verification e-mail. Please try again.');
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (axiosInstance === null) return;
+    if (code.length !== 8) return;
+
+    setVerifying(true);
+    setVerifyError(undefined);
+
+    try {
+      await verifyEmail(axiosInstance, code);
+      invalidateProfile();
+    } catch {
+      setVerifyError('Invalid or expired verification code. Please request a new one.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString(undefined, {
       year: 'numeric',
@@ -135,6 +184,45 @@ export const Account = () => {
         </div>
 
         <div className="max-w-md mt-8 pt-8 border-t border-gray-200">
+          <h2 className="text-primary text-xl font-semibold mb-4">E-Mail Verification</h2>
+          {profile?.emailVerified === true ? (
+            <div className="bg-success-900 border border-success-700 rounded-sm p-4">
+              <p className="text-success-200">Your E-Mail address has been verified.</p>
+            </div>
+          ) : profile?.emailVerified === false ? (
+            <div>
+              <div className="bg-warning-900 border border-warning-700 rounded-sm p-4 mb-4">
+                <p className="text-warning-200">
+                  Please verify your E-Mail address. This is required if you ever need to reset your
+                  password.
+                </p>
+              </div>
+              {requestSuccess ? (
+                <div>
+                  <p className="text-display mb-4">
+                    Verification E-Mail sent! Check your inbox and enter the code below.
+                  </p>
+                  <VerificationCodeForm
+                    code={code}
+                    onCodeChange={setCode}
+                    onSubmit={handleVerify}
+                    submitting={verifying}
+                    error={verifyError}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <WarningButton onClick={handleRequestVerification} disabled={requesting}>
+                    {requesting ? 'Sending...' : 'Send Verification E-Mail'}
+                  </WarningButton>
+                  {requestError && <p className="text-warning mt-2">{requestError}</p>}
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="max-w-md mt-8 pt-8 border-t border-gray-200">
           <h2 className="text-danger text-xl font-semibold mb-4">Delete Account</h2>
           {profile?.purgeAt ? (
             <div>
@@ -154,8 +242,8 @@ export const Account = () => {
             </div>
           ) : (
             <div>
-              <div className="bg-red-50 border border-red-200 rounded-sm p-4 mb-4">
-                <p className="text-red-700">
+              <div className="bg-danger-900 border border-danger-400 rounded-sm p-4 mb-4">
+                <p className="text-danger-700">
                   Deletion is scheduled with a grace period during which you can cancel. After that,
                   all your data will be permanently removed.
                 </p>
@@ -178,11 +266,11 @@ export const Account = () => {
         size="sm"
       >
         <div className="space-y-4">
-          <div className="bg-red-50 border border-red-200 rounded-sm p-4">
-            <p className="text-red-800 font-medium">
+          <div className="bg-danger-900 border border-danger-400 rounded-sm p-4">
+            <p className="text-danger-500 font-medium">
               Are you sure you want to delete your account?
             </p>
-            <p className="text-red-700 text-sm mt-2">
+            <p className="text-danger-500 text-sm mt-2">
               Your account will be scheduled for deletion. You can cancel the deletion until the
               scheduled date, but once your account is purged, all your things, lists, images, and
               other data will be permanently removed.
