@@ -65,7 +65,7 @@ export const Login = () => {
             />
           </div>
           <PrimaryButton type="submit">Login</PrimaryButton>
-          {error && <p className="text-warning-primary">{error}</p>}
+          {error && <p className="text-danger-400">{error}</p>}
         </form>
         <a href="/user/register" className="underline text-secondary">
           Register an account

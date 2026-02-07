@@ -43,7 +43,7 @@ export const ProfileDetails = ({ profile }: ProfileProps) => {
         <div className="flex flex-row gap-4">
           <div>
             {profile.image ? (
-              <div className="flex w-80 h-80 items-center justify-center bg-brand-900 p-2 rounded-md">
+              <div className="flex w-80 h-80 items-center justify-center p-2 rounded-md">
                 <ImageComponent
                   image={profile.image}
                   defaultWidth={512}
