@@ -258,14 +258,8 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	rateLimitedAuthGroup := userGroup.Group("", middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
 		Store: authRateLimiter,
 		IdentifierExtractor: func(c echo.Context) (string, error) {
-			println("Real-IP", c.RealIP())
-			// Check X-Real-IP header first (set by reverse proxy)
-			if ip := c.Request().Header.Get("X-Real-IP"); ip != "" {
-				println("X-Real-IP", ip)
-				return ip, nil
-			}
-			// Fall back to Echo's RealIP which checks X-Forwarded-For and RemoteAddr
-			return c.RealIP(), nil
+			id := c.RealIP()
+			return id, nil
 		},
 	}))
 	usersGroup := a.Group("/users")
