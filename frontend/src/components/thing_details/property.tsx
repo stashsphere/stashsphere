@@ -198,129 +198,59 @@ const formatValue = (value: string | number) => {
   }
 };
 
+type NamedConfig = {
+  icon: string;
+  label: string;
+  format?: (v: string | number) => React.ReactNode;
+};
+
+const namedProperties: Record<string, NamedConfig> = {
+  manufacturer: { icon: 'mdi--manufacturing', label: 'Manufacturer:' },
+  manufacturer_url: { icon: 'mdi--link-variant', label: 'Manufacturer Link:', format: formatValue },
+  torque_min: { icon: 'mdi--refresh', label: 'Min. Torque:' },
+  torque_max: { icon: 'mdi--refresh', label: 'Max. Torque:' },
+  material: { icon: 'mdi--test-tube', label: 'Material:' },
+  color: { icon: 'mdi--color', label: 'Color:', format: formatColor },
+  voltage: { icon: 'mdi--lightning-bolt', label: 'Voltage:' },
+  current: { icon: 'mdi--current-ac', label: 'Current:' },
+  frequency: { icon: 'mdi--sine-wave', label: 'Frequency:' },
+  pitch: { icon: 'mdi--arrow-expand-horizontal', label: 'Pitch:' },
+  inductance: { icon: 'mdi--magnet', label: 'Inductance:' },
+};
+
+const typeDefaults: Record<
+  string,
+  { icon: string; format?: (v: string | number) => React.ReactNode }
+> = {
+  string: { icon: 'mdi--format-text', format: formatValue },
+  datetime: { icon: 'mdi--date-range' },
+  float: { icon: 'mdi--hashtag' },
+};
+
 const PropertyComponent = ({ property, keyWidth }: PropertyProps) => {
   // help tailwind to generate all widths used
   // min-w-[1rem] min-w-[2rem] min-w-[3rem] min-w-[4rem] min-w-[5rem] min-w-[6rem]
   // min-w-[7rem] min-w-[8rem] min-w-[9rem] min-w-[10rem] min-w-[11rem] min-w-[12rem]
   // min-w-[13rem] min-w-[14rem] min-w-[15rem] min-w-[16rem] min-w-[17rem] min-w-[18rem] min-w-[19rem]
   const [first, second] = (() => {
-    switch (property.name) {
-      case 'manufacturer':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="manufacturer">
-            <Icon icon={'mdi--manufacturing'} />
-            Manufacturer:
-          </div>,
-          property.value,
-        ];
-      case 'manufacturer_url':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="manufacturer_url">
-            <Icon icon={'mdi--link-variant'} />
-            Manufacturer Link:
-          </div>,
-          formatValue(property.value),
-        ];
-      case 'torque_min':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="torque_min">
-            <Icon icon={'mdi--refresh'} />
-            Min. Torque:
-          </div>,
-          property.value,
-        ];
-      case 'torque_max':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="torque_max">
-            <Icon icon={'mdi--refresh'} />
-            Max. Torque:
-          </div>,
-          property.value,
-        ];
-      case 'material':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="material">
-            <Icon icon={'mdi--test-tube'} />
-            Material:
-          </div>,
-          property.value,
-        ];
-      case 'color':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="color">
-            <Icon icon={'mdi--color'} />
-            Color:
-          </div>,
-          formatColor(property.value),
-        ];
-      case 'voltage':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="voltage">
-            <Icon icon={'mdi--lightning-bolt'} />
-            Voltage:
-          </div>,
-          property.value,
-        ];
-      case 'current':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="current">
-            <Icon icon={'mdi--current-ac'} />
-            Current:
-          </div>,
-          property.value,
-        ];
-      case 'frequency':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="frequency">
-            <Icon icon={'mdi--sine-wave'} />
-            Frequency:
-          </div>,
-          property.value,
-        ];
-      case 'pitch':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="pitch">
-            <Icon icon={'mdi--arrow-expand-horizontal'} />
-            Pitch:
-          </div>,
-          property.value,
-        ];
-      case 'inductance':
-        return [
-          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="inductance">
-            <Icon icon={'mdi--magnet'} />
-            Inductance:
-          </div>,
-          property.value,
-        ];
-      default:
-        switch (property.type) {
-          case 'string':
-            return [
-              <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key={property.name}>
-                <Icon icon="mdi--format-text" />
-                {property.name}:
-              </div>,
-              formatValue(property.value),
-            ];
-          case 'datetime':
-            return [
-              <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key={property.name}>
-                <Icon icon="mdi--date-range" />
-                {property.name}:
-              </div>,
-              property.value.toString(),
-            ];
-          case 'float':
-            return [
-              <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key={property.name}>
-                <Icon icon="mdi--hashtag" />
-                {property.name}:
-              </div>,
-              property.value,
-            ];
-        }
+    const named = namedProperties[property.name];
+    if (named) {
+      return [
+        <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key={property.name}>
+          <Icon icon={named.icon} />
+          {named.label}
+        </div>,
+        named.format ? named.format(property.value) : property.value,
+      ];
     }
+    const td = typeDefaults[property.type];
+    return [
+      <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key={property.name}>
+        <Icon icon={td.icon} />
+        {property.name}:
+      </div>,
+      td.format ? td.format(property.value) : property.value,
+    ];
   })();
 
   if (property.type === 'float') {
