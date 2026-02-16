@@ -27,6 +27,31 @@ For example:
 ./stashsphere serve --conf stashsphere.yaml --conf invite.yaml
 ```
 
+When developing locally over plain HTTP, auth cookies will be rejected by the
+browser because they carry the `Secure` flag by default. Disable it with:
+
+```
+./stashsphere serve --conf stashsphere.yaml --disable-secure-cookies
+```
+
+Alternatively, set the environment variable:
+
+```
+STASHSPHERE_DISABLE_SECURE_COOKIES=true ./stashsphere serve --conf stashsphere.yaml
+```
+
+Or add it to your config file:
+
+```yaml
+auth:
+  disableSecureCookies: true
+```
+
+If you are using the Nix dev shell (`nix develop`), `STASHSPHERE_DISABLE_SECURE_COOKIES`
+is already set automatically via `flake.nix`.
+
+> **Warning:** Never disable secure cookies in production.
+
 ### OpenAPI
 
 An OpenAPI 3.1 schema is generated through `fuego` dynamically from code.
