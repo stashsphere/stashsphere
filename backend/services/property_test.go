@@ -130,6 +130,35 @@ func assertStringSliceEqual(t *testing.T, expected, actual []string, msgAndArgs 
 	assert.Equal(t, sortedExpected, sortedActual, msgAndArgs...)
 }
 
+func assertSuggestionsContainName(t *testing.T, suggestions []services.PropertyNameSuggestion, name string, msgAndArgs ...interface{}) {
+	t.Helper()
+	for _, s := range suggestions {
+		if s.Name == name {
+			return
+		}
+	}
+	assert.Fail(t, "suggestions do not contain name: "+name, msgAndArgs...)
+}
+
+func assertSuggestionsNotContainName(t *testing.T, suggestions []services.PropertyNameSuggestion, name string, msgAndArgs ...interface{}) {
+	t.Helper()
+	for _, s := range suggestions {
+		if s.Name == name {
+			assert.Fail(t, "suggestions contain name but should not: "+name, msgAndArgs...)
+			return
+		}
+	}
+}
+
+func getSuggestionByName(suggestions []services.PropertyNameSuggestion, name string) *services.PropertyNameSuggestion {
+	for i, s := range suggestions {
+		if s.Name == name {
+			return &suggestions[i]
+		}
+	}
+	return nil
+}
+
 func TestPropertyAutoComplete_NameCompletion_WithMatches(t *testing.T) {
 	env := setupTestEnv(t)
 	user := createTestUser(t, env.ctx, env.db)
@@ -149,10 +178,10 @@ func TestPropertyAutoComplete_NameCompletion_WithMatches(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 2)
-	assertContainsString(t, result.Values, "Color")
-	assertContainsString(t, result.Values, "Condition")
-	assertNotContainsString(t, result.Values, "Material")
+	assert.Len(t, result.Suggestions, 2)
+	assertSuggestionsContainName(t, result.Suggestions, "Color")
+	assertSuggestionsContainName(t, result.Suggestions, "Condition")
+	assertSuggestionsNotContainName(t, result.Suggestions, "Material")
 }
 
 func TestPropertyAutoComplete_NameCompletion_NoMatches(t *testing.T) {
@@ -173,7 +202,7 @@ func TestPropertyAutoComplete_NameCompletion_NoMatches(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 0)
+	assert.Len(t, result.Suggestions, 0)
 }
 
 func TestPropertyAutoComplete_ValueCompletion_StringType_WithMatches(t *testing.T) {
@@ -274,7 +303,7 @@ func TestPropertyAutoComplete_CannotSeeOtherUsersPrivateThings(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 0)
+	assert.Len(t, result.Suggestions, 0)
 }
 
 func TestPropertyAutoComplete_DirectThingShare(t *testing.T) {
@@ -433,8 +462,12 @@ func TestPropertyAutoComplete_DeduplicatesNames(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 1)
-	assertContainsString(t, result.Values, "Weight")
+	assert.Len(t, result.Suggestions, 1)
+	assertSuggestionsContainName(t, result.Suggestions, "Weight")
+
+	suggestion := getSuggestionByName(result.Suggestions, "Weight")
+	assert.Equal(t, "float", suggestion.Type)
+	assert.Equal(t, []string{"kg"}, suggestion.Units)
 }
 
 func TestPropertyAutoComplete_EmptyNameQuery(t *testing.T) {
@@ -456,10 +489,10 @@ func TestPropertyAutoComplete_EmptyNameQuery(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 3)
-	assertContainsString(t, result.Values, "Color")
-	assertContainsString(t, result.Values, "Size")
-	assertContainsString(t, result.Values, "Weight")
+	assert.Len(t, result.Suggestions, 3)
+	assertSuggestionsContainName(t, result.Suggestions, "Color")
+	assertSuggestionsContainName(t, result.Suggestions, "Size")
+	assertSuggestionsContainName(t, result.Suggestions, "Weight")
 }
 
 func TestPropertyAutoComplete_EmptyValueQuery(t *testing.T) {
@@ -507,7 +540,7 @@ func TestPropertyAutoComplete_CaseInsensitiveMatching(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 1, "ILIKE operator is case-insensitive")
+	assert.Len(t, result.Suggestions, 1, "ILIKE operator is case-insensitive")
 }
 
 func TestPropertyAutoComplete_SpecialCharactersInName(t *testing.T) {
@@ -527,8 +560,8 @@ func TestPropertyAutoComplete_SpecialCharactersInName(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 1)
-	assertContainsString(t, result.Values, "Weight_%_test")
+	assert.Len(t, result.Suggestions, 1)
+	assertSuggestionsContainName(t, result.Suggestions, "Weight_%_test")
 }
 
 func TestPropertyAutoComplete_MultiplePropertyTypes(t *testing.T) {
@@ -551,10 +584,10 @@ func TestPropertyAutoComplete_MultiplePropertyTypes(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 3)
-	assertContainsString(t, result.Values, "Weight")
-	assertContainsString(t, result.Values, "Color")
-	assertContainsString(t, result.Values, "Date")
+	assert.Len(t, result.Suggestions, 3)
+	assertSuggestionsContainName(t, result.Suggestions, "Weight")
+	assertSuggestionsContainName(t, result.Suggestions, "Color")
+	assertSuggestionsContainName(t, result.Suggestions, "Date")
 }
 
 func TestPropertyAutoComplete_NoThingsExist(t *testing.T) {
@@ -569,7 +602,7 @@ func TestPropertyAutoComplete_NoThingsExist(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 0)
+	assert.Len(t, result.Suggestions, 0)
 }
 
 func TestPropertyAutoComplete_NoPropertiesOnThings(t *testing.T) {
@@ -586,5 +619,96 @@ func TestPropertyAutoComplete_NoPropertiesOnThings(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", result.CompletionType)
-	assert.Len(t, result.Values, 0)
+	assert.Len(t, result.Suggestions, 0)
+}
+
+func TestPropertyAutoComplete_DominantTypeFromUsage(t *testing.T) {
+	env := setupTestEnv(t)
+	user := createTestUser(t, env.ctx, env.db)
+
+	unit := "V"
+	// 3 float, 1 string — float should win
+	for i := 0; i < 3; i++ {
+		createThingWithProperties(t, env.ctx, env.db, env.imageService, user.ID, []operations.CreatePropertyParams{
+			operations.CreatePropertyFloatParams{Name: "voltage", Value: 5.0, Unit: &unit},
+		})
+	}
+	createThingWithProperties(t, env.ctx, env.db, env.imageService, user.ID, []operations.CreatePropertyParams{
+		operations.CreatePropertyStringParams{Name: "voltage", Value: "high"},
+	})
+
+	result, err := env.propertyService.AutoComplete(env.ctx, services.PropertyAutoCompleteParams{
+		UserId: user.ID,
+		Name:   "voltage",
+		Value:  nil,
+	})
+
+	assert.NoError(t, err)
+	assert.Len(t, result.Suggestions, 1)
+	suggestion := getSuggestionByName(result.Suggestions, "voltage")
+	assert.Equal(t, "float", suggestion.Type)
+	assert.Equal(t, "V", suggestion.Units[0])
+}
+
+func TestPropertyAutoComplete_UnitsSortedByUsage(t *testing.T) {
+	env := setupTestEnv(t)
+	user := createTestUser(t, env.ctx, env.db)
+
+	unitV := "V"
+	unitMV := "mV"
+	unitA := "A"
+
+	// V: 5 occurrences, mV: 3, A: 1 — ordering mirrors the spec example (V > mV > A)
+	for i := 0; i < 5; i++ {
+		createThingWithProperties(t, env.ctx, env.db, env.imageService, user.ID, []operations.CreatePropertyParams{
+			operations.CreatePropertyFloatParams{Name: "voltage", Value: 5.0, Unit: &unitV},
+		})
+	}
+	for i := 0; i < 3; i++ {
+		createThingWithProperties(t, env.ctx, env.db, env.imageService, user.ID, []operations.CreatePropertyParams{
+			operations.CreatePropertyFloatParams{Name: "voltage", Value: 0.005, Unit: &unitMV},
+		})
+	}
+	createThingWithProperties(t, env.ctx, env.db, env.imageService, user.ID, []operations.CreatePropertyParams{
+		operations.CreatePropertyFloatParams{Name: "voltage", Value: 1.0, Unit: &unitA},
+	})
+
+	result, err := env.propertyService.AutoComplete(env.ctx, services.PropertyAutoCompleteParams{
+		UserId: user.ID,
+		Name:   "voltage",
+		Value:  nil,
+	})
+
+	assert.NoError(t, err)
+	assert.Len(t, result.Suggestions, 1)
+
+	suggestion := getSuggestionByName(result.Suggestions, "voltage")
+	assert.Equal(t, "float", suggestion.Type)
+	assert.Equal(t, []string{"V", "mV", "A"}, suggestion.Units)
+}
+
+func TestPropertyAutoComplete_SuggestionsSortedByUsage(t *testing.T) {
+	env := setupTestEnv(t)
+	user := createTestUser(t, env.ctx, env.db)
+
+	// "rare" used once, "common" used 5 times
+	createThingWithProperties(t, env.ctx, env.db, env.imageService, user.ID, []operations.CreatePropertyParams{
+		operations.CreatePropertyStringParams{Name: "rare", Value: "x"},
+	})
+	for i := 0; i < 5; i++ {
+		createThingWithProperties(t, env.ctx, env.db, env.imageService, user.ID, []operations.CreatePropertyParams{
+			operations.CreatePropertyStringParams{Name: "common", Value: "x"},
+		})
+	}
+
+	result, err := env.propertyService.AutoComplete(env.ctx, services.PropertyAutoCompleteParams{
+		UserId: user.ID,
+		Name:   "",
+		Value:  nil,
+	})
+
+	assert.NoError(t, err)
+	assert.Len(t, result.Suggestions, 2)
+	assert.Equal(t, "common", result.Suggestions[0].Name)
+	assert.Equal(t, "rare", result.Suggestions[1].Name)
 }
