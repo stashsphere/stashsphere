@@ -245,9 +245,16 @@ export type Cart = {
   entries: CartEntry[];
 };
 
+export type PropertyNameSuggestion = {
+  name: string;
+  type: string;
+  units: string[];
+};
+
 export type AutoCompleteResult = {
   completionType: 'name' | 'value';
   values: string[];
+  suggestions: PropertyNameSuggestion[];
 };
 
 export type InstanceInfo = {

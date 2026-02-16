@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import { Property } from '../../api/resources';
+import { Property, PropertyNameSuggestion } from '../../api/resources';
 import { AxiosContext } from '../../context/axios';
 import { getAutoComplete } from '../../api/search';
 
@@ -11,12 +11,12 @@ interface PropertyRowProps {
 
 const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete }) => {
   const axiosInstance = useContext(AxiosContext);
-  const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
+  const [nameSuggestions, setNameSuggestions] = useState<PropertyNameSuggestion[]>([]);
   const [valueSuggestions, setValueSuggestions] = useState<string[]>([]);
+  const [unitSuggestions, setUnitSuggestions] = useState<string[]>([]);
   const nameDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const valueDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (nameDebounceRef.current) clearTimeout(nameDebounceRef.current);
@@ -32,7 +32,7 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
       getAutoComplete(axiosInstance, name, null)
         .then((result) => {
           if (result.completionType === 'name') {
-            setNameSuggestions(result.values);
+            setNameSuggestions(result.suggestions);
           }
         })
         .catch((err) => {
@@ -58,32 +58,79 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
     }, 300);
   };
 
+  // AC5 + AC6: apply type and unit from a matched name suggestion
+  const applyNameSuggestion = (suggestion: PropertyNameSuggestion, name: string) => {
+    setUnitSuggestions(suggestion.units);
+
+    switch (suggestion.type) {
+      case 'float': {
+        let value: number;
+        if (property.type === 'string') {
+          // AC1: try to parse current string as float, fall back to 0
+          const parsed = parseFloat(property.value);
+          value = isNaN(parsed) ? 0 : parsed;
+        } else if (property.type === 'float') {
+          value = property.value;
+        } else {
+          // AC3: datetime → float: clear
+          value = 0;
+        }
+        // AC6: prefill unit with most-used unit (units[0])
+        onChange({ type: 'float', name, value, unit: suggestion.units[0] ?? '' });
+        break;
+      }
+      case 'string': {
+        let value: string;
+        if (property.type === 'float') {
+          // AC2: convert float to string
+          value = String(property.value);
+        } else if (property.type === 'datetime') {
+          // AC3: clear
+          value = '';
+        } else {
+          value = property.value;
+        }
+        onChange({ type: 'string', name, value, unit: undefined });
+        break;
+      }
+      case 'datetime': {
+        // AC3: always clear when entering datetime
+        onChange({ type: 'datetime', name, value: new Date().toISOString(), unit: undefined });
+        break;
+      }
+    }
+  };
+
   const handleNameChange = (name: string) => {
-    switch (property.type) {
-      case 'string':
-        onChange({ type: 'string', name, value: property.value, unit: undefined });
-        break;
-      case 'float':
-        onChange({ type: 'float', name, value: property.value, unit: property.unit });
-        break;
-      case 'datetime':
-        onChange({ type: 'datetime', name, value: property.value, unit: undefined });
-        break;
+    const suggestion = nameSuggestions.find((s) => s.name === name);
+    if (suggestion) {
+      // AC3, AC5, AC6: exact match — apply preselected type and unit
+      applyNameSuggestion(suggestion, name);
+    } else {
+      setUnitSuggestions([]);
+      switch (property.type) {
+        case 'string':
+          onChange({ type: 'string', name, value: property.value, unit: undefined });
+          break;
+        case 'float':
+          onChange({ type: 'float', name, value: property.value, unit: property.unit });
+          break;
+        case 'datetime':
+          onChange({ type: 'datetime', name, value: property.value, unit: undefined });
+          break;
+      }
     }
     fetchNameSuggestions(name);
   };
 
   const handleValueChange = (value: string) => {
-    console.log(value);
     switch (property.type) {
       case 'float':
         onChange({ type: 'float', name: property.name, value: Number(value), unit: property.unit });
         break;
       case 'string':
         onChange({ type: 'string', name: property.name, value, unit: undefined });
-        if (property.name) {
-          fetchValueSuggestions(property.name, value);
-        }
+        if (property.name) fetchValueSuggestions(property.name, value);
         break;
       case 'datetime':
         onChange({ type: 'datetime', name: property.name, value, unit: undefined });
@@ -94,20 +141,44 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
   const handleTypeChange = (type: string) => {
     switch (type) {
       case 'datetime': {
-        const value =
-          property.type !== 'datetime' ? new Date().toISOString() : (property.value as string);
-        onChange({ type: 'datetime', name: property.name, value, unit: undefined });
+        // AC3: switching to datetime always uses current date (blank datetime is invalid)
+        onChange({
+          type: 'datetime',
+          name: property.name,
+          value: new Date().toISOString(),
+          unit: undefined,
+        });
         break;
       }
       case 'string': {
-        const value = property.type !== 'string' ? '' : (property.value as string);
+        let value: string;
+        if (property.type === 'float') {
+          // AC2: Number → String: convert
+          value = String(property.value);
+        } else if (property.type === 'datetime') {
+          // AC3: Datetime → String: clear
+          value = '';
+        } else {
+          value = property.value;
+        }
+        // AC4: unit cleared implicitly (string has no unit)
         onChange({ type: 'string', name: property.name, value, unit: undefined });
         break;
       }
       case 'float': {
-        const value = property.type !== 'float' ? 0 : (property.value as number);
-        const unit = property.type === 'float' ? property.unit : '';
-        onChange({ type: 'float', name: property.name, value, unit });
+        let value: number;
+        if (property.type === 'string') {
+          // AC1: String → Number: try to parse, fall back to 0
+          const parsed = parseFloat(property.value);
+          value = isNaN(parsed) ? 0 : parsed;
+        } else if (property.type === 'datetime') {
+          // AC3: Datetime → Number: clear
+          value = 0;
+        } else {
+          value = property.value;
+        }
+        // AC4: unit reset — user picks from unitSuggestions or types their own
+        onChange({ type: 'float', name: property.name, value, unit: '' });
         break;
       }
       default:
@@ -121,7 +192,6 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
     }
   };
 
-  // Render value input based on type
   const renderValueInput = () => {
     switch (property.type) {
       case 'float':
@@ -129,6 +199,7 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
           <input
             type="number"
             value={property.value}
+            onFocus={(e) => e.target.select()}
             onChange={(e) => handleValueChange(e.target.value)}
             className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
             placeholder="Enter number"
@@ -158,11 +229,7 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
           <input
             type="date"
             value={formattedDate}
-            onChange={(e) => {
-              // Convert YYYY-MM-DD to ISO timestamp by appending time and converting
-              const isoString = e.target.value + 'T00:00:00.000Z';
-              handleValueChange(isoString);
-            }}
+            onChange={(e) => handleValueChange(e.target.value + 'T00:00:00.000Z')}
             className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
           />
         );
@@ -184,7 +251,7 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
         />
         <datalist id="name-suggestions">
           {nameSuggestions.map((suggestion, i) => (
-            <option key={i} value={suggestion} />
+            <option key={i} value={suggestion.name} />
           ))}
         </datalist>
       </div>
@@ -206,13 +273,23 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
           <option value="datetime">Date</option>
         </select>
         {property.type === 'float' && (
-          <input
-            type="text"
-            value={property.unit || ''}
-            onChange={(e) => handleUnitChange(e.target.value)}
-            placeholder="Unit"
-            className="w-full mt-1 text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1 text-xs"
-          />
+          <>
+            <input
+              type="text"
+              value={property.unit || ''}
+              onChange={(e) => handleUnitChange(e.target.value)}
+              placeholder="Unit"
+              className="w-full mt-1 text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1 text-xs"
+              list="unit-suggestions"
+            />
+            {unitSuggestions.length > 0 && (
+              <datalist id="unit-suggestions">
+                {unitSuggestions.map((unit, i) => (
+                  <option key={i} value={unit} />
+                ))}
+              </datalist>
+            )}
+          </>
         )}
       </div>
 
