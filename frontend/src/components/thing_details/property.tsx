@@ -253,6 +253,46 @@ const PropertyComponent = ({ property, keyWidth }: PropertyProps) => {
           </div>,
           formatColor(property.value),
         ];
+      case 'voltage':
+        return [
+          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="voltage">
+            <Icon icon={'mdi--lightning-bolt'} />
+            Voltage:
+          </div>,
+          property.value,
+        ];
+      case 'current':
+        return [
+          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="current">
+            <Icon icon={'mdi--current-ac'} />
+            Current:
+          </div>,
+          property.value,
+        ];
+      case 'frequency':
+        return [
+          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="frequency">
+            <Icon icon={'mdi--sine-wave'} />
+            Frequency:
+          </div>,
+          property.value,
+        ];
+      case 'pitch':
+        return [
+          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="pitch">
+            <Icon icon={'mdi--arrow-expand-horizontal'} />
+            Pitch:
+          </div>,
+          property.value,
+        ];
+      case 'inductance':
+        return [
+          <div className={`flex flex-nowrap min-w-[${keyWidth}]`} key="inductance">
+            <Icon icon={'mdi--magnet'} />
+            Inductance:
+          </div>,
+          property.value,
+        ];
       default:
         switch (property.type) {
           case 'string':
