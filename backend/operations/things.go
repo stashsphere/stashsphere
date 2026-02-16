@@ -212,6 +212,26 @@ func GetSharedThingIdsForUser(ctx context.Context, exec boil.ContextExecutor, us
 	return sharedThingIds, nil
 }
 
+func GetOwnedThingIds(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
+	type ThingIdRow struct {
+		ThingId string `boil:"thing_id"`
+	}
+	var rows []ThingIdRow
+	err := models.NewQuery(
+		qm.Distinct("id as thing_id"),
+		qm.From("things"),
+		qm.Where("owner_id = ?", userId),
+	).Bind(ctx, exec, &rows)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, len(rows))
+	for i, row := range rows {
+		ids[i] = row.ThingId
+	}
+	return ids, nil
+}
+
 func SumQuantity(thing *models.Thing) int64 {
 	currentQuantity := int64(0)
 	for _, x := range thing.R.QuantityEntries {

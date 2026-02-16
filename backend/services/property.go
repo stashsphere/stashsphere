@@ -46,21 +46,11 @@ func (ps *PropertyService) AutoComplete(ctx context.Context, params PropertyAuto
 		return nil, err
 	}
 
-	type ThingIdRow struct {
-		ThingId string `boil:"thing_id"`
-	}
-	var thingIds []ThingIdRow
-	err = models.NewQuery(
-		qm.Distinct("id as thing_id"),
-		qm.From("things"),
-		qm.Where("owner_id = ?", userId),
-	).Bind(ctx, ps.db, &thingIds)
+	ownedThingIds, err := operations.GetOwnedThingIds(ctx, ps.db, userId)
 	if err != nil {
 		return nil, err
 	}
-	for _, thingIdRow := range thingIds {
-		sharedThingIds = append(sharedThingIds, thingIdRow.ThingId)
-	}
+	sharedThingIds = append(sharedThingIds, ownedThingIds...)
 
 	if value == nil {
 		return ps.autoCompleteName(ctx, name, sharedThingIds)
