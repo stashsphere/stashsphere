@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Fixed
+
+- frontend: datalist ids for suggestions in PropertyEditor are now unique across rows
+
 ### Removed
 
 ## [0.9.0] - 2026-02-16

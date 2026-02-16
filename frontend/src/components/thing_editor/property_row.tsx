@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useId, useRef, useState } from 'react';
 import { Property, PropertyNameSuggestion } from '../../api/resources';
 import { AxiosContext } from '../../context/axios';
 import { getAutoComplete } from '../../api/search';
@@ -16,6 +16,7 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
   const [unitSuggestions, setUnitSuggestions] = useState<string[]>([]);
   const nameDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const valueDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const rowId = useId();
 
   useEffect(() => {
     return () => {
@@ -214,9 +215,9 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
               onChange={(e) => handleValueChange(e.target.value)}
               className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
               placeholder="Enter text"
-              list="value-suggestions"
+              list={`${rowId}-value-suggestions`}
             />
-            <datalist id="value-suggestions">
+            <datalist id={`${rowId}-value-suggestions`}>
               {valueSuggestions.map((suggestion, i) => (
                 <option key={i} value={suggestion} />
               ))}
@@ -247,9 +248,9 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
           onChange={(e) => handleNameChange(e.target.value)}
           className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
           placeholder="Property name"
-          list="name-suggestions"
+          list={`${rowId}-name-suggestions`}
         />
-        <datalist id="name-suggestions">
+        <datalist id={`${rowId}-name-suggestions`}>
           {nameSuggestions.map((suggestion, i) => (
             <option key={i} value={suggestion.name} />
           ))}
@@ -280,10 +281,10 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
               onChange={(e) => handleUnitChange(e.target.value)}
               placeholder="Unit"
               className="w-full mt-1 text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1 text-xs"
-              list="unit-suggestions"
+              list={`${rowId}-unit-suggestions`}
             />
             {unitSuggestions.length > 0 && (
-              <datalist id="unit-suggestions">
+              <datalist id={`${rowId}-unit-suggestions`}>
                 {unitSuggestions.map((unit, i) => (
                   <option key={i} value={unit} />
                 ))}
