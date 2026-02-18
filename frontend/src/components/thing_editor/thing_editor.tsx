@@ -124,7 +124,7 @@ export const ThingEditor = ({ children, thing, lists, onChange }: ThingEditorPro
       return;
     }
     const entry: ThingFileImage = { type: 'file', file, rotation: 0 };
-    setImages([...images, entry]);
+    setImages((prev) => [...prev, entry]);
   };
 
   const selectImages = () => {
@@ -199,6 +199,42 @@ export const ThingEditor = ({ children, thing, lists, onChange }: ThingEditorPro
     images[idx] = tmp;
     setImages([...images]);
   };
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            addFile(file);
+          }
+        }
+      }
+    };
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      const files = e.dataTransfer?.files;
+      if (!files) return;
+      for (const file of files) {
+        if (file.type.startsWith('image/')) {
+          addFile(file);
+        }
+      }
+    };
+    document.addEventListener('paste', handlePaste);
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('drop', handleDrop);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+      document.removeEventListener('dragover', handleDragOver);
+      document.removeEventListener('drop', handleDrop);
+    };
+  }, []);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
