@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- frontend: allow to paste images from clipboard
+- frontend: allow to drag images from other applications / desktop
+- frontend: add more icons for known properties
+
 ### Changed
 
 ### Fixed
