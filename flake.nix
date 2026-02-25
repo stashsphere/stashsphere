@@ -97,6 +97,7 @@
 
       checks = forAllSystems (system: {
         nixos-test = nixpkgsFor.${system}.callPackage ./backend/nix/nixos-test.nix { };
+        nixos-test-oidc = nixpkgsFor.${system}.callPackage ./backend/nix/nixos-test-oidc.nix { };
       });
     };
 }
