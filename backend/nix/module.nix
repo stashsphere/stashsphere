@@ -40,7 +40,8 @@ in
         in
         {
           wantedBy = [ "multi-user.target" ];
-          after = [ "network.target" ] ++ (if cfg.usesLocalPostgresql then [ "postgresql.service" ] else [ ]);
+          after = [ "network.target" ] ++ (if cfg.usesLocalPostgresql then [ "postgresql.service" "postgresql-setup.service" ] else [ ]);
+          requires = if cfg.usesLocalPostgresql then [ "postgresql-setup.service" ] else [ ];
           serviceConfig = {
             Restart = "always";
             DynamicUser = true;
