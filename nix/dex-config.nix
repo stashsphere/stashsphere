@@ -2,9 +2,10 @@
 # Used by both the NixOS VM test and the process-compose dev environment.
 {
   # Dex settings that map to its YAML configuration.
-  # The issuerBase should be overridden per-environment if needed.
   dexSettings =
     { issuerBase ? "http://127.0.0.1:5556"
+    , dexListenAddr ? "0.0.0.0:5556"
+    , backendBases ? [ "http://127.0.0.1:8081" "http://localhost:8081" ]
     , storagePath ? "/var/lib/dex/dex.db"
     }:
     {
@@ -15,17 +16,14 @@
         config.file = storagePath;
       };
 
-      web.http = "0.0.0.0:5556";
+      web.http = dexListenAddr;
 
       staticClients = [
         {
           id = "stashsphere";
           name = "StashSphere";
           secret = "stashsphere-test-secret";
-          redirectURIs = [
-            "http://127.0.0.1:8081/auth/oidc/callback"
-            "http://localhost:8081/auth/oidc/callback"
-          ];
+          redirectURIs = map (base: "${base}/api/auth/oidc/dex/callback") backendBases;
         }
       ];
 

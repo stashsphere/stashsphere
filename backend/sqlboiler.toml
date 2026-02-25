@@ -7,7 +7,7 @@ add-enum-types = true
 [psql]
   dbname = "stashsphere"
   host   = "localhost"
-  port   = 5432
+  port   = 5433
   user   = "stashsphere"
   pass   = "secret"
   blacklist = ["schema_migrations"]

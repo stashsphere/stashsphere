@@ -34,6 +34,7 @@
         inherit (nixpkgsFor.${system}) stashsphere;
         backend = (nixpkgsFor.${system}).stashsphere;
         frontend = (nixpkgsFor.${system}).stashsphere-frontend;
+        dev = nixpkgsFor.${system}.callPackage ./nix/dev.nix { };
       });
       devShells = forAllSystems (
         system:
@@ -76,7 +77,7 @@
             ];
             env = {
               "PGHOST" = "127.0.0.1";
-              "PGPORT" = "5432";
+              "PGPORT" = "5433";
               "PGUSER" = "stashsphere";
               "PGPASSWORD" = "secret";
               "PGDATABASE" = "stashsphere";
