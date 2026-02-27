@@ -64,6 +64,18 @@ func CreateStashSphereHTTPErrorHandler(echoInstance *echo.Echo) func(err error, 
 			case utils.ErrVerificationCodeExpired:
 				statusCode = http.StatusBadRequest
 				message = "Verification code has expired"
+			case utils.ErrOIDCProviderNotFound:
+				statusCode = http.StatusNotFound
+				message = "OIDC provider not found"
+			case utils.ErrOIDCCallbackFailed:
+				statusCode = http.StatusBadRequest
+				message = e.Error()
+			case utils.ErrOIDCLinkChallengExpired:
+				statusCode = http.StatusBadRequest
+				message = "Link challenge has expired"
+			case utils.ErrOIDCLinkIncorrectPassword:
+				statusCode = http.StatusUnauthorized
+				message = "Incorrect password"
 			}
 		default:
 			echoInstance.DefaultHTTPErrorHandler(err, c)

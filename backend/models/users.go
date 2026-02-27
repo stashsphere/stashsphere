@@ -24,11 +24,11 @@ import (
 
 // User is an object representing the database table.
 type User struct {
-	ID           string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Name         string    `boil:"name" json:"name" toml:"name" yaml:"name"`
-	Email        string    `boil:"email" json:"email" toml:"email" yaml:"email"`
-	PasswordHash string    `boil:"password_hash" json:"password_hash" toml:"password_hash" yaml:"password_hash"`
-	PurgeAt      null.Time `boil:"purge_at" json:"purge_at,omitempty" toml:"purge_at" yaml:"purge_at,omitempty"`
+	ID           string      `boil:"id" json:"id" toml:"id" yaml:"id"`
+	Name         string      `boil:"name" json:"name" toml:"name" yaml:"name"`
+	Email        string      `boil:"email" json:"email" toml:"email" yaml:"email"`
+	PasswordHash null.String `boil:"password_hash" json:"password_hash,omitempty" toml:"password_hash" yaml:"password_hash,omitempty"`
+	PurgeAt      null.Time   `boil:"purge_at" json:"purge_at,omitempty" toml:"purge_at" yaml:"purge_at,omitempty"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -68,13 +68,13 @@ var UserWhere = struct {
 	ID           whereHelperstring
 	Name         whereHelperstring
 	Email        whereHelperstring
-	PasswordHash whereHelperstring
+	PasswordHash whereHelpernull_String
 	PurgeAt      whereHelpernull_Time
 }{
 	ID:           whereHelperstring{field: "\"users\".\"id\""},
 	Name:         whereHelperstring{field: "\"users\".\"name\""},
 	Email:        whereHelperstring{field: "\"users\".\"email\""},
-	PasswordHash: whereHelperstring{field: "\"users\".\"password_hash\""},
+	PasswordHash: whereHelpernull_String{field: "\"users\".\"password_hash\""},
 	PurgeAt:      whereHelpernull_Time{field: "\"users\".\"purge_at\""},
 }
 
@@ -84,6 +84,7 @@ var UserRels = struct {
 	CartEntries            string
 	EmailVerificationCodes string
 	EmailVerifications     string
+	ExternalAuths          string
 	ReceiverFriendRequests string
 	SenderFriendRequests   string
 	Friend1Friendships     string
@@ -99,6 +100,7 @@ var UserRels = struct {
 	CartEntries:            "CartEntries",
 	EmailVerificationCodes: "EmailVerificationCodes",
 	EmailVerifications:     "EmailVerifications",
+	ExternalAuths:          "ExternalAuths",
 	ReceiverFriendRequests: "ReceiverFriendRequests",
 	SenderFriendRequests:   "SenderFriendRequests",
 	Friend1Friendships:     "Friend1Friendships",
@@ -117,6 +119,7 @@ type userR struct {
 	CartEntries            CartEntrySlice             `boil:"CartEntries" json:"CartEntries" toml:"CartEntries" yaml:"CartEntries"`
 	EmailVerificationCodes EmailVerificationCodeSlice `boil:"EmailVerificationCodes" json:"EmailVerificationCodes" toml:"EmailVerificationCodes" yaml:"EmailVerificationCodes"`
 	EmailVerifications     EmailVerificationSlice     `boil:"EmailVerifications" json:"EmailVerifications" toml:"EmailVerifications" yaml:"EmailVerifications"`
+	ExternalAuths          ExternalAuthSlice          `boil:"ExternalAuths" json:"ExternalAuths" toml:"ExternalAuths" yaml:"ExternalAuths"`
 	ReceiverFriendRequests FriendRequestSlice         `boil:"ReceiverFriendRequests" json:"ReceiverFriendRequests" toml:"ReceiverFriendRequests" yaml:"ReceiverFriendRequests"`
 	SenderFriendRequests   FriendRequestSlice         `boil:"SenderFriendRequests" json:"SenderFriendRequests" toml:"SenderFriendRequests" yaml:"SenderFriendRequests"`
 	Friend1Friendships     FriendshipSlice            `boil:"Friend1Friendships" json:"Friend1Friendships" toml:"Friend1Friendships" yaml:"Friend1Friendships"`
@@ -196,6 +199,22 @@ func (r *userR) GetEmailVerifications() EmailVerificationSlice {
 	}
 
 	return r.EmailVerifications
+}
+
+func (o *User) GetExternalAuths() ExternalAuthSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetExternalAuths()
+}
+
+func (r *userR) GetExternalAuths() ExternalAuthSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.ExternalAuths
 }
 
 func (o *User) GetReceiverFriendRequests() FriendRequestSlice {
@@ -363,8 +382,8 @@ type userL struct{}
 
 var (
 	userAllColumns            = []string{"id", "name", "email", "password_hash", "purge_at"}
-	userColumnsWithoutDefault = []string{"id", "name", "email", "password_hash"}
-	userColumnsWithDefault    = []string{"purge_at"}
+	userColumnsWithoutDefault = []string{"id", "name", "email"}
+	userColumnsWithDefault    = []string{"password_hash", "purge_at"}
 	userPrimaryKeyColumns     = []string{"id"}
 	userGeneratedColumns      = []string{}
 )
@@ -725,6 +744,20 @@ func (o *User) EmailVerifications(mods ...qm.QueryMod) emailVerificationQuery {
 	)
 
 	return EmailVerifications(queryMods...)
+}
+
+// ExternalAuths retrieves all the external_auth's ExternalAuths with an executor.
+func (o *User) ExternalAuths(mods ...qm.QueryMod) externalAuthQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"external_auth\".\"user_id\"=?", o.ID),
+	)
+
+	return ExternalAuths(queryMods...)
 }
 
 // ReceiverFriendRequests retrieves all the friend_request's FriendRequests with an executor via receiver_id column.
@@ -1311,6 +1344,118 @@ func (userL) LoadEmailVerifications(ctx context.Context, e boil.ContextExecutor,
 				local.R.EmailVerifications = append(local.R.EmailVerifications, foreign)
 				if foreign.R == nil {
 					foreign.R = &emailVerificationR{}
+				}
+				foreign.R.User = local
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadExternalAuths allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadExternalAuths(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`external_auth`),
+		qm.WhereIn(`external_auth.user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load external_auth")
+	}
+
+	var resultSlice []*ExternalAuth
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice external_auth")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on external_auth")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for external_auth")
+	}
+
+	if len(externalAuthAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ExternalAuths = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &externalAuthR{}
+			}
+			foreign.R.User = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.UserID {
+				local.R.ExternalAuths = append(local.R.ExternalAuths, foreign)
+				if foreign.R == nil {
+					foreign.R = &externalAuthR{}
 				}
 				foreign.R.User = local
 			}
@@ -2664,6 +2809,59 @@ func (o *User) AddEmailVerifications(ctx context.Context, exec boil.ContextExecu
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &emailVerificationR{
+				User: o,
+			}
+		} else {
+			rel.R.User = o
+		}
+	}
+	return nil
+}
+
+// AddExternalAuths adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.ExternalAuths.
+// Sets related.R.User appropriately.
+func (o *User) AddExternalAuths(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*ExternalAuth) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.UserID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"external_auth\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, externalAuthPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.UserID, rel.Provider}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.UserID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			ExternalAuths: related,
+		}
+	} else {
+		o.R.ExternalAuths = append(o.R.ExternalAuths, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &externalAuthR{
 				User: o,
 			}
 		} else {

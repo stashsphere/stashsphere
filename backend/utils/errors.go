@@ -22,6 +22,10 @@ const (
 	ErrFriendShipExists            = "friend-ship-exists"
 	ErrInvalidVerificationCode     = "invalid-verification-code"
 	ErrVerificationCodeExpired     = "verification-code-expired"
+	ErrOIDCProviderNotFound        = "oidc-provider-not-found"
+	ErrOIDCCallbackFailed          = "oidc-callback-failed"
+	ErrOIDCLinkChallengExpired     = "oidc-link-challenge-expired"
+	ErrOIDCLinkIncorrectPassword   = "oidc-link-incorrect-password"
 )
 
 type StashsphereError interface {
@@ -128,3 +132,25 @@ type VerificationCodeExpiredError struct{}
 
 func (r VerificationCodeExpiredError) ErrorType() string { return ErrVerificationCodeExpired }
 func (r VerificationCodeExpiredError) Error() string     { return "Verification code has expired" }
+
+type OIDCProviderNotFoundError struct{}
+
+func (r OIDCProviderNotFoundError) ErrorType() string { return ErrOIDCProviderNotFound }
+func (r OIDCProviderNotFoundError) Error() string     { return "OIDC provider not found" }
+
+type OIDCCallbackFailedError struct {
+	Err error
+}
+
+func (r OIDCCallbackFailedError) ErrorType() string { return ErrOIDCCallbackFailed }
+func (r OIDCCallbackFailedError) Error() string     { return fmt.Sprintf("OIDC callback failed: %v", r.Err) }
+
+type OIDCLinkChallengeExpiredError struct{}
+
+func (r OIDCLinkChallengeExpiredError) ErrorType() string { return ErrOIDCLinkChallengExpired }
+func (r OIDCLinkChallengeExpiredError) Error() string     { return "Link challenge has expired" }
+
+type OIDCLinkIncorrectPasswordError struct{}
+
+func (r OIDCLinkIncorrectPasswordError) ErrorType() string { return ErrOIDCLinkIncorrectPassword }
+func (r OIDCLinkIncorrectPasswordError) Error() string     { return "Incorrect password" }

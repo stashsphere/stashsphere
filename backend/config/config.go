@@ -13,14 +13,29 @@ type StashSphereUserDeletionConfig struct {
 	GracePeriodMinutes int `koanf:"gracePeriodMinutes"`
 }
 
+type OIDCProviderConfig struct {
+	Name         string   `koanf:"name"`
+	DisplayName  string   `koanf:"display_name"`
+	IssuerURL    string   `koanf:"issuer_url"`
+	ClientID     string   `koanf:"client_id"`
+	ClientSecret string   `koanf:"client_secret"`
+	Scopes       []string `koanf:"scopes"`
+}
+
+type OIDCConfig struct {
+	Enabled   bool                 `koanf:"enabled"`
+	Providers []OIDCProviderConfig `koanf:"providers"`
+}
+
 type StashSphereServeConfig struct {
 	Database StashSphereDatabaseConfig `koanf:"database"`
 
 	ListenAddress string `koanf:"listenAddress"`
 
 	Auth struct {
-		PrivateKey           string `koanf:"privateKey"`
-		DisableSecureCookies bool   `koanf:"disableSecureCookies"`
+		PrivateKey           string     `koanf:"privateKey"`
+		DisableSecureCookies bool       `koanf:"disableSecureCookies"`
+		OIDC                 OIDCConfig `koanf:"oidc"`
 	} `koanf:"auth"`
 
 	Image struct {
@@ -40,6 +55,7 @@ type StashSphereServeConfig struct {
 		ApiDomain      string   `koanf:"api"`
 	} `koanf:"domains"`
 
+	BaseURL      string `koanf:"baseUrl"`
 	FrontendUrl  string `koanf:"frontendUrl"`
 	InstanceName string `koanf:"instanceName"`
 

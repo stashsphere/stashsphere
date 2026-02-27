@@ -114,6 +114,14 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		log.Info().Msgf("Invite disabled and no code required")
 	}
 
+	if config.Auth.OIDC.Enabled && len(config.Auth.OIDC.Providers) > 0 {
+		for _, p := range config.Auth.OIDC.Providers {
+			log.Info().Str("provider", p.Name).Str("issuer", p.IssuerURL).Msg("OIDC provider configured")
+		}
+	} else {
+		log.Info().Msg("OIDC disabled")
+	}
+
 	privateKey, err := crypto.LoadEd22519PrivateKeyFromString(config.Auth.PrivateKey)
 	if err != nil {
 		log.Fatal().Msgf("error loading private key from config: %v", err)
@@ -167,6 +175,8 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		return name
 	})
 	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, 24*7*time.Hour, config.Domains.ApiDomain, !config.Auth.DisableSecureCookies)
+
+	oidcService := services.NewOIDCService(db, config.Auth.OIDC, config.BaseURL, privateKey, publicKey)
 
 	emailService := services.NewEmailService(config.Email)
 	notificationService := services.NewNotificationService(db,
@@ -245,7 +255,8 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	cartHandler := handlers.NewCartHandler(cartService)
 	emailVerificationHandler := handlers.NewEmailVerificationHandler(userService)
-	infoHandler := handlers.NewInfoHandler(config.Invites.Enabled)
+	infoHandler := handlers.NewInfoHandler(config.Invites.Enabled, oidcService.GetProviderConfigs())
+	oidcHandler := handlers.NewOIDCHandler(oidcService, authService, config.FrontendUrl, !config.Auth.DisableSecureCookies)
 
 	a := e.Group("/api")
 	userGroup := a.Group("/user")
@@ -372,6 +383,45 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 			ContentTypes: []string{"application/json"},
 		}),
 	)
+
+	// OIDC routes
+	commonOIDCOptions := option.Group(
+		option.Tags("OIDC"),
+	)
+	oidcGroup := a.Group("/auth/oidc")
+	fuegoecho.GetEcho(engine, oidcGroup, "/:provider/authorize", oidcHandler.AuthorizeHandlerGet,
+		option.Summary("OIDC Authorize"),
+		option.Description("Redirect to OIDC provider's authorization endpoint"),
+		option.Path("provider", "OIDC provider name", param.Required(), param.Example("keycloak", "keycloak")),
+		commonOIDCOptions,
+	)
+	fuegoecho.GetEcho(engine, oidcGroup, "/:provider/callback", oidcHandler.CallbackHandlerGet,
+		option.Summary("OIDC Callback"),
+		option.Description("Handle callback from OIDC provider after user authentication"),
+		option.Path("provider", "OIDC provider name", param.Required(), param.Example("keycloak", "keycloak")),
+		option.Query("code", "Authorization code from provider"),
+		option.Query("state", "CSRF state parameter"),
+		commonOIDCOptions,
+	)
+	fuegoecho.PostEcho(engine, oidcGroup, "/:provider/link", oidcHandler.LinkHandlerPost,
+		option.Summary("OIDC Link Account"),
+		option.Description("Link an OIDC identity to an existing password account by verifying the password"),
+		option.Path("provider", "OIDC provider name", param.Required(), param.Example("keycloak", "keycloak")),
+		option.RequestBody(fuego.RequestBody{
+			Type:         handlers.LinkPostParams{},
+			ContentTypes: []string{"application/json"},
+		}),
+		option.AddResponse(200, "Account linked and authenticated", fuego.Response{
+			Type:         utils.NoContent{},
+			ContentTypes: []string{""},
+		}),
+		option.AddResponse(401, "Incorrect password", fuego.Response{
+			Type:         ss_middleware.ErrorResponse{},
+			ContentTypes: []string{"application/json"},
+		}),
+		commonOIDCOptions,
+	)
+
 	fuegoecho.GetEcho(engine, userGroup, "/profile", profileHandler.ProfileHandlerGet,
 		option.Summary("Get Profile"),
 		option.Description("Get current authenticated user's profile information"),
@@ -1727,6 +1777,7 @@ var serveCommand = &cobra.Command{
 				"allowed": []string{"http://localhost"},
 				"own":     []string{"localhost"},
 			},
+			"baseUrl":      "http://localhost:8081",
 			"frontendUrl":  "http://localhost",
 			"instanceName": "stashsphereDev",
 			"email": map[string]interface{}{

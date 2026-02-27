@@ -12,12 +12,10 @@ import (
 )
 
 func AuthenticateUser(user *models.User, password string) error {
-	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err != nil {
-		return err
+	if !user.PasswordHash.Valid {
+		return bcrypt.ErrMismatchedHashAndPassword
 	}
-
-	return nil
+	return bcrypt.CompareHashAndPassword([]byte(user.PasswordHash.String), []byte(password))
 }
 
 func AuthenticateUserByEmail(exec boil.ContextExecutor, ctx context.Context, email string, password string) (*models.User, error) {

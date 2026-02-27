@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
@@ -86,7 +87,7 @@ Examples:
 			return fmt.Errorf("error hashing password: %w", err)
 		}
 
-		user.PasswordHash = string(passwordHash)
+		user.PasswordHash = null.StringFrom(string(passwordHash))
 		_, err = user.Update(ctx, db, boil.Whitelist(models.UserColumns.PasswordHash))
 		if err != nil {
 			return fmt.Errorf("error updating password: %w", err)

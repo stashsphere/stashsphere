@@ -64,6 +64,20 @@ func (as *AuthService) ClearAuthCookies(ctx echo.Context) {
 	operations.SetRefreshIntoTokenCookie(ctx, as.cookieDomain, "", -1, as.secureCookies)
 }
 
+// IssueTokensForUser creates JWT tokens for a user without password verification.
+// Used by OIDC login where authentication is handled by the external provider.
+func (as *AuthService) IssueTokensForUser(user *models.User) (string, string, string, string, error) {
+	accessToken, infoToken, err := operations.CreateJWTAccessTokenForUser(user, as.privateKey, time.Now(), as.accessTokenLifeTime)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	refreshToken, refreshInfoToken, err := operations.CreateJWTRefreshTokenForUser(user, as.privateKey, time.Now(), as.refreshTokenLifeTime)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	return accessToken, infoToken, refreshToken, refreshInfoToken, nil
+}
+
 func (as *AuthService) AuthorizeUserWithRefreshToken(ctx context.Context, value string) (*models.User, string, string, string, string, error) {
 	token, err := jwt.ParseWithClaims(value, &operations.RefreshClaims{}, func(t *jwt.Token) (interface{}, error) {
 		return as.publicKey, nil

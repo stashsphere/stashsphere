@@ -7,6 +7,7 @@ require (
 	github.com/aarondl/sqlboiler/v4 v4.19.5
 	github.com/aarondl/strmangle v0.0.9
 	github.com/benjajaja/jtug v0.1.2
+	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/friendsofgo/errors v0.9.2
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/go-fuego/fuego v0.18.9-0.20251201171859-7e4b0de9e84e
@@ -25,6 +26,7 @@ require (
 	github.com/rakyll/magicmime v0.1.0
 	github.com/rs/zerolog v1.31.0
 	golang.org/x/crypto v0.45.0
+	golang.org/x/oauth2 v0.28.0
 )
 
 require (
@@ -38,10 +40,12 @@ require (
 	github.com/dsoprea/go-utility v0.0.0-20221003172846-a3e1774ef349 // indirect
 	github.com/ericlagergren/decimal v0.0.0-20190420051523-6335edbaa640 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-xmlfmt/xmlfmt v1.1.2 // indirect
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/schema v1.4.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -57,6 +61,8 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/woodsbury/decimal128 v1.3.0 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
+	google.golang.org/appengine v1.6.8 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -61,7 +61,7 @@ func (us *UserService) CreateUser(ctx context.Context, params CreateUserParams) 
 		ID:           userID,
 		Name:         params.Name,
 		Email:        params.Email,
-		PasswordHash: string(passwordHash),
+		PasswordHash: null.StringFrom(string(passwordHash)),
 	}
 
 	err = user.Insert(ctx, us.db, boil.Infer())
@@ -167,7 +167,7 @@ func (us *UserService) UpdatePassword(ctx context.Context, params UpdatePassword
 		if err != nil {
 			return err
 		}
-		user.PasswordHash = string(passwordHash)
+		user.PasswordHash = null.StringFrom(string(passwordHash))
 		_, err = user.Update(ctx, tx, boil.Infer())
 		return err
 	})
