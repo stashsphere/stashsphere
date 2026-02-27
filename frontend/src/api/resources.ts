@@ -257,6 +257,12 @@ export type AutoCompleteResult = {
   suggestions: PropertyNameSuggestion[];
 };
 
+export type OIDCProviderInfo = {
+  name: string;
+  displayName: string;
+};
+
 export type InstanceInfo = {
   inviteRequired: boolean;
+  oidcProviders: OIDCProviderInfo[];
 };

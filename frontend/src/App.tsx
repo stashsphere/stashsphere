@@ -40,6 +40,7 @@ import { refreshTokens } from './api/auth';
 import { ShowCart } from './routes/cart';
 import { useCart } from './hooks/useCart';
 import { CartContext } from './context/cart';
+import { OIDCCallback } from './routes/auth/callback';
 import React from 'react';
 
 export const App = () => {
@@ -161,6 +162,7 @@ export const App = () => {
                     <Route path="/user/login" element={<Login />} />
                     <Route path="/user/logout" element={<Logout />} />
                     <Route path="/user/register" element={<Register />} />
+                    <Route path="/auth/callback" element={<OIDCCallback />} />
                     <Route
                       path="/user"
                       element={
