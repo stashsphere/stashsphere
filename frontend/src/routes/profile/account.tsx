@@ -152,7 +152,19 @@ export const Account = () => {
       <div className="mt-4">
         <div className="max-w-md">
           <h2 className="text-primary text-xl font-semibold mb-4">Change Password</h2>
-          <form onSubmit={onSubmit}>
+          {profile?.externalAuth && (
+            <div className="bg-neutral-900 border border-neutral-700 rounded-sm p-4 mb-4">
+              <p className="text-display">
+                This account uses external authentication. Password changes are not available for
+                externally authenticated accounts.
+              </p>
+            </div>
+          )}
+          <form
+            onSubmit={onSubmit}
+            className={profile?.externalAuth ? 'blur-xs pointer-events-none select-none' : ''}
+            aria-disabled={profile?.externalAuth}
+          >
             <div className="mb-4">
               <label htmlFor="oldPassword" className="block text-primary text-sm font-medium">
                 Current Password
@@ -164,6 +176,7 @@ export const Account = () => {
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
                 className="mt-1 p-2 w-full border border-secondary rounded-sm text-display"
+                disabled={profile?.externalAuth}
               />
             </div>
             <PasswordInput
@@ -175,7 +188,7 @@ export const Account = () => {
               confirmLabel="Confirm New Password"
               minLength={8}
             />
-            <PrimaryButton type="submit" disabled={!isPasswordValid}>
+            <PrimaryButton type="submit" disabled={!isPasswordValid || profile?.externalAuth}>
               Update Password
             </PrimaryButton>
             {error && <p className="text-warning mt-2">{error}</p>}

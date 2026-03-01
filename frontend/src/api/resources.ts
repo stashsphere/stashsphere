@@ -143,6 +143,7 @@ export interface Profile {
   image: ReducedImage | null;
   purgeAt: Date | null;
   emailVerified?: boolean;
+  externalAuth: boolean;
 }
 
 export interface Share {
