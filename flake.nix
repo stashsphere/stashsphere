@@ -1,9 +1,11 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nix-github-actions.url = "github:nix-community/nix-github-actions";
+    nix-github-actions.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs =
-    { self, nixpkgs }:
+    { self, nixpkgs, nix-github-actions }:
     let
       # from https://github.com/NixOS/templates/blob/master/go-hello/flake.nix
       lastModifiedDate = self.lastModifiedDate or self.lastModified or "19700101";
@@ -100,5 +102,16 @@
         nixos-test = nixpkgsFor.${system}.callPackage ./backend/nix/nixos-test.nix { };
         nixos-test-oidc = nixpkgsFor.${system}.callPackage ./backend/nix/nixos-test-oidc.nix { };
       });
+
+      githubActions =
+        let
+          checks = nixpkgs.lib.recursiveUpdate (nixpkgs.lib.getAttrs [ "x86_64-linux" ] self.checks)
+            (forAllSystems
+              (system: {
+                packages_backend = self.packages.${system}.backend;
+                packages_frontend = self.packages.${system}.frontend;
+              }));
+        in
+        nix-github-actions.lib.mkGithubMatrix { inherit checks; };
     };
 }
