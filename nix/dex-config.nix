@@ -44,6 +44,13 @@
           username = "bob";
           userID = "41331323-6f44-45e6-b3b9-2c4b60ce40a5";
         }
+        {
+          email = "charlie@example.com";
+          # bcrypt hash of "password"
+          hash = "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W";
+          username = "charlie";
+          userID = "99d7e095-742e-4dc3-b77f-b01df1e78c37";
+        }
       ];
     };
 

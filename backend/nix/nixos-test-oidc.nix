@@ -3,6 +3,11 @@
 let
   dexConfig = import ../../nix/dex-config.nix;
   dexSettings = dexConfig.dexSettings { issuerBase = "http://127.0.0.1:5556"; };
+  oidcClientConfig = dexConfig.oidcClientConfig;
+
+  testPy = ./oidc-test.py;
+
+  python = pkgs.python3.withPackages (ps: [ ps.requests ps.beautifulsoup4 ]);
 in
 testers.nixosTest {
   name = "stashsphere-oidc";
@@ -17,6 +22,23 @@ testers.nixosTest {
             enabled = true;
             code = "1234";
           };
+          auth = {
+            disableSecureCookies = true;
+            oidc = {
+              enabled = true;
+              providers = [
+                {
+                  name = "dex";
+                  display_name = "Dex";
+                  issuer_url = "http://127.0.0.1:5556/dex";
+                  client_id = oidcClientConfig.clientId;
+                  client_secret = oidcClientConfig.clientSecret;
+                }
+              ];
+            };
+          };
+          baseUrl = "http://127.0.0.1:8081";
+          frontendUrl = "http://localhost:3000";
         });
       in
       {
@@ -44,7 +66,9 @@ testers.nixosTest {
 
     services.dex = {
       enable = true;
-      settings = dexSettings;
+      settings = dexSettings // {
+        oauth2 = { skipApprovalScreen = true; };
+      };
     };
 
     systemd.services.dex.serviceConfig.StateDirectory = "dex";
@@ -56,12 +80,13 @@ testers.nixosTest {
     server.wait_for_unit("dex.service")
     server.wait_for_unit("stashsphere.service")
 
-    # Verify StashSphere is responding
-    server.wait_until_succeeds("${pkgs.curl}/bin/curl http://127.0.0.1:8081")
-
-    # Verify Dex OIDC discovery endpoint is responding
+    # Verify both services are responding
+    server.wait_until_succeeds("${pkgs.curl}/bin/curl -f http://127.0.0.1:8081/api/info")
     server.wait_until_succeeds(
         "${pkgs.curl}/bin/curl -f http://127.0.0.1:5556/dex/.well-known/openid-configuration"
     )
+
+    # Run the OIDC test suite
+    server.succeed("${python}/bin/python3 ${testPy}")
   '';
 }
