@@ -267,3 +267,10 @@ func (us *UserService) GetEmailVerificationStatus(ctx context.Context, userId st
 	return operations.GetEmailVerificationStatus(ctx, us.db, userId)
 }
 
+func (us *UserService) HasExternalAuth(ctx context.Context, userId string) (bool, error) {
+	return models.ExternalAuths(
+		qm.Where("user_id = ?", userId),
+		qm.Limit(1),
+	).Exists(ctx, us.db)
+}
+

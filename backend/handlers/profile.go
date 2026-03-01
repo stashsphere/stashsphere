@@ -35,7 +35,11 @@ func (ph *ProfileHandler) ProfileHandlerGet(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ProfileFromModel(user).WithEmailVerification(verification))
+	hasExternalAuth, err := ph.userService.HasExternalAuth(ctx, authCtx.User.UserId)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, resources.ProfileFromModel(user).WithEmailVerification(verification).WithExternalAuth(hasExternalAuth))
 }
 
 type ProfileUpdateParams struct {
@@ -68,9 +72,18 @@ func (ph *ProfileHandler) ProfileHandlerPatch(c echo.Context) error {
 	}
 	serviceParams := params.ToUpdateUserParams()
 	serviceParams.UserId = authCtx.User.UserId
-	user, err := ph.userService.UpdateUser(c.Request().Context(), serviceParams)
+	ctx := c.Request().Context()
+	user, err := ph.userService.UpdateUser(ctx, serviceParams)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ProfileFromModel(user))
+	verification, err := ph.userService.GetEmailVerificationStatus(ctx, authCtx.User.UserId)
+	if err != nil {
+		return err
+	}
+	hasExternalAuth, err := ph.userService.HasExternalAuth(ctx, authCtx.User.UserId)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, resources.ProfileFromModel(user).WithEmailVerification(verification).WithExternalAuth(hasExternalAuth))
 }

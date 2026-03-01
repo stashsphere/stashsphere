@@ -142,7 +142,6 @@ func (s *OIDCService) getProvider(ctx context.Context, name string) (*OIDCProvid
 	return runtime, nil
 }
 
-// GetProviderConfigs returns display info for all configured providers.
 func (s *OIDCService) GetProviderConfigs() []config.OIDCProviderConfig {
 	if !s.oidcConfig.Enabled {
 		return nil

@@ -16,6 +16,7 @@ type Profile struct {
 	Image         *ReducedImage `json:"image"`
 	PurgeAt       *time.Time    `json:"purgeAt"`
 	EmailVerified *bool         `json:"emailVerified,omitempty"`
+	ExternalAuth  bool          `json:"externalAuth"`
 }
 
 func ProfileFromUserContext(ctx *middleware.UserContext) Profile {
@@ -58,6 +59,11 @@ func ProfileFromModel(user *models.User) Profile {
 func (p Profile) WithEmailVerification(verification *models.EmailVerification) Profile {
 	verified := verification != nil && verification.VerifiedAt.Valid
 	p.EmailVerified = &verified
+	return p
+}
+
+func (p Profile) WithExternalAuth(hasExternalAuth bool) Profile {
+	p.ExternalAuth = hasExternalAuth
 	return p
 }
 
