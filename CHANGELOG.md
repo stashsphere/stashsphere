@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- development: a nix-based development environment is available
+  with the `dev` flake output.
+- backend: add OIDC auth mechanism
+  multiple providers can now be added for external authentication
 - frontend: allow to paste images from clipboard
 - frontend: allow to drag images from other applications / desktop
 - frontend: add more icons for known properties
