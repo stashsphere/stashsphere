@@ -199,6 +199,7 @@ func TestCallbackProviderErrorRedirect(t *testing.T) {
 		"/api/auth/oidc/test/callback?state="+state+"&error=access_denied&error_description=user+denied", nil)
 	req.AddCookie(&http.Cookie{Name: "oidc-state", Value: state})
 	req.AddCookie(&http.Cookie{Name: "oidc-nonce", Value: "nonce"})
+	req.AddCookie(&http.Cookie{Name: "oidc-redirect", Value: "http://localhost/auth/callback"})
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -328,4 +329,24 @@ func TestLinkSuccess(t *testing.T) {
 	).Count(ctx, db)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), count)
+}
+
+func TestCallbackRequiresRedirectCookie(t *testing.T) {
+	db, tearDown, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(tearDown)
+	t.Cleanup(func() { db.Close() })
+
+	e, _, err := cmd.SetupWithDB(db, oidcTestConfig(t), false, false, "")
+	assert.NoError(t, err)
+
+	state := "valid-state"
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/oidc/test/callback?state="+state+"&code=xyz", nil)
+	req.AddCookie(&http.Cookie{Name: "oidc-state", Value: state})
+	req.AddCookie(&http.Cookie{Name: "oidc-nonce", Value: "nonce"})
+	// Missing oidc-redirect cookie
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }

@@ -23,7 +23,8 @@ def dex_login(email, password):
     s = requests.Session()
 
     # Start the authorize flow - get redirect to Dex
-    r = s.get(f"{BASE}/api/auth/oidc/dex/authorize", allow_redirects=False)
+    redirect_to = f"{FRONTEND}/auth/callback"
+    r = s.get(f"{BASE}/api/auth/oidc/dex/authorize?redirect_to={redirect_to}", allow_redirects=False)
     if r.status_code != 302:
         raise AssertionError(f"authorize redirect: expected 302, got {r.status_code}")
     dex_auth_url = r.headers["Location"]

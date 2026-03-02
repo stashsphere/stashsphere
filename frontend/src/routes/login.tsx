@@ -90,17 +90,23 @@ export const Login = () => {
               <span className="px-2 text-sm text-secondary">or</span>
               <hr className="flex-grow border-secondary" />
             </div>
-            {oidcProviders.map((provider) => (
-              <a
-                key={provider.name}
-                href={config.apiHost + '/api/auth/oidc/' + provider.name + '/authorize'}
-                className="block mb-2"
-              >
-                <SecondaryButton type="button" className="w-full">
-                  Login with {provider.displayName}
-                </SecondaryButton>
-              </a>
-            ))}
+            {oidcProviders.map((provider) => {
+              const redirectTo = window.location.origin + '/auth/callback';
+              const authorizeUrl =
+                config.apiHost +
+                '/api/auth/oidc/' +
+                provider.name +
+                '/authorize' +
+                '?redirect_to=' +
+                encodeURIComponent(redirectTo);
+              return (
+                <a key={provider.name} href={authorizeUrl} className="block mb-2">
+                  <SecondaryButton type="button" className="w-full">
+                    Login with {provider.displayName}
+                  </SecondaryButton>
+                </a>
+              );
+            })}
           </div>
         )}
         <a href="/user/register" className="underline text-secondary mt-2 inline-block">

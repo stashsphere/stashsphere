@@ -256,7 +256,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	cartHandler := handlers.NewCartHandler(cartService)
 	emailVerificationHandler := handlers.NewEmailVerificationHandler(userService)
 	infoHandler := handlers.NewInfoHandler(config.Invites.Enabled, oidcService.GetProviderConfigs())
-	oidcHandler := handlers.NewOIDCHandler(oidcService, authService, config.FrontendUrl, !config.Auth.DisableSecureCookies)
+	oidcHandler := handlers.NewOIDCHandler(oidcService, authService, config.Domains.AllowedDomains, !config.Auth.DisableSecureCookies)
 
 	a := e.Group("/api")
 	userGroup := a.Group("/user")
