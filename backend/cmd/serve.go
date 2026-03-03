@@ -174,7 +174,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		}
 		return name
 	})
-	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, 24*7*time.Hour, config.Domains.ApiDomain, !config.Auth.DisableSecureCookies)
+	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, 24*7*time.Hour, config.Domains.CookieDomain, !config.Auth.DisableSecureCookies)
 
 	oidcService := services.NewOIDCService(db, config.Auth.OIDC, config.BaseURL, privateKey, publicKey)
 
@@ -1801,6 +1801,14 @@ var serveCommand = &cobra.Command{
 
 		if config.Auth.DisableSecureCookies {
 			log.Warn().Msg("Secure cookies are disabled. Do not use in production.")
+		}
+
+		// Handle deprecated domains.api configuration
+		if config.Domains.ApiDomain != "" {
+			log.Warn().Msg("Configuration 'domains.api' is deprecated and will be removed in a future version. Please use 'domains.cookieDomain' instead.")
+			if config.Domains.CookieDomain == "" {
+				config.Domains.CookieDomain = config.Domains.ApiDomain
+			}
 		}
 
 		return Serve(config, debug, serveOpenAPI)

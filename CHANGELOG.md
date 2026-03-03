@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- backend: `domains.api` config is deprecated, use `domains.cookieDomain` instead
+
 ### Fixed
 
 - frontend: datalist ids for suggestions in PropertyEditor are now unique across rows

@@ -27,9 +27,11 @@ func testConfig(t *testing.T) config.StashSphereServeConfig {
 		},
 		Domains: struct {
 			AllowedDomains []string `koanf:"allowed"`
+			CookieDomain   string   `koanf:"cookieDomain"`
 			ApiDomain      string   `koanf:"api"`
 		}{
 			AllowedDomains: []string{"http://localhost"},
+			CookieDomain:   "",
 			ApiDomain:      "",
 		},
 		FrontendUrl:  "http://localhost",

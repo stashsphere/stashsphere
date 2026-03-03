@@ -52,7 +52,8 @@ type StashSphereServeConfig struct {
 
 	Domains struct {
 		AllowedDomains []string `koanf:"allowed"`
-		ApiDomain      string   `koanf:"api"`
+		CookieDomain   string   `koanf:"cookieDomain"`
+		ApiDomain      string   `koanf:"api"` // Deprecated: use CookieDomain instead
 	} `koanf:"domains"`
 
 	BaseURL      string `koanf:"baseUrl"`

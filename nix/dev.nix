@@ -37,6 +37,7 @@ let
     };
     domains = {
       allowed = [ "http://localhost:5173" ];
+      cookieDomain = "localhost";
     };
     email = {
       backend = "stdout";
