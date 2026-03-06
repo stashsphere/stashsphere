@@ -36,7 +36,7 @@ let
       code = "1234";
     };
     domains = {
-      allowed = [ "http://localhost:5173" ];
+      allowed = [ "http://localhost:5173" "http://localhost:5174" ];
       cookieDomain = "localhost";
     };
     email = {
@@ -121,7 +121,7 @@ let
           set -euo pipefail
           cd backend
           ${pkgs.go}/bin/go run ./... migrate --conf ${backendConfigFile}
-          exec ${pkgs.go}/bin/go run ./... serve --conf ${backendConfigFile}
+          exec ${pkgs.go}/bin/go run ./... serve --conf ${backendConfigFile} --serve-openapi
         '';
         depends_on = {
           postgres-init.condition = "process_completed_successfully";
