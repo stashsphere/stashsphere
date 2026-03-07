@@ -8,6 +8,7 @@ import { ImageBrowserGrid } from './image_browser_grid';
 import QuantityEditor from './quantity_editor';
 import { urlForImage } from '../../api/image';
 import { Toggle } from '../shared/toggle';
+import { SharingStateComponent } from '../shared/sharing_state';
 
 export type ThingEditorData = {
   name: string;
@@ -28,6 +29,7 @@ type ThingEditorProps = {
   // all lists that this thing can be part of
   lists: List[];
   onChange: (thing: ThingEditorData) => void;
+  defaultSharingState?: SharingState;
 };
 
 export type ThingFileImage = {
@@ -42,7 +44,13 @@ export type ThingUrlImage = {
 };
 export type ThingImage = ThingUrlImage | ThingFileImage;
 
-export const ThingEditor = ({ children, thing, lists, onChange }: ThingEditorProps) => {
+export const ThingEditor = ({
+  children,
+  thing,
+  lists,
+  onChange,
+  defaultSharingState = 'private',
+}: ThingEditorProps) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [privateNote, setPrivateNote] = useState('');
@@ -52,11 +60,15 @@ export const ThingEditor = ({ children, thing, lists, onChange }: ThingEditorPro
   const [imageBrowserImages, setImageBrowserImages] = useState<Image[]>([]);
   const [quantity, setQuantity] = useState(0);
   const [quantityUnit, setQuantityUnit] = useState('');
-  const [sharingState, setSharingState] = useState<SharingState>('private');
+  const [sharingStateAndDefault, setSharingStateAndDefault] = useState<[SharingState, boolean]>([
+    'private',
+    true,
+  ]);
   const [onlyUnassignedImages, setOnlyUnassignedImages] = useState(true);
   const [listIds, setListIds] = useState<string[]>([]);
 
   const config = useContext(ConfigContext);
+  const [sharingState, usingDefaultSharingState] = sharingStateAndDefault;
 
   useEffect(() => {
     if (!thing) {
@@ -69,9 +81,19 @@ export const ThingEditor = ({ children, thing, lists, onChange }: ThingEditorPro
     setProperties(thing.properties);
     setQuantity(thing.quantity);
     setQuantityUnit(thing.quantityUnit);
-    setSharingState(thing.sharingState);
+    setSharingStateAndDefault([thing.sharingState, false]);
     setListIds(thing.listIds);
   }, [thing]);
+
+  useEffect(() => {
+    if (thing) {
+      // If we have a loaded thing, don't override its sharing state
+      return;
+    }
+    if (defaultSharingState) {
+      setSharingStateAndDefault([defaultSharingState, true]);
+    }
+  }, [defaultSharingState, thing]);
 
   useEffect(() => {
     const data = {
@@ -386,8 +408,6 @@ export const ThingEditor = ({ children, thing, lists, onChange }: ThingEditorPro
             />
           </div>
 
-          <div className="border-t border-gray-200 my-2"></div>
-
           <div>
             <Headline type="h2">Lists</Headline>
             {lists.length > 0 ? (
@@ -408,6 +428,16 @@ export const ThingEditor = ({ children, thing, lists, onChange }: ThingEditorPro
             )}
           </div>
 
+          {!thing && (
+            <div className="bg-neutral-900 border border-neutral-700 rounded-sm p-3">
+              <p className="text-display text-sm flex">
+                Sharing: <SharingStateComponent state={sharingState} />
+                {usingDefaultSharingState && (
+                  <span className="text-secondary text-sm">(from your profile default)</span>
+                )}
+              </p>
+            </div>
+          )}
           {children}
         </div>
       </div>

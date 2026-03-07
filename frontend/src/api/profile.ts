@@ -1,5 +1,5 @@
 import { Axios } from 'axios';
-import { Profile } from './resources';
+import { Profile, SharingState } from './resources';
 
 export const getProfile = async (axios: Axios) => {
   const response = await axios.get('/user/profile', {
@@ -19,6 +19,7 @@ export type ProfileUpdateParams = {
   fullName: string;
   information: string;
   imageId: string | null;
+  defaultSharingState: SharingState;
 };
 
 export const patchProfile = async (axios: Axios, params: ProfileUpdateParams) => {

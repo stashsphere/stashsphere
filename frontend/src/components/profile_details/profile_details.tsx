@@ -1,6 +1,7 @@
 import { Profile } from '../../api/resources';
 import { Icon, ImageComponent, PrimaryButton } from '../shared';
 import { Labeled } from '../shared';
+import { SharingStateComponent } from '../shared/sharing_state';
 
 type ProfileProps = {
   profile: Profile;
@@ -37,6 +38,16 @@ export const ProfileDetails = ({ profile }: ProfileProps) => {
                 <span className="text-sm">not verified</span>
               </a>
             ) : null}
+          </div>
+        </Labeled>
+        <Labeled label="Default Sharing State">
+          <div className="flex flex-row items-center gap-2">
+            <div className="my-2">
+              <SharingStateComponent state={profile.defaultSharingState} />
+            </div>
+            <span className="text-sm text-gray-600">
+              New things and lists will use this setting
+            </span>
           </div>
         </Labeled>
         <p className="text-accent">visible to other users</p>

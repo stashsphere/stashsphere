@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { List } from '../../api/resources';
 import { useNavigate, useParams } from 'react-router';
 import { AxiosContext } from '../../context/axios';
@@ -8,11 +8,7 @@ import { GrayButton, YellowButton } from '../../components/shared';
 
 export const EditList = () => {
   const [list, setList] = useState<null | List>(null);
-  const [editedData, setEditedData] = useState<ListEditorData>({
-    name: '',
-    selectedThingIDs: [],
-    sharingState: 'private',
-  });
+  const [editedData, setEditedData] = useState<null | ListEditorData>(null);
 
   const axiosInstance = useContext(AxiosContext);
   const navigate = useNavigate();
@@ -25,42 +21,32 @@ export const EditList = () => {
     getList(axiosInstance, listId).then(setList);
   }, [axiosInstance, listId]);
 
-  useEffect(() => {
-    if (list === null) {
-      return;
-    }
-    setEditedData({
+  const data = useMemo(() => {
+    if (!list) return undefined;
+    return {
       name: list.name,
       selectedThingIDs: list.things.map((thing) => thing.id),
       sharingState: list.sharingState,
-    });
+    };
   }, [list]);
 
   const edit = async () => {
-    if (!axiosInstance || !listId) {
+    if (!axiosInstance || !listId || !editedData) {
       return;
     }
-    const params = {
+    await updateList(axiosInstance, listId, {
       name: editedData.name,
       thingIds: editedData.selectedThingIDs,
       sharingState: editedData.sharingState,
-    };
-    await updateList(axiosInstance, listId, params);
-    navigate(`/lists/${listId}`);
-  };
-
-  const abort = () => {
-    if (!listId) {
-      return;
-    }
+    });
     navigate(`/lists/${listId}`);
   };
 
   return (
-    <ListEditor onChange={setEditedData} list={editedData}>
+    <ListEditor onChange={setEditedData} list={data}>
       <div className="flex gap-4">
         <YellowButton onClick={edit}>Save</YellowButton>
-        <GrayButton onClick={abort}>Abort</GrayButton>
+        <GrayButton onClick={() => navigate(`/lists/${listId}`)}>Abort</GrayButton>
       </div>
     </ListEditor>
   );

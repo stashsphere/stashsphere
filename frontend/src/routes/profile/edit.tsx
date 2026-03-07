@@ -43,6 +43,7 @@ export const EditProfile = () => {
       fullName: editedData.fullName,
       information: editedData.information,
       imageId,
+      defaultSharingState: editedData.defaultSharingState,
     } as ProfileUpdateParams);
     console.log('Updated profile');
     authContext.invalidateProfile();

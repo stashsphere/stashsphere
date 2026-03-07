@@ -1,5 +1,5 @@
 import { ChangeEvent, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Profile, ReducedImage, Image } from '../../api/resources';
+import { Profile, ReducedImage, Image, SharingState } from '../../api/resources';
 import { ImageBrowserGrid } from '../thing_editor/image_browser_grid';
 import { urlForImage } from '../../api/image';
 import { Headline, Icon, Modal, PrimaryButton, SecondaryButton } from '../shared';
@@ -10,6 +10,7 @@ export type EditableProfile = {
   fullName: string;
   information: string;
   image: ProfileImage | null;
+  defaultSharingState: SharingState;
 };
 
 type Props = {
@@ -34,6 +35,7 @@ export const ProfileEditor = ({ children, profile, onUpdateProfile }: Props) => 
   const [name, setName] = useState('');
   const [fullName, setFullName] = useState('');
   const [information, setInformation] = useState('');
+  const [defaultSharingState, setDefaultSharingState] = useState<SharingState>('private');
 
   const [image, setImage] = useState<ProfileImage | null>(null);
   const [showImageBrowser, setShowImageBrowser] = useState(false);
@@ -44,6 +46,7 @@ export const ProfileEditor = ({ children, profile, onUpdateProfile }: Props) => 
     setName(profile.name);
     setFullName(profile.fullName);
     setInformation(profile.information);
+    setDefaultSharingState(profile.defaultSharingState);
     if (profile.image) {
       setImage({
         type: 'url',
@@ -59,9 +62,10 @@ export const ProfileEditor = ({ children, profile, onUpdateProfile }: Props) => 
       fullName,
       information,
       image,
+      defaultSharingState,
     };
     onUpdateProfile(data);
-  }, [fullName, image, information, name, onUpdateProfile]);
+  }, [fullName, image, information, name, defaultSharingState, onUpdateProfile]);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -172,6 +176,25 @@ export const ProfileEditor = ({ children, profile, onUpdateProfile }: Props) => 
           onChange={(e) => setInformation(e.target.value)}
           className="mt-1 p-2 border border-gray-300 rounded-sm text-display w-full"
         />
+      </div>
+      <div className="mb-4">
+        <label htmlFor="defaultSharingState" className="block text-primary text-sm font-medium">
+          Default Sharing State
+        </label>
+        <select
+          id="defaultSharingState"
+          name="defaultSharingState"
+          className="mt-1 p-2 border border-gray-300 rounded-sm text-display"
+          value={defaultSharingState}
+          onChange={(e) => setDefaultSharingState(e.target.value as SharingState)}
+        >
+          <option value="private">Private</option>
+          <option value="friends">Friends</option>
+          <option value="friends-of-friends">Friends of Friends</option>
+        </select>
+        <p className="mt-1 text-sm text-gray-600">
+          New things and lists will default to this sharing state
+        </p>
       </div>
       <Headline type="h2">Image</Headline>
       <div className="flex flex-col gap-4 mb-6">

@@ -79,7 +79,11 @@ export const CreateThing = () => {
   };
 
   return (
-    <ThingEditor onChange={setEditedData} lists={lists}>
+    <ThingEditor
+      onChange={setEditedData}
+      lists={lists}
+      defaultSharingState={authContext.profile?.defaultSharingState}
+    >
       <PrimaryButton onClick={() => create()}>Create</PrimaryButton>
     </ThingEditor>
   );

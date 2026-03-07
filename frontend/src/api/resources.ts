@@ -144,6 +144,7 @@ export interface Profile {
   purgeAt: Date | null;
   emailVerified?: boolean;
   externalAuth: boolean;
+  defaultSharingState: SharingState;
 }
 
 export interface Share {
