@@ -134,6 +134,8 @@ let
         availability.restart = "on_failure";
         environment = [
           "CGO_ENABLED=1"
+          "CGO_CFLAGS=-I${pkgs.file.dev}/include"
+          "CGO_LDFLAGS=-L${pkgs.file}/lib"
         ];
       };
 
@@ -158,6 +160,7 @@ pkgs.writeShellApplication {
   name = "stashsphere-dev";
   runtimeInputs = [
     pkgs.process-compose
+    pkgs.file
   ];
   text = ''
     export DEV_DATA_DIR="''${DEV_DATA_DIR:-$PWD/.dev-data}"
