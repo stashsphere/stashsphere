@@ -24,42 +24,47 @@ import (
 
 // Profile is an object representing the database table.
 type Profile struct {
-	ID          string      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	FullName    string      `boil:"full_name" json:"full_name" toml:"full_name" yaml:"full_name"`
-	Information string      `boil:"information" json:"information" toml:"information" yaml:"information"`
-	ImageID     null.String `boil:"image_id" json:"image_id,omitempty" toml:"image_id" yaml:"image_id,omitempty"`
-	UserID      null.String `boil:"user_id" json:"user_id,omitempty" toml:"user_id" yaml:"user_id,omitempty"`
+	ID                  string       `boil:"id" json:"id" toml:"id" yaml:"id"`
+	FullName            string       `boil:"full_name" json:"full_name" toml:"full_name" yaml:"full_name"`
+	Information         string       `boil:"information" json:"information" toml:"information" yaml:"information"`
+	ImageID             null.String  `boil:"image_id" json:"image_id,omitempty" toml:"image_id" yaml:"image_id,omitempty"`
+	UserID              string       `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	DefaultSharingState SharingState `boil:"default_sharing_state" json:"default_sharing_state" toml:"default_sharing_state" yaml:"default_sharing_state"`
 
 	R *profileR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L profileL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var ProfileColumns = struct {
-	ID          string
-	FullName    string
-	Information string
-	ImageID     string
-	UserID      string
+	ID                  string
+	FullName            string
+	Information         string
+	ImageID             string
+	UserID              string
+	DefaultSharingState string
 }{
-	ID:          "id",
-	FullName:    "full_name",
-	Information: "information",
-	ImageID:     "image_id",
-	UserID:      "user_id",
+	ID:                  "id",
+	FullName:            "full_name",
+	Information:         "information",
+	ImageID:             "image_id",
+	UserID:              "user_id",
+	DefaultSharingState: "default_sharing_state",
 }
 
 var ProfileTableColumns = struct {
-	ID          string
-	FullName    string
-	Information string
-	ImageID     string
-	UserID      string
+	ID                  string
+	FullName            string
+	Information         string
+	ImageID             string
+	UserID              string
+	DefaultSharingState string
 }{
-	ID:          "profiles.id",
-	FullName:    "profiles.full_name",
-	Information: "profiles.information",
-	ImageID:     "profiles.image_id",
-	UserID:      "profiles.user_id",
+	ID:                  "profiles.id",
+	FullName:            "profiles.full_name",
+	Information:         "profiles.information",
+	ImageID:             "profiles.image_id",
+	UserID:              "profiles.user_id",
+	DefaultSharingState: "profiles.default_sharing_state",
 }
 
 // Generated where
@@ -121,17 +126,19 @@ func (w whereHelpernull_String) IsNull() qm.QueryMod    { return qmhelper.WhereI
 func (w whereHelpernull_String) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
 var ProfileWhere = struct {
-	ID          whereHelperstring
-	FullName    whereHelperstring
-	Information whereHelperstring
-	ImageID     whereHelpernull_String
-	UserID      whereHelpernull_String
+	ID                  whereHelperstring
+	FullName            whereHelperstring
+	Information         whereHelperstring
+	ImageID             whereHelpernull_String
+	UserID              whereHelperstring
+	DefaultSharingState whereHelperSharingState
 }{
-	ID:          whereHelperstring{field: "\"profiles\".\"id\""},
-	FullName:    whereHelperstring{field: "\"profiles\".\"full_name\""},
-	Information: whereHelperstring{field: "\"profiles\".\"information\""},
-	ImageID:     whereHelpernull_String{field: "\"profiles\".\"image_id\""},
-	UserID:      whereHelpernull_String{field: "\"profiles\".\"user_id\""},
+	ID:                  whereHelperstring{field: "\"profiles\".\"id\""},
+	FullName:            whereHelperstring{field: "\"profiles\".\"full_name\""},
+	Information:         whereHelperstring{field: "\"profiles\".\"information\""},
+	ImageID:             whereHelpernull_String{field: "\"profiles\".\"image_id\""},
+	UserID:              whereHelperstring{field: "\"profiles\".\"user_id\""},
+	DefaultSharingState: whereHelperSharingState{field: "\"profiles\".\"default_sharing_state\""},
 }
 
 // ProfileRels is where relationship names are stored.
@@ -190,9 +197,9 @@ func (r *profileR) GetUser() *User {
 type profileL struct{}
 
 var (
-	profileAllColumns            = []string{"id", "full_name", "information", "image_id", "user_id"}
-	profileColumnsWithoutDefault = []string{"id", "full_name", "information"}
-	profileColumnsWithDefault    = []string{"image_id", "user_id"}
+	profileAllColumns            = []string{"id", "full_name", "information", "image_id", "user_id", "default_sharing_state"}
+	profileColumnsWithoutDefault = []string{"id", "full_name", "information", "user_id"}
+	profileColumnsWithDefault    = []string{"image_id", "default_sharing_state"}
 	profilePrimaryKeyColumns     = []string{"id"}
 	profileGeneratedColumns      = []string{}
 )
@@ -681,9 +688,7 @@ func (profileL) LoadUser(ctx context.Context, e boil.ContextExecutor, singular b
 		if object.R == nil {
 			object.R = &profileR{}
 		}
-		if !queries.IsNil(object.UserID) {
-			args[object.UserID] = struct{}{}
-		}
+		args[object.UserID] = struct{}{}
 
 	} else {
 		for _, obj := range slice {
@@ -691,9 +696,7 @@ func (profileL) LoadUser(ctx context.Context, e boil.ContextExecutor, singular b
 				obj.R = &profileR{}
 			}
 
-			if !queries.IsNil(obj.UserID) {
-				args[obj.UserID] = struct{}{}
-			}
+			args[obj.UserID] = struct{}{}
 
 		}
 	}
@@ -758,7 +761,7 @@ func (profileL) LoadUser(ctx context.Context, e boil.ContextExecutor, singular b
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
-			if queries.Equal(local.UserID, foreign.ID) {
+			if local.UserID == foreign.ID {
 				local.R.User = foreign
 				if foreign.R == nil {
 					foreign.R = &userR{}
@@ -879,7 +882,7 @@ func (o *Profile) SetUser(ctx context.Context, exec boil.ContextExecutor, insert
 		return errors.Wrap(err, "failed to update local table")
 	}
 
-	queries.Assign(&o.UserID, related.ID)
+	o.UserID = related.ID
 	if o.R == nil {
 		o.R = &profileR{
 			User: related,
@@ -896,28 +899,6 @@ func (o *Profile) SetUser(ctx context.Context, exec boil.ContextExecutor, insert
 		related.R.Profile = o
 	}
 
-	return nil
-}
-
-// RemoveUser relationship.
-// Sets o.R.User to nil.
-// Removes o from all passed in related items' relationships struct.
-func (o *Profile) RemoveUser(ctx context.Context, exec boil.ContextExecutor, related *User) error {
-	var err error
-
-	queries.SetScanner(&o.UserID, nil)
-	if _, err = o.Update(ctx, exec, boil.Whitelist("user_id")); err != nil {
-		return errors.Wrap(err, "failed to update local table")
-	}
-
-	if o.R != nil {
-		o.R.User = nil
-	}
-	if related == nil || related.R == nil {
-		return nil
-	}
-
-	related.R.Profile = nil
 	return nil
 }
 

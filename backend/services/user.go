@@ -83,11 +83,12 @@ func (us *UserService) FindUserByID(ctx context.Context, userId string) (*models
 }
 
 type UpdateUserParams struct {
-	UserId      string
-	Name        string
-	FullName    string
-	Information string
-	ImageId     *string
+	UserId              string
+	Name                string
+	FullName            string
+	Information         string
+	ImageId             *string
+	DefaultSharingState string
 }
 
 func (us *UserService) UpdateUser(ctx context.Context, params UpdateUserParams) (*models.User, error) {
@@ -112,12 +113,23 @@ func (us *UserService) UpdateUser(ctx context.Context, params UpdateUserParams) 
 				return err
 			}
 			profile = &models.Profile{
-				ID: profileId,
+				ID:                   profileId,
+				DefaultSharingState:  models.SharingStatePrivate,
 			}
 			insertProfile = true
 		}
 		profile.FullName = params.FullName
 		profile.Information = params.Information
+
+		sharingState := models.SharingStatePrivate
+		switch params.DefaultSharingState {
+		case "friends":
+			sharingState = models.SharingStateFriends
+		case "friends-of-friends":
+			sharingState = models.SharingStateFriendsOfFriends
+		}
+		profile.DefaultSharingState = sharingState
+
 		if params.ImageId != nil {
 			res, err := operations.ImageBelongsToUser(ctx, tx, params.UserId, *params.ImageId)
 			if err != nil {

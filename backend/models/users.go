@@ -1003,7 +1003,7 @@ func (userL) LoadProfile(ctx context.Context, e boil.ContextExecutor, singular b
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
-			if queries.Equal(local.ID, foreign.UserID) {
+			if local.ID == foreign.UserID {
 				local.R.Profile = foreign
 				if foreign.R == nil {
 					foreign.R = &profileR{}
@@ -2592,7 +2592,7 @@ func (o *User) SetProfile(ctx context.Context, exec boil.ContextExecutor, insert
 	var err error
 
 	if insert {
-		queries.Assign(&related.UserID, o.ID)
+		related.UserID = o.ID
 
 		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
 			return errors.Wrap(err, "failed to insert into foreign table")
@@ -2614,7 +2614,7 @@ func (o *User) SetProfile(ctx context.Context, exec boil.ContextExecutor, insert
 			return errors.Wrap(err, "failed to update foreign table")
 		}
 
-		queries.Assign(&related.UserID, o.ID)
+		related.UserID = o.ID
 	}
 
 	if o.R == nil {
@@ -2632,30 +2632,6 @@ func (o *User) SetProfile(ctx context.Context, exec boil.ContextExecutor, insert
 	} else {
 		related.R.User = o
 	}
-	return nil
-}
-
-// RemoveProfile relationship.
-// Sets o.R.Profile to nil.
-// Removes o from all passed in related items' relationships struct.
-func (o *User) RemoveProfile(ctx context.Context, exec boil.ContextExecutor, related *Profile) error {
-	var err error
-
-	queries.SetScanner(&related.UserID, nil)
-	if _, err = related.Update(ctx, exec, boil.Whitelist("user_id")); err != nil {
-		return errors.Wrap(err, "failed to update local table")
-	}
-
-	if o.R != nil {
-		o.R.Profile = nil
-	}
-
-	if related == nil || related.R == nil {
-		return nil
-	}
-
-	related.R.User = nil
-
 	return nil
 }
 

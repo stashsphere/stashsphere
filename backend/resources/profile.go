@@ -8,15 +8,16 @@ import (
 )
 
 type Profile struct {
-	ID            string        `json:"id"`
-	Name          string        `json:"name"`
-	FullName      *string       `json:"fullName"`
-	Information   *string       `json:"information"`
-	Email         string        `json:"email"`
-	Image         *ReducedImage `json:"image"`
-	PurgeAt       *time.Time    `json:"purgeAt"`
-	EmailVerified *bool         `json:"emailVerified,omitempty"`
-	ExternalAuth  bool          `json:"externalAuth"`
+	ID                  string             `json:"id"`
+	Name                string             `json:"name"`
+	FullName            *string            `json:"fullName"`
+	Information         *string            `json:"information"`
+	Email               string             `json:"email"`
+	Image               *ReducedImage      `json:"image"`
+	PurgeAt             *time.Time         `json:"purgeAt"`
+	EmailVerified       *bool              `json:"emailVerified,omitempty"`
+	ExternalAuth        bool               `json:"externalAuth"`
+	DefaultSharingState models.SharingState `json:"defaultSharingState"`
 }
 
 func ProfileFromUserContext(ctx *middleware.UserContext) Profile {
@@ -31,6 +32,7 @@ func ProfileFromModel(user *models.User) Profile {
 	var image *ReducedImage
 	var information *string
 	var fullName *string
+	defaultSharingState := models.SharingStatePrivate
 	if user.R.Profile != nil {
 		if user.R.Profile.R.Image != nil {
 			reduced := ReducedImageFromModel(user.R.Profile.R.Image)
@@ -38,6 +40,7 @@ func ProfileFromModel(user *models.User) Profile {
 		}
 		fullName = &user.R.Profile.FullName
 		information = &user.R.Profile.Information
+		defaultSharingState = user.R.Profile.DefaultSharingState
 	}
 
 	var purgeAt *time.Time
@@ -46,13 +49,14 @@ func ProfileFromModel(user *models.User) Profile {
 	}
 
 	return Profile{
-		ID:          user.ID,
-		Name:        user.Name,
-		Email:       user.Email,
-		Image:       image,
-		FullName:    fullName,
-		Information: information,
-		PurgeAt:     purgeAt,
+		ID:                  user.ID,
+		Name:                user.Name,
+		Email:               user.Email,
+		Image:               image,
+		FullName:            fullName,
+		Information:         information,
+		PurgeAt:             purgeAt,
+		DefaultSharingState: defaultSharingState,
 	}
 }
 

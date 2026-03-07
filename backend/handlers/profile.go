@@ -43,18 +43,20 @@ func (ph *ProfileHandler) ProfileHandlerGet(c echo.Context) error {
 }
 
 type ProfileUpdateParams struct {
-	Name        string  `json:"name"`
-	FullName    string  `json:"fullName"`
-	Information string  `json:"information"`
-	ImageId     *string `json:"imageId"`
+	Name                string  `json:"name"`
+	FullName            string  `json:"fullName"`
+	Information         string  `json:"information"`
+	ImageId             *string `json:"imageId"`
+	DefaultSharingState string  `json:"defaultSharingState" validate:"oneof=private friends friends-of-friends"`
 }
 
 func (p *ProfileUpdateParams) ToUpdateUserParams() services.UpdateUserParams {
 	return services.UpdateUserParams{
-		Name:        p.Name,
-		FullName:    p.FullName,
-		Information: p.Information,
-		ImageId:     p.ImageId,
+		Name:                p.Name,
+		FullName:            p.FullName,
+		Information:         p.Information,
+		ImageId:             p.ImageId,
+		DefaultSharingState: p.DefaultSharingState,
 	}
 }
 
@@ -68,6 +70,9 @@ func (ph *ProfileHandler) ProfileHandlerPatch(c echo.Context) error {
 	}
 	params := ProfileUpdateParams{}
 	if err := c.Bind(&params); err != nil {
+		return &utils.ParameterError{Err: err}
+	}
+	if err := c.Validate(params); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
 	serviceParams := params.ToUpdateUserParams()

@@ -57,16 +57,29 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 			return err
 		}
 
-		sharingState := models.SharingStatePrivate
-		switch params.SharingState {
-		case "friends":
-			sharingState = models.SharingStateFriends
+		var sharingState models.SharingState
+		if params.SharingState == "" {
+			sharingState, err = operations.GetUserDefaultSharingState(ctx, tx, params.OwnerId)
+			if err != nil {
+				return err
+			}
+		} else {
+			sharingState = models.SharingStatePrivate
+			switch params.SharingState {
+			case "friends":
+				sharingState = models.SharingStateFriends
+			case "friends-of-friends":
+				sharingState = models.SharingStateFriendsOfFriends
+			}
+		}
+
+		switch sharingState {
+		case models.SharingStateFriends:
 			targetUsersIds, err = operations.GetFriendIds(ctx, tx, params.OwnerId)
 			if err != nil {
 				return err
 			}
-		case "friends-of-friends":
-			sharingState = models.SharingStateFriendsOfFriends
+		case models.SharingStateFriendsOfFriends:
 			ownerFriendIds, err := operations.GetFriendIds(ctx, tx, params.OwnerId)
 			if err != nil {
 				return err
@@ -183,19 +196,24 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 
 		originalState := thing.SharingState
 
-		sharingState := models.SharingStatePrivate
-		switch params.SharingState {
-		case "friends":
-			sharingState = models.SharingStateFriends
-			if originalState == models.SharingStatePrivate {
+		var sharingState models.SharingState
+		if params.SharingState == "" {
+			sharingState = originalState
+		} else {
+			sharingState = models.SharingStatePrivate
+			switch params.SharingState {
+			case "friends":
+				sharingState = models.SharingStateFriends
+			case "friends-of-friends":
+				sharingState = models.SharingStateFriendsOfFriends
+			}
+
+			if sharingState == models.SharingStateFriends && originalState == models.SharingStatePrivate {
 				targetUsersIds, err = operations.GetFriendIds(ctx, tx, userId)
 				if err != nil {
 					return err
 				}
-			}
-		case "friends-of-friends":
-			sharingState = models.SharingStateFriendsOfFriends
-			if originalState != models.SharingStateFriendsOfFriends {
+			} else if sharingState == models.SharingStateFriendsOfFriends && originalState != models.SharingStateFriendsOfFriends {
 				ownerFriendIds, err := operations.GetFriendIds(ctx, tx, userId)
 				if err != nil {
 					return err

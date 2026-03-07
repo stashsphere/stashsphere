@@ -223,3 +223,14 @@ func FindUserWithProfileByID(ctx context.Context, exec boil.ContextExecutor, use
 	}
 	return user, nil
 }
+
+func GetUserDefaultSharingState(ctx context.Context, exec boil.ContextExecutor, userId string) (models.SharingState, error) {
+	profile, err := models.Profiles(models.ProfileWhere.UserID.EQ(userId)).One(ctx, exec)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.SharingStatePrivate, nil
+		}
+		return models.SharingStatePrivate, err
+	}
+	return profile.DefaultSharingState, nil
+}
