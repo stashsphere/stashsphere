@@ -5,7 +5,11 @@
     nix-github-actions.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs =
-    { self, nixpkgs, nix-github-actions }:
+    {
+      self,
+      nixpkgs,
+      nix-github-actions,
+    }:
     let
       # from https://github.com/NixOS/templates/blob/master/go-hello/flake.nix
       lastModifiedDate = self.lastModifiedDate or self.lastModified or "19700101";
@@ -66,7 +70,7 @@
         in
         {
           backend = pkgs.mkShell {
-            name = "default";
+            name = "backend";
             buildInputs = with pkgs; [
               go
               gopls
@@ -87,12 +91,19 @@
             };
           };
           frontend = pkgs.mkShell {
-            name = "default";
+            name = "frontend";
             buildInputs = with pkgs; [
               create-logo-and-favicon
               nodePackages.npm
               nodejs_22
               pnpm
+            ];
+          };
+          default = pkgs.mkShell {
+            name = "default";
+            buildInputs = with pkgs; [
+              nodePackages.npm
+              nodejs_22
             ];
           };
         }
@@ -105,12 +116,12 @@
 
       githubActions =
         let
-          checks = nixpkgs.lib.recursiveUpdate (nixpkgs.lib.getAttrs [ "x86_64-linux" ] self.checks)
-            (forAllSystems
-              (system: {
-                packages_backend = self.packages.${system}.backend;
-                packages_frontend = self.packages.${system}.frontend;
-              }));
+          checks = nixpkgs.lib.recursiveUpdate (nixpkgs.lib.getAttrs [ "x86_64-linux" ] self.checks) (
+            forAllSystems (system: {
+              packages_backend = self.packages.${system}.backend;
+              packages_frontend = self.packages.${system}.frontend;
+            })
+          );
         in
         nix-github-actions.lib.mkGithubMatrix { inherit checks; };
     };
