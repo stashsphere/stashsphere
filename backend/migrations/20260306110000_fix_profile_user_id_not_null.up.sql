@@ -1,0 +1,3 @@
+DELETE FROM profiles WHERE user_id IS NULL;
+
+ALTER TABLE profiles ALTER COLUMN user_id SET NOT NULL;
