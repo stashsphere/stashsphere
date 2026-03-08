@@ -41,9 +41,13 @@ type PropertyAutoCompleteParams struct {
 func (ps *PropertyService) AutoComplete(ctx context.Context, params PropertyAutoCompleteParams) (*PropertyAutoCompleteResult, error) {
 	userId, name, value := params.UserId, params.Name, params.Value
 
-	sharedThingIds, err := operations.GetSharedThingIdsForUser(ctx, ps.db, userId)
+	sharedThingsIdWithReason, err := operations.GetSharedThingsIdWithReasonForUser(ctx, ps.db, userId)
 	if err != nil {
 		return nil, err
+	}
+	sharedThingIds := make([]string, len(sharedThingsIdWithReason))
+	for idx, sharedThingWithReason := range sharedThingsIdWithReason {
+		sharedThingIds[idx] = sharedThingWithReason.ThingId
 	}
 
 	ownedThingIds, err := operations.GetOwnedThingIds(ctx, ps.db, userId)

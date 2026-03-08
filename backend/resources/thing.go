@@ -23,6 +23,7 @@ type Thing struct {
 	Actions      Actions        `json:"actions"`
 	Quantity     int64          `json:"quantity"`
 	QuantityUnit string         `json:"quantityUnit"`
+	Reason       *AccessReason  `json:"reason,omitempty"`
 }
 
 func SumQuantityEntries(entries models.QuantityEntrySlice) int64 {
@@ -33,7 +34,7 @@ func SumQuantityEntries(entries models.QuantityEntrySlice) int64 {
 	return sum
 }
 
-func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string) *Thing {
+func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string, reasonMap map[string]*AccessReason) *Thing {
 	shares := []ReducedShare{}
 	if thing.OwnerID == userId {
 		shares = ReducedSharesFromModelSlice(thing.R.Shares)
@@ -73,6 +74,11 @@ func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string) 
 		images[i] = *imageThing.R.Image
 	}
 
+	var reason *AccessReason
+	if reasonMap != nil {
+		reason = reasonMap[thing.ID]
+	}
+
 	return &Thing{
 		ID:           thing.ID,
 		Name:         thing.Name,
@@ -92,21 +98,22 @@ func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string) 
 		},
 		Quantity:     SumQuantityEntries(thing.R.QuantityEntries),
 		QuantityUnit: thing.QuantityUnit,
+		Reason:       reason,
 	}
 }
 
-func ThingsFromModel(mThings []models.Thing, userId string, sharedListIds []string) []Thing {
+func ThingsFromModel(mThings []models.Thing, userId string, sharedListIds []string, reasonMap map[string]*AccessReason) []Thing {
 	things := make([]Thing, len(mThings))
 	for i, thing := range mThings {
-		things[i] = *ThingFromModel(&thing, userId, sharedListIds)
+		things[i] = *ThingFromModel(&thing, userId, sharedListIds, reasonMap)
 	}
 	return things
 }
 
-func ThingsFromModelSlice(mThings models.ThingSlice, userId string, sharedListIds []string) []Thing {
+func ThingsFromModelSlice(mThings models.ThingSlice, userId string, sharedListIds []string, reasonMap map[string]*AccessReason) []Thing {
 	things := make([]Thing, len(mThings))
 	for i, thing := range mThings {
-		things[i] = *ThingFromModel(thing, userId, sharedListIds)
+		things[i] = *ThingFromModel(thing, userId, sharedListIds, reasonMap)
 	}
 	return things
 }

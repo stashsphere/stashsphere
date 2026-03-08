@@ -116,7 +116,11 @@ func (ls *ListService) CreateList(ctx context.Context, params CreateListParams) 
 			TargetUserId: targetUserId,
 		})
 	}
-	return ls.GetList(ctx, outerList.ID, outerList.OwnerID)
+	listWithReason, err := ls.GetList(ctx, outerList.ID, outerList.OwnerID)
+	if err != nil {
+		return nil, err
+	}
+	return &listWithReason.List, nil
 }
 
 type UpdateListParams struct {
@@ -290,7 +294,11 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 			TargetUserId: targetUserId,
 		})
 	}
-	return ls.GetList(ctx, outerList.ID, outerList.OwnerID)
+	listWithReason, err := ls.GetList(ctx, outerList.ID, outerList.OwnerID)
+	if err != nil {
+		return nil, err
+	}
+	return &listWithReason.List, nil
 }
 
 type GetListsForUserParams struct {
@@ -301,24 +309,43 @@ type GetListsForUserParams struct {
 	FilterOwnerIds []string
 }
 
-func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUserParams) (uint64, uint64, models.ListSlice, error) {
+type GetListsForUserResult struct {
+	TotalCount     uint64
+	TotalPages     uint64
+	Lists          models.ListSlice
+	ListReasonMap  map[string]operations.AccessReasonInformation
+	ThingReasonMap map[string]operations.AccessReasonInformation
+}
+
+func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUserParams) (*GetListsForUserResult, error) {
 	userId, perPage, page, paginate, filterUserIds := params.UserId, params.PerPage, params.Page, params.Paginate, params.FilterOwnerIds
 
 	tx, err := ls.db.BeginTx(ctx, &sql.TxOptions{
 		ReadOnly: true,
 	})
 	if err != nil {
-		return 0, 0, nil, err
+		return nil, err
 	}
 	defer tx.Rollback()
 
-	sharedListIds, err := operations.GetSharedListIdsForUser(ctx, tx, userId)
+	sharedListsWithReasons, err := operations.GetSharedListIdsWithReasonForUser(ctx, tx, userId)
 	if err != nil {
-		return 0, 0, nil, err
+		return nil, err
 	}
-	interfaceIds := make([]interface{}, len(sharedListIds))
-	for i, s := range sharedListIds {
-		interfaceIds[i] = s
+	interfaceIds := make([]interface{}, len(sharedListsWithReasons))
+	listReasonMap := make(map[string]operations.AccessReasonInformation)
+	for i, s := range sharedListsWithReasons {
+		interfaceIds[i] = s.ListId
+		listReasonMap[s.ListId] = s.Reason
+	}
+
+	sharedThingsWithReasons, err := operations.GetSharedThingsIdWithReasonForUser(ctx, tx, userId)
+	if err != nil {
+		return nil, err
+	}
+	thingReasonMap := make(map[string]operations.AccessReasonInformation)
+	for _, s := range sharedThingsWithReasons {
+		thingReasonMap[s.ThingId] = s.Reason
 	}
 
 	searchCond := qm.Expr(
@@ -336,7 +363,7 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 
 	listCount, err := models.Lists(searchCond).Count(ctx, tx)
 	if err != nil {
-		return 0, 0, nil, err
+		return nil, err
 	}
 
 	// empty expr for no pagination
@@ -350,53 +377,55 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 	listQuery = append(listQuery,
 		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.Owner)),
 		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.ImagesThings, models.ImagesThingRels.Image)),
+		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.QuantityEntries)),
 		qm.Load(models.ListRels.Owner),
+		qm.Load(qm.Rels(models.ListRels.Shares, models.ShareRels.Owner)),
+		qm.Load(qm.Rels(models.ListRels.Shares, models.ShareRels.TargetUser)),
 		searchCond,
 		sortCond,
 	)
 
 	lists, err := models.Lists(listQuery...).All(ctx, tx)
 	if err != nil {
-		return 0, 0, nil, err
+		return nil, err
+	}
+
+	// Add Owner reasons for lists that belong to the user
+	for _, list := range lists {
+		if list.OwnerID == userId {
+			listReasonMap[list.ID] = operations.AccessReasonOwner{}
+		}
 	}
 
 	totalPages := uint64(math.Ceil(float64(listCount) / float64(perPage)))
 
-	return uint64(listCount), totalPages, lists, nil
+	return &GetListsForUserResult{
+		TotalCount:     uint64(listCount),
+		TotalPages:     totalPages,
+		Lists:          lists,
+		ListReasonMap:  listReasonMap,
+		ThingReasonMap: thingReasonMap,
+	}, nil
 }
 
 func (ls *ListService) GetListsWhereThingIsPartOf(ctx context.Context, thingId string) (models.ListSlice, error) {
 	return models.Lists(qm.InnerJoin("lists_things on lists.id = list_things.list_id", qm.Where("list_things.thingId = ?", thingId))).All(ctx, ls.db)
 }
 
-func (ls *ListService) GetList(ctx context.Context, listId string, userId string) (*models.List, error) {
-	list, err := operations.GetListUnchecked(ctx, ls.db, listId)
-	if err != nil {
-		return nil, err
-	}
-	sharedListsForUsers, err := operations.GetSharedListIdsForUser(ctx, ls.db, userId)
-	if err != nil {
-		return nil, err
-	}
-	authorized := func() bool {
-		for _, id := range sharedListsForUsers {
-			if id == listId {
-				return true
-			}
-		}
-		if userId == list.OwnerID {
-			return true
-		}
-		return false
-	}()
-	if !authorized {
-		return nil, utils.UserHasNoAccessRightsError{}
-	}
-	return list, nil
+func (ls *ListService) GetList(ctx context.Context, listId string, userId string) (*operations.ListWithReason, error) {
+	return operations.GetListChecked(ctx, ls.db, listId, userId)
 }
 
 func (ls *ListService) GetSharedListIdsForUser(ctx context.Context, userId string) ([]string, error) {
-	return operations.GetSharedListIdsForUser(ctx, ls.db, userId)
+	listsWithReasons, err := operations.GetSharedListIdsWithReasonForUser(ctx, ls.db, userId)
+	if err != nil {
+		return nil, err
+	}
+	listIds := make([]string, len(listsWithReasons))
+	for i, listWithReason := range listsWithReasons {
+		listIds[i] = listWithReason.ListId
+	}
+	return listIds, nil
 }
 
 func (ts *ListService) DeleteList(ctx context.Context, listId string, userId string) error {

@@ -66,7 +66,7 @@ func (lh *ListHandler) ListHandlerShow(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	listId := c.Param("listId")
-	list, err := lh.listService.GetList(c.Request().Context(), listId, authCtx.User.UserId)
+	listWithReason, err := lh.listService.GetList(c.Request().Context(), listId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,10 @@ func (lh *ListHandler) ListHandlerShow(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ListFromModel(list, authCtx.User.UserId, sharedListIds))
+
+	listReason := resources.AccessReasonFromOperations(listWithReason.Reason)
+
+	return c.JSON(http.StatusOK, resources.ListFromModel(&listWithReason.List, authCtx.User.UserId, sharedListIds, listReason, nil))
 }
 
 type ListsParams struct {
@@ -103,7 +106,7 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 	if params.Paginate != nil && *params.Paginate == true {
 		paginate = true
 	}
-	totalCount, totalPageCount, lists, err := lh.listService.GetListsForUser(c.Request().Context(),
+	result, err := lh.listService.GetListsForUser(c.Request().Context(),
 		services.GetListsForUserParams{
 			UserId:         authCtx.User.UserId,
 			PerPage:        params.PerPage,
@@ -119,12 +122,23 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	listReasonMap := make(map[string]*resources.AccessReason)
+	for listId, reason := range result.ListReasonMap {
+		listReasonMap[listId] = resources.AccessReasonFromOperations(reason)
+	}
+
+	thingReasonMap := make(map[string]*resources.AccessReason)
+	for thingId, reason := range result.ThingReasonMap {
+		thingReasonMap[thingId] = resources.AccessReasonFromOperations(reason)
+	}
+
 	paginated := resources.PaginatedLists{
-		Things:         resources.ListsFromModelSlice(lists, authCtx.User.UserId, sharedListIds),
+		Things:         resources.ListsFromModelSlice(result.Lists, authCtx.User.UserId, sharedListIds, listReasonMap, thingReasonMap),
 		PerPage:        uint64(params.PerPage),
 		Page:           uint64(params.Page),
-		TotalPageCount: totalPageCount,
-		TotalCount:     totalCount,
+		TotalPageCount: result.TotalPages,
+		TotalCount:     result.TotalCount,
 	}
 	return c.JSON(http.StatusOK, paginated)
 }
@@ -164,7 +178,7 @@ func (lh *ListHandler) ListHandlerPatch(c echo.Context) error {
 		return err
 	}
 	c.Logger().Infof("List edited: %v", list.ID)
-	list, err = lh.listService.GetList(c.Request().Context(), listId, authCtx.User.UserId)
+	listWithReason, err := lh.listService.GetList(c.Request().Context(), listId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
@@ -172,7 +186,7 @@ func (lh *ListHandler) ListHandlerPatch(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ListFromModel(list, authCtx.User.UserId, sharedListIds))
+	return c.JSON(http.StatusOK, resources.ListFromModel(&listWithReason.List, authCtx.User.UserId, sharedListIds, nil, nil))
 }
 
 func (lh *ListHandler) ListHandlerDelete(c echo.Context) error {

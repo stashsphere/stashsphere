@@ -15,17 +15,18 @@ type List struct {
 	Actions      Actions        `json:"actions"`
 	Shares       []ReducedShare `json:"shares"`
 	SharingState *string        `json:"sharingState"`
+	Reason       *AccessReason  `json:"reason,omitempty"`
 }
 
 // requires an eager loaded list with things
-func ListFromModel(list *models.List, userId string, sharedListIds []string) List {
+func ListFromModel(list *models.List, userId string, sharedListIds []string, listReason *AccessReason, thingReasonMap map[string]*AccessReason) List {
 	shares := []ReducedShare{}
 	if list.OwnerID == userId {
 		shares = ReducedSharesFromModelSlice(list.R.Shares)
 	}
 	thingResources := []Thing{}
 	for _, e := range list.R.Things {
-		thingResources = append(thingResources, *ThingFromModel(e, userId, sharedListIds))
+		thingResources = append(thingResources, *ThingFromModel(e, userId, sharedListIds, thingReasonMap))
 	}
 	canEdit := list.OwnerID == userId
 	canShare := list.OwnerID == userId
@@ -50,21 +51,30 @@ func ListFromModel(list *models.List, userId string, sharedListIds []string) Lis
 			CanDelete: canDelete,
 			CanShare:  canShare,
 		},
+		Reason: listReason,
 	}
 }
 
-func ListsFromModelSlice(mLists models.ListSlice, userId string, sharedListIds []string) []List {
+func ListsFromModelSlice(mLists models.ListSlice, userId string, sharedListIds []string, listReasonMap map[string]*AccessReason, thingReasonMap map[string]*AccessReason) []List {
 	lists := make([]List, len(mLists))
 	for i, list := range mLists {
-		lists[i] = ListFromModel(list, userId, sharedListIds)
+		var listReason *AccessReason
+		if listReasonMap != nil {
+			listReason = listReasonMap[list.ID]
+		}
+		lists[i] = ListFromModel(list, userId, sharedListIds, listReason, thingReasonMap)
 	}
 	return lists
 }
 
-func ListsFromModel(mLists []models.List, userId string, sharedListIds []string) []List {
+func ListsFromModel(mLists []models.List, userId string, sharedListIds []string, listReasonMap map[string]*AccessReason, thingReasonMap map[string]*AccessReason) []List {
 	lists := make([]List, len(mLists))
 	for i, list := range mLists {
-		lists[i] = ListFromModel(&list, userId, sharedListIds)
+		var listReason *AccessReason
+		if listReasonMap != nil {
+			listReason = listReasonMap[list.ID]
+		}
+		lists[i] = ListFromModel(&list, userId, sharedListIds, listReason, thingReasonMap)
 	}
 	return lists
 

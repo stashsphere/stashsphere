@@ -12,6 +12,92 @@ import (
 	"github.com/stashsphere/backend/utils"
 )
 
+type AccessReason uint32
+
+const (
+	Owner AccessReason = iota
+	SharedDirectly
+	Friend
+	FriendOfFriend
+	ListSharedDirectly
+	ListFriend
+	ListFriendOfFriend
+)
+
+type AccessReasonInformation interface {
+	Reason() AccessReason
+}
+
+type AccessReasonOwner struct {
+}
+
+type AccessReasonSharedDirectly struct {
+	ShareOwnerId string
+}
+
+type AccessReasonFriend struct {
+	FriendId string
+}
+
+type AccessReasonFriendOfFriend struct {
+	FriendId         string
+	FriendOfFriendId string
+}
+
+type AccessReasonListSharedDirectly struct {
+	ShareOwnerId string
+	ListId       string
+}
+
+type AccessReasonListFriend struct {
+	FriendId string
+	ListId   string
+}
+
+type AccessReasonListFriendOfFriend struct {
+	FriendId         string
+	FriendOfFriendId string
+	ListId           string
+}
+
+func (ar AccessReasonOwner) Reason() AccessReason {
+	return Owner
+}
+
+func (ar AccessReasonSharedDirectly) Reason() AccessReason {
+	return SharedDirectly
+}
+
+func (ar AccessReasonFriend) Reason() AccessReason {
+	return Friend
+}
+
+func (ar AccessReasonFriendOfFriend) Reason() AccessReason {
+	return FriendOfFriend
+}
+
+func (ar AccessReasonListSharedDirectly) Reason() AccessReason {
+	return ListSharedDirectly
+}
+
+func (ar AccessReasonListFriend) Reason() AccessReason {
+	return ListFriend
+}
+
+func (ar AccessReasonListFriendOfFriend) Reason() AccessReason {
+	return ListFriendOfFriend
+}
+
+type ThingWithReason struct {
+	Thing  models.Thing
+	Reason AccessReasonInformation
+}
+
+type ThingIdWithReason struct {
+	ThingId string
+	Reason  AccessReasonInformation
+}
+
 func GetThingUnchecked(ctx context.Context, exec boil.ContextExecutor, thingId string) (*models.Thing, error) {
 	thing, err := models.Things(
 		qm.Load(models.ThingRels.Properties),
@@ -81,135 +167,229 @@ func DeleteThing(ctx context.Context, exec boil.ContextExecutor, thing *models.T
 	return err
 }
 
+type FriendOfFriendInformation struct {
+	Id               string
+	FriendId         string
+	FriendOfFriendId string
+}
+
 // second order of sharing
-func getFriendOfFriendThings(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
-	sharedThingIds := make([]string, 0)
+func getFriendOfFriendThings(ctx context.Context, exec boil.ContextExecutor, userId string, friendId string) ([]FriendOfFriendInformation, error) {
+	sharedThings := make([]FriendOfFriendInformation, 0)
 	type IdRow struct {
-		Id string `boil:"id"`
+		Id               string `boil:"id"`
+		FriendOfFriendId string `boil:"friend_of_friend_id"`
 	}
 	var idRows []IdRow
 	err := queries.Raw(
-		`SELECT DISTINCT id from things where sharing_state='friends-of-friends' and owner_id in (
-		SELECT 
-		CASE WHEN friend1_id=$1 THEN friend2_id ELSE friend1_id END AS other_id
-		FROM friendships
-		WHERE friend1_id=$1 OR friend2_id=$1)`, userId,
+		`SELECT DISTINCT
+			t.id,
+			t.owner_id AS friend_of_friend_id
+		FROM things t
+		WHERE t.sharing_state='friends-of-friends'
+		AND t.owner_id IN (
+			SELECT
+				CASE WHEN friend1_id=$1 THEN friend2_id ELSE friend1_id END AS other_id
+			FROM friendships
+			WHERE friend1_id=$1 OR friend2_id=$1
+		)`, friendId,
 	).Bind(ctx, exec, &idRows)
 	if err != nil {
 		return nil, err
 	}
 	for _, idRow := range idRows {
-		sharedThingIds = append(sharedThingIds, idRow.Id)
+		sharedThings = append(sharedThings, FriendOfFriendInformation{
+			Id:               idRow.Id,
+			FriendId:         friendId,
+			FriendOfFriendId: idRow.FriendOfFriendId,
+		})
 	}
-	return sharedThingIds, nil
+	return sharedThings, nil
+}
+
+type FriendInformation struct {
+	Id     string
+	Friend string
 }
 
 // first order of sharing
-func getFriendThings(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
-	sharedThingIds := make([]string, 0)
+func getFriendThings(ctx context.Context, exec boil.ContextExecutor, userId string) ([]FriendInformation, error) {
+	sharedThings := make([]FriendInformation, 0)
 	type IdRow struct {
-		Id string `boil:"id"`
+		Id       string `boil:"id"`
+		FriendId string `boil:"friend_id"`
 	}
 	var idRows []IdRow
 	err := queries.Raw(
-		`SELECT DISTINCT id from things where (sharing_state='friends' or sharing_state='friends-of-friends') and owner_id in (
-		SELECT 
-		CASE WHEN friend1_id=$1 THEN friend2_id ELSE friend1_id END AS other_id
-		FROM friendships
-		WHERE friend1_id=$1 OR friend2_id=$1)`, userId,
+		`SELECT DISTINCT
+			t.id,
+			t.owner_id AS friend_id
+		FROM things t
+		WHERE (t.sharing_state='friends' OR t.sharing_state='friends-of-friends')
+		AND t.owner_id IN (
+			SELECT
+				CASE WHEN friend1_id=$1 THEN friend2_id ELSE friend1_id END AS other_id
+			FROM friendships
+			WHERE friend1_id=$1 OR friend2_id=$1
+		)`, userId,
 	).Bind(ctx, exec, &idRows)
 	if err != nil {
 		return nil, err
 	}
 	for _, idRow := range idRows {
-		sharedThingIds = append(sharedThingIds, idRow.Id)
+		sharedThings = append(sharedThings, FriendInformation{
+			Id:     idRow.Id,
+			Friend: idRow.FriendId,
+		})
 	}
-	return sharedThingIds, nil
+	return sharedThings, nil
 }
 
-func GetSharedThingIdsForUser(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
-	sharedThingIds := make([]string, 0)
+func GetSharedThingsIdWithReasonForUser(ctx context.Context, exec boil.ContextExecutor, userId string) ([]ThingIdWithReason, error) {
+	thingsWithReasons := make([]ThingIdWithReason, 0)
+	seenThings := make(map[string]bool)
 
-	friendThingIds, err := getFriendThings(ctx, exec, userId)
+	// 1. Things shared directly with user via shares table (highest priority)
+	type ThingShareRow struct {
+		ThingId      string `boil:"thing_id"`
+		ShareOwnerId string `boil:"owner_id"`
+	}
+	var thingShareRows []ThingShareRow
+	err := models.NewQuery(
+		qm.Distinct("thing_id, owner_id"),
+		qm.From("shares_things st"),
+		qm.InnerJoin("shares s on st.share_id = s.id"),
+		qm.Where("s.target_user_id=?", userId),
+	).Bind(ctx, exec, &thingShareRows)
 	if err != nil {
 		return nil, err
 	}
-	for _, id := range friendThingIds {
-		sharedThingIds = append(sharedThingIds, id)
+	for _, row := range thingShareRows {
+		if !seenThings[row.ThingId] {
+			thingsWithReasons = append(thingsWithReasons, ThingIdWithReason{
+				ThingId: row.ThingId,
+				Reason:  AccessReasonSharedDirectly{ShareOwnerId: row.ShareOwnerId},
+			})
+			seenThings[row.ThingId] = true
+		}
 	}
 
+	// 2. Things visible via direct friend sharing
+	friendThingInfos, err := getFriendThings(ctx, exec, userId)
+	if err != nil {
+		return nil, err
+	}
+	for _, info := range friendThingInfos {
+		if !seenThings[info.Id] {
+			thingsWithReasons = append(thingsWithReasons, ThingIdWithReason{
+				ThingId: info.Id,
+				Reason:  AccessReasonFriend{FriendId: info.Friend},
+			})
+			seenThings[info.Id] = true
+		}
+	}
+
+	// 3. Things visible via friend-of-friend sharing
 	friendIds, err := GetFriendIds(ctx, exec, userId)
 	if err != nil {
 		return nil, err
 	}
-	// get all things that are shared by the friend of the friend
 	for _, friendId := range friendIds {
-		friendOfFriendThings, err := getFriendOfFriendThings(ctx, exec, friendId)
+		friendOfFriendThingInfos, err := getFriendOfFriendThings(ctx, exec, userId, friendId)
 		if err != nil {
 			return nil, err
 		}
-		for _, id := range friendOfFriendThings {
-			sharedThingIds = append(sharedThingIds, id)
+		for _, info := range friendOfFriendThingInfos {
+			if !seenThings[info.Id] {
+				thingsWithReasons = append(thingsWithReasons, ThingIdWithReason{
+					ThingId: info.Id,
+					Reason: AccessReasonFriendOfFriend{
+						FriendId:         info.FriendId,
+						FriendOfFriendId: info.FriendOfFriendId,
+					},
+				})
+				seenThings[info.Id] = true
+			}
 		}
 	}
 
-	type ThingIdRow struct {
-		ThingId string `boil:"thing_id"`
+	// 4. Things in lists shared directly with user
+	type ListThingShareRow struct {
+		ThingId      string `boil:"thing_id"`
+		ListId       string `boil:"list_id"`
+		ShareOwnerId string `boil:"owner_id"`
 	}
-	var sharedThingIdRows []ThingIdRow
-	// SELECT DISTINCT thing_id from shares_things JOIN shares ON share_id = id WHERE target_user_id=?;
+	var listThingShareRows []ListThingShareRow
 	err = models.NewQuery(
-		qm.Distinct("thing_id"),
-		qm.From("shares_things"),
-		qm.InnerJoin("shares on share_id = id"),
-		qm.Where("target_user_id=?", userId),
-	).Bind(ctx, exec, &sharedThingIdRows)
-	if err != nil {
-		return nil, err
-	}
-	for _, thingIdRow := range sharedThingIdRows {
-		sharedThingIds = append(sharedThingIds, thingIdRow.ThingId)
-	}
-
-	//SELECT DISTINCT lt.thing_id FROM public.lists_things lt
-	//JOIN public.shares_lists sl ON lt.list_id = sl.list_id
-	//JOIN public.shares s ON sl.share_id = s.id
-	//WHERE s.target_user_id = '?';
-	err = models.NewQuery(
-		qm.Distinct("thing_id"),
+		qm.Distinct("lt.thing_id, sl.list_id, s.owner_id"),
 		qm.From("lists_things lt"),
 		qm.InnerJoin("shares_lists sl on lt.list_id = sl.list_id"),
 		qm.InnerJoin("shares s on sl.share_id = s.id"),
 		qm.Where("s.target_user_id=?", userId),
-	).Bind(ctx, exec, &sharedThingIdRows)
+	).Bind(ctx, exec, &listThingShareRows)
 	if err != nil {
 		return nil, err
 	}
-	for _, thingIdRow := range sharedThingIdRows {
-		sharedThingIds = append(sharedThingIds, thingIdRow.ThingId)
+	for _, row := range listThingShareRows {
+		if !seenThings[row.ThingId] {
+			thingsWithReasons = append(thingsWithReasons, ThingIdWithReason{
+				ThingId: row.ThingId,
+				Reason: AccessReasonListSharedDirectly{
+					ShareOwnerId: row.ShareOwnerId,
+					ListId:       row.ListId,
+				},
+			})
+			seenThings[row.ThingId] = true
+		}
 	}
 
-	// fetch all shared lists
-	listIds, err := GetSharedListIdsForUser(ctx, exec, userId)
+	// 5. Things in lists visible via friend/friend-of-friend sharing
+	listIdsWithReasons, err := GetSharedListIdsWithReasonForUser(ctx, exec, userId)
 	if err != nil {
 		return nil, err
 	}
-	args := make([]interface{}, len(listIds))
-	for i, id := range listIds {
-		args[i] = id
+	for _, listWithReason := range listIdsWithReasons {
+		type ThingIdRow struct {
+			ThingId string `boil:"thing_id"`
+		}
+		var thingIdRows []ThingIdRow
+		err = models.NewQuery(
+			qm.Distinct("thing_id"),
+			qm.From("lists_things"),
+			qm.Where("list_id=?", listWithReason.ListId),
+		).Bind(ctx, exec, &thingIdRows)
+		if err != nil {
+			return nil, err
+		}
+		for _, thingRow := range thingIdRows {
+			if !seenThings[thingRow.ThingId] {
+				var reason AccessReasonInformation
+				switch listReason := listWithReason.Reason.(type) {
+				case AccessReasonFriend:
+					reason = AccessReasonListFriend{
+						FriendId: listReason.FriendId,
+						ListId:   listWithReason.ListId,
+					}
+				case AccessReasonFriendOfFriend:
+					reason = AccessReasonListFriendOfFriend{
+						FriendId:         listReason.FriendId,
+						FriendOfFriendId: listReason.FriendOfFriendId,
+						ListId:           listWithReason.ListId,
+					}
+				default:
+					// If list was shared directly, we already handled it above
+					continue
+				}
+				thingsWithReasons = append(thingsWithReasons, ThingIdWithReason{
+					ThingId: thingRow.ThingId,
+					Reason:  reason,
+				})
+				seenThings[thingRow.ThingId] = true
+			}
+		}
 	}
-	err = models.NewQuery(
-		qm.Distinct("thing_id"),
-		qm.From("lists_things lt"),
-		qm.WhereIn("lt.list_id in ?", args...),
-	).Bind(ctx, exec, &sharedThingIdRows)
-	if err != nil {
-		return nil, err
-	}
-	for _, thingIdRow := range sharedThingIdRows {
-		sharedThingIds = append(sharedThingIds, thingIdRow.ThingId)
-	}
-	return sharedThingIds, nil
+
+	return thingsWithReasons, nil
 }
 
 func GetOwnedThingIds(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
@@ -244,7 +424,7 @@ func DeltaQuantity(thing *models.Thing, target uint64) int64 {
 	return int64(target) - SumQuantity(thing)
 }
 
-func GetThingChecked(ctx context.Context, exec boil.ContextExecutor, thingId string, userId string) (*models.Thing, error) {
+func GetThingChecked(ctx context.Context, exec boil.ContextExecutor, thingId string, userId string) (*ThingWithReason, error) {
 	thing, err := GetThingUnchecked(ctx, exec, thingId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -252,23 +432,26 @@ func GetThingChecked(ctx context.Context, exec boil.ContextExecutor, thingId str
 		}
 		return nil, err
 	}
-	sharedThingsForUser, err := GetSharedThingIdsForUser(ctx, exec, userId)
+	sharedThingsForUser, err := GetSharedThingsIdWithReasonForUser(ctx, exec, userId)
 	if err != nil {
 		return nil, err
 	}
-	authorized := func() bool {
-		for _, id := range sharedThingsForUser {
-			if id == thingId {
-				return true
+	authorized, reason := func() (bool, AccessReasonInformation) {
+		for _, thingIdWithReason := range sharedThingsForUser {
+			if thingIdWithReason.ThingId == thingId {
+				return true, thingIdWithReason.Reason
 			}
 		}
 		if userId == thing.OwnerID {
-			return true
+			return true, AccessReasonOwner{}
 		}
-		return false
+		return false, nil
 	}()
 	if !authorized {
 		return nil, utils.UserHasNoAccessRightsError{}
 	}
-	return thing, nil
+	return &ThingWithReason{
+		Thing:  *thing,
+		Reason: reason,
+	}, nil
 }

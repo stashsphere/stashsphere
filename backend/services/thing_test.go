@@ -267,24 +267,45 @@ func TestSharingState(t *testing.T) {
 	friendsOfFriendsThing, err := thingService.CreateThing(context.Background(), *friendsOfFriendsThingParams)
 	assert.NoError(t, err)
 
+	// alice should see her own thing with Owner reason
+	alicePrivateRes, err := thingService.GetThing(context.Background(), privateThing.ID, alice.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, alicePrivateRes)
+	_, isOwner := alicePrivateRes.Reason.(operations.AccessReasonOwner)
+	assert.True(t, isOwner, "alice should have Owner access reason for her own thing")
+
 	_, err = thingService.GetThing(context.Background(), privateThing.ID, bob.ID)
 	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{})
 	_, err = thingService.GetThing(context.Background(), privateThing.ID, charlie.ID)
 	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{})
 
+	// bob should see friendThing with Friend reason
 	res, err := thingService.GetThing(context.Background(), friendThing.ID, bob.ID)
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
+	friendReason, isFriend := res.Reason.(operations.AccessReasonFriend)
+	assert.True(t, isFriend, "bob should have Friend access reason for alice's friend thing")
+	assert.Equal(t, alice.ID, friendReason.FriendId, "Friend reason should point to alice")
+
 	_, err = thingService.GetThing(context.Background(), friendThing.ID, charlie.ID)
 	assert.ErrorIs(t, err, utils.UserHasNoAccessRightsError{})
 
+	// bob should see friendsOfFriendsThing with Friend reason (not FriendOfFriend because bob is direct friend)
 	res, err = thingService.GetThing(context.Background(), friendsOfFriendsThing.ID, bob.ID)
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
+	bobFriendReason, isFriend := res.Reason.(operations.AccessReasonFriend)
+	assert.True(t, isFriend, "bob should have Friend access reason for alice's friends-of-friends thing")
+	assert.Equal(t, alice.ID, bobFriendReason.FriendId, "Friend reason should point to alice")
 
+	// charlie should see friendsOfFriendsThing with FriendOfFriend reason
 	res, err = thingService.GetThing(context.Background(), friendsOfFriendsThing.ID, charlie.ID)
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
+	fofReason, isFoF := res.Reason.(operations.AccessReasonFriendOfFriend)
+	assert.True(t, isFoF, "charlie should have FriendOfFriend access reason for alice's friends-of-friends thing")
+	assert.Equal(t, bob.ID, fofReason.FriendId, "FriendOfFriend reason should have bob as the friend")
+	assert.Equal(t, alice.ID, fofReason.FriendOfFriendId, "FriendOfFriend reason should have alice as the friend-of-friend")
 }
 
 func TestDeletion(t *testing.T) {
@@ -548,43 +569,144 @@ func TestGetThingsForUserSearchTerm(t *testing.T) {
 	_, err = thingService.CreateThing(context.Background(), *thing3Params)
 	assert.NoError(t, err)
 
-	// Search for "Red" - should return 2 things
-	_, _, things, err := thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
+	// Search for "Red" - should return 2 thingsWithReasons
+	thingsWithReasons, err := thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
 		UserId:     alice.ID,
 		SearchTerm: "Red",
 	})
 	assert.NoError(t, err)
-	assert.Len(t, things, 2, "should find 2 things starting with 'Red'")
+	assert.Len(t, thingsWithReasons.Things, 2, "should find 2 things starting with 'Red'")
 
 	// Search for "Blue" - should return 1 thing
-	_, _, things, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
+	thingsWithReasons, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
 		UserId:     alice.ID,
 		SearchTerm: "Blue",
 	})
 	assert.NoError(t, err)
-	assert.Len(t, things, 1, "should find 1 thing starting with 'Blue'")
+	assert.Len(t, thingsWithReasons.Things, 1, "should find 1 thing starting with 'Blue'")
 
 	// Search for "Green" - should return 0 things
-	_, _, things, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
+	thingsWithReasons, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
 		UserId:     alice.ID,
 		SearchTerm: "Green",
 	})
 	assert.NoError(t, err)
-	assert.Len(t, things, 0, "should find 0 things starting with 'Green'")
+	assert.Len(t, thingsWithReasons.Things, 0, "should find 0 things starting with 'Green'")
 
 	// Empty search term - should return all 3 things
-	_, _, things, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
+	thingsWithReasons, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
 		UserId:     alice.ID,
 		SearchTerm: "",
 	})
 	assert.NoError(t, err)
-	assert.Len(t, things, 3, "empty search term should return all things")
+	assert.Len(t, thingsWithReasons.Things, 3, "empty search term should return all things")
 
 	// Case insensitive search - "red" should also match
-	_, _, things, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
+	thingsWithReasons, err = thingService.GetThingsForUser(context.Background(), services.GetThingsForUserParams{
 		UserId:     alice.ID,
 		SearchTerm: "red",
 	})
 	assert.NoError(t, err)
-	assert.Len(t, things, 2, "search should be case insensitive")
+	assert.Len(t, thingsWithReasons.Things, 2, "search should be case insensitive")
+}
+
+func TestGetSummaryForUser(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	is, err := services.NewTmpImageService(db)
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		os.Remove(is.StorePath())
+	})
+
+	userService := services.NewUserService(db, false, "", 60, nil)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	thingService := services.NewThingService(db, is, notificationService)
+	shareService := services.NewShareService(db, notificationService)
+
+	// Create three users
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	bob, err := userService.CreateUser(context.Background(), *bobParams)
+	assert.NoError(t, err)
+
+	charlieParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	charlie, err := userService.CreateUser(context.Background(), *charlieParams)
+	assert.NoError(t, err)
+
+	// Bob and alice are friends
+	createFriendShip(t, db, alice.ID, bob.ID)
+
+	// Alice creates 2 things (1 private, 1 shared with friends)
+	alicePrivateThingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	alicePrivateThingParams.OwnerId = alice.ID
+	alicePrivateThingParams.SharingState = "private"
+	_, err = thingService.CreateThing(context.Background(), *alicePrivateThingParams)
+	assert.NoError(t, err)
+
+	aliceFriendThingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	aliceFriendThingParams.OwnerId = alice.ID
+	aliceFriendThingParams.SharingState = models.SharingStateFriends.String()
+	_, err = thingService.CreateThing(context.Background(), *aliceFriendThingParams)
+	assert.NoError(t, err)
+
+	// Bob creates 1 thing
+	bobThingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	bobThingParams.OwnerId = bob.ID
+	_, err = thingService.CreateThing(context.Background(), *bobThingParams)
+	assert.NoError(t, err)
+
+	// Charlie creates 1 thing and shares it directly with bob
+	charlieThingParams := factories.ThingFactory.MustCreate().(*services.CreateThingParams)
+	charlieThingParams.OwnerId = charlie.ID
+	charlieThing, err := thingService.CreateThing(context.Background(), *charlieThingParams)
+	assert.NoError(t, err)
+
+	_, err = shareService.CreateThingShare(context.Background(), services.CreateThingShareParams{
+		ThingId:      charlieThing.ID,
+		OwnerId:      charlie.ID,
+		TargetUserId: bob.ID,
+	})
+	assert.NoError(t, err)
+
+	// Get summary for bob
+	summary, err := thingService.GetSummaryForUser(context.Background(), bob.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, summary)
+
+	// Bob should see 3 things total:
+	// - 1 owned by bob
+	// - 1 shared by alice (friend)
+	// - 1 shared directly by charlie
+	assert.Equal(t, 3, summary.TotalCount, "bob should see 3 things total")
+
+	// Bob should see things from 3 unique owners: alice, bob, charlie
+	assert.Len(t, summary.OwnerIds, 3, "bob should see things from 3 unique owners")
+
+	ownerIdSet := make(map[string]bool)
+	for _, ownerId := range summary.OwnerIds {
+		ownerIdSet[ownerId] = true
+	}
+	assert.True(t, ownerIdSet[alice.ID], "summary should include alice as an owner")
+	assert.True(t, ownerIdSet[bob.ID], "summary should include bob as an owner")
+	assert.True(t, ownerIdSet[charlie.ID], "summary should include charlie as an owner")
+
+	// Verify alice's summary (should only see her own 2 things)
+	aliceSummary, err := thingService.GetSummaryForUser(context.Background(), alice.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, aliceSummary.TotalCount, "alice should see 2 things total")
+	assert.Len(t, aliceSummary.OwnerIds, 1, "alice should see things from 1 owner")
+	assert.Equal(t, alice.ID, aliceSummary.OwnerIds[0], "alice should only see her own things")
 }

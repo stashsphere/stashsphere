@@ -156,10 +156,14 @@ func (ts *ThingService) CreateThing(ctx context.Context, params CreateThingParam
 			TargetUserId: targetUserId,
 		})
 	}
-	return ts.GetThing(ctx, outerThing.ID, outerThing.OwnerID)
+	thingWithReason, err := ts.GetThing(ctx, outerThing.ID, outerThing.OwnerID)
+	if err != nil {
+		return nil, err
+	}
+	return &thingWithReason.Thing, nil
 }
 
-func (ts *ThingService) GetThing(ctx context.Context, thingId string, userId string) (*models.Thing, error) {
+func (ts *ThingService) GetThing(ctx context.Context, thingId string, userId string) (*operations.ThingWithReason, error) {
 	return operations.GetThingChecked(ctx, ts.db, thingId, userId)
 }
 
@@ -311,7 +315,11 @@ func (ts *ThingService) EditThing(ctx context.Context, thingId string, userId st
 			TargetUserId: targetUserId,
 		})
 	}
-	return ts.GetThing(ctx, thingId, outerThing.OwnerID)
+	thingWithReason, err := ts.GetThing(ctx, thingId, outerThing.OwnerID)
+	if err != nil {
+		return nil, err
+	}
+	return &thingWithReason.Thing, nil
 }
 
 type ThingsForUserSummary struct {
@@ -328,13 +336,13 @@ func (ts *ThingService) GetSummaryForUser(ctx context.Context, userId string) (*
 	}
 	defer tx.Rollback()
 
-	sharedThingIds, err := operations.GetSharedThingIdsForUser(ctx, tx, userId)
+	sharedThingIds, err := operations.GetSharedThingsIdWithReasonForUser(ctx, tx, userId)
 	if err != nil {
 		return nil, err
 	}
 	interfaceIds := make([]interface{}, len(sharedThingIds))
 	for i, s := range sharedThingIds {
-		interfaceIds[i] = s
+		interfaceIds[i] = s.ThingId
 	}
 
 	searchCond := qm.Expr(
@@ -376,24 +384,33 @@ type GetThingsForUserParams struct {
 	SearchTerm     string
 }
 
-func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsForUserParams) (uint64, uint64, models.ThingSlice, error) {
+type GetThingsForUserResult struct {
+	TotalCount     uint64
+	TotalPages     uint64
+	Things         models.ThingSlice
+	ThingReasonMap map[string]operations.AccessReasonInformation
+}
+
+func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsForUserParams) (*GetThingsForUserResult, error) {
 	userId, perPage, page, paginate, filterUserIds, searchTerm := params.UserId, params.PerPage, params.Page, params.Paginate, params.FilterOwnerIds, params.SearchTerm
 
 	tx, err := ts.db.BeginTx(ctx, &sql.TxOptions{
 		ReadOnly: true,
 	})
 	if err != nil {
-		return 0, 0, nil, err
+		return nil, err
 	}
 	defer tx.Rollback()
 
-	sharedThingIds, err := operations.GetSharedThingIdsForUser(ctx, tx, userId)
+	sharedThingsWithReasons, err := operations.GetSharedThingsIdWithReasonForUser(ctx, tx, userId)
 	if err != nil {
-		return 0, 0, nil, err
+		return nil, err
 	}
-	interfaceIds := make([]interface{}, len(sharedThingIds))
-	for i, s := range sharedThingIds {
-		interfaceIds[i] = s
+	interfaceIds := make([]interface{}, len(sharedThingsWithReasons))
+	thingReasonMap := make(map[string]operations.AccessReasonInformation)
+	for i, s := range sharedThingsWithReasons {
+		interfaceIds[i] = s.ThingId
+		thingReasonMap[s.ThingId] = s.Reason
 	}
 
 	searchCond := qm.Expr(
@@ -416,7 +433,7 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 
 	thingCount, err := models.Things(searchCond).Count(ctx, tx)
 	if err != nil {
-		return 0, 0, models.ThingSlice{}, err
+		return nil, err
 	}
 
 	// empty expr for no pagination
@@ -441,10 +458,24 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 
 	things, err := models.Things(thingQuery...).All(ctx, tx)
 	if err != nil {
-		return 0, 0, models.ThingSlice{}, err
+		return nil, err
 	}
+
+	// Add Owner reasons for things that belong to the user
+	for _, thing := range things {
+		if thing.OwnerID == userId {
+			thingReasonMap[thing.ID] = operations.AccessReasonOwner{}
+		}
+	}
+
 	totalPages := uint64(math.Ceil(float64(thingCount) / float64(perPage)))
-	return uint64(thingCount), totalPages, things, nil
+
+	return &GetThingsForUserResult{
+		TotalCount:     uint64(thingCount),
+		TotalPages:     totalPages,
+		Things:         things,
+		ThingReasonMap: thingReasonMap,
+	}, nil
 }
 
 func (ts *ThingService) DeleteThing(ctx context.Context, thingId string, userId string) error {

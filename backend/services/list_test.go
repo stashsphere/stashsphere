@@ -7,6 +7,7 @@ import (
 
 	"github.com/stashsphere/backend/factories"
 	"github.com/stashsphere/backend/models"
+	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/services"
 	testcommon "github.com/stashsphere/backend/test_common"
 	"github.com/stashsphere/backend/utils"
@@ -741,14 +742,23 @@ func TestGetListsForUserThingInMultipleListsHasImages(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Fetch all lists via GetListsForUser
-	_, _, lists, err := listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+	result, err := listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
 		UserId:   alice.ID,
 		PerPage:  50,
 		Page:     0,
 		Paginate: true,
 	})
 	assert.NoError(t, err)
+	lists := result.Lists
 	assert.Len(t, lists, 2, "should return both lists")
+
+	// Verify both lists have Owner reason (alice owns them)
+	for _, list := range lists {
+		reason, ok := result.ListReasonMap[list.ID]
+		assert.True(t, ok, "list %s should have a reason", list.ID)
+		_, isOwner := reason.(operations.AccessReasonOwner)
+		assert.True(t, isOwner, "list %s should have Owner reason", list.ID)
+	}
 
 	// Verify both lists contain the thing with images
 	// Due to SQLBoiler bug, without the fix, one of the lists would have empty ImagesThings
@@ -822,17 +832,35 @@ func TestGetListsForUserFilterOwnerIds(t *testing.T) {
 	assert.NoError(t, err)
 
 	// alice should see all 3 lists without filter
-	_, _, lists, err := listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+	result, err := listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
 		UserId:   alice.ID,
 		PerPage:  50,
 		Page:     0,
 		Paginate: true,
 	})
 	assert.NoError(t, err)
-	assert.Len(t, lists, 3, "alice should see all 3 lists without filter")
+	assert.Len(t, result.Lists, 3, "alice should see all 3 lists without filter")
+
+	// Verify reasons: alice's list is Owner, bob's and charlie's are Friend
+	aliceReason, ok := result.ListReasonMap[aliceList.ID]
+	assert.True(t, ok, "alice's list should have a reason")
+	_, isOwner := aliceReason.(operations.AccessReasonOwner)
+	assert.True(t, isOwner, "alice's list should have Owner reason")
+
+	bobReason, ok := result.ListReasonMap[bobList.ID]
+	assert.True(t, ok, "bob's list should have a reason")
+	bobFriendReason, isFriend := bobReason.(operations.AccessReasonFriend)
+	assert.True(t, isFriend, "bob's list should have Friend reason")
+	assert.Equal(t, bob.ID, bobFriendReason.FriendId, "bob's list Friend reason should point to bob")
+
+	charlieReason, ok := result.ListReasonMap[charlieList.ID]
+	assert.True(t, ok, "charlie's list should have a reason")
+	charlieFriendReason, isFriend := charlieReason.(operations.AccessReasonFriend)
+	assert.True(t, isFriend, "charlie's list should have Friend reason")
+	assert.Equal(t, charlie.ID, charlieFriendReason.FriendId, "charlie's list Friend reason should point to charlie")
 
 	// filter by bob's ID - should only return bob's list
-	_, _, lists, err = listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+	result, err = listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
 		UserId:         alice.ID,
 		PerPage:        50,
 		Page:           0,
@@ -840,11 +868,11 @@ func TestGetListsForUserFilterOwnerIds(t *testing.T) {
 		FilterOwnerIds: []string{bob.ID},
 	})
 	assert.NoError(t, err)
-	assert.Len(t, lists, 1, "filter by bob should return 1 list")
-	assert.Equal(t, bobList.ID, lists[0].ID)
+	assert.Len(t, result.Lists, 1, "filter by bob should return 1 list")
+	assert.Equal(t, bobList.ID, result.Lists[0].ID)
 
 	// filter by charlie's ID - should only return charlie's list
-	_, _, lists, err = listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+	result, err = listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
 		UserId:         alice.ID,
 		PerPage:        50,
 		Page:           0,
@@ -852,11 +880,11 @@ func TestGetListsForUserFilterOwnerIds(t *testing.T) {
 		FilterOwnerIds: []string{charlie.ID},
 	})
 	assert.NoError(t, err)
-	assert.Len(t, lists, 1, "filter by charlie should return 1 list")
-	assert.Equal(t, charlieList.ID, lists[0].ID)
+	assert.Len(t, result.Lists, 1, "filter by charlie should return 1 list")
+	assert.Equal(t, result.Lists[0].ID, charlieList.ID)
 
 	// filter by bob and charlie - should return both their lists but not alice's
-	_, _, lists, err = listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+	result, err = listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
 		UserId:         alice.ID,
 		PerPage:        50,
 		Page:           0,
@@ -864,8 +892,8 @@ func TestGetListsForUserFilterOwnerIds(t *testing.T) {
 		FilterOwnerIds: []string{bob.ID, charlie.ID},
 	})
 	assert.NoError(t, err)
-	assert.Len(t, lists, 2, "filter by bob and charlie should return 2 lists")
-	listIds := []string{lists[0].ID, lists[1].ID}
+	assert.Len(t, result.Lists, 2, "filter by bob and charlie should return 2 lists")
+	listIds := []string{result.Lists[0].ID, result.Lists[1].ID}
 	assert.Contains(t, listIds, bobList.ID)
 	assert.Contains(t, listIds, charlieList.ID)
 	assert.NotContains(t, listIds, aliceList.ID)

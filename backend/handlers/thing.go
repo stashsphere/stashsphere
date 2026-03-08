@@ -51,7 +51,7 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 	if params.Paginate != nil && *params.Paginate == false {
 		paginate = false
 	}
-	totalCount, totalPageCount, things, err := th.thingService.GetThingsForUser(c.Request().Context(),
+	result, err := th.thingService.GetThingsForUser(c.Request().Context(),
 		services.GetThingsForUserParams{
 			UserId:         authCtx.User.UserId,
 			PerPage:        params.PerPage,
@@ -68,12 +68,18 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	reasonMap := make(map[string]*resources.AccessReason)
+	for thingId, reason := range result.ThingReasonMap {
+		reasonMap[thingId] = resources.AccessReasonFromOperations(reason)
+	}
+
 	paginated := resources.PaginatedThings{
-		Things:         resources.ThingsFromModelSlice(things, authCtx.User.UserId, sharedListIds),
+		Things:         resources.ThingsFromModelSlice(result.Things, authCtx.User.UserId, sharedListIds, reasonMap),
 		PerPage:        uint64(params.PerPage),
 		Page:           uint64(params.Page),
-		TotalPageCount: totalPageCount,
-		TotalCount:     totalCount,
+		TotalPageCount: result.TotalPages,
+		TotalCount:     result.TotalCount,
 	}
 	return c.JSON(http.StatusOK, paginated)
 }
@@ -257,11 +263,7 @@ func (th *ThingHandler) ThingHandlerPatch(c echo.Context) error {
 	if err := c.Validate(thingParams); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
-	_, err := th.thingService.EditThing(c.Request().Context(), thingId, authCtx.User.UserId, UpdateThingParamsToUpdateThingParams(thingParams))
-	if err != nil {
-		return err
-	}
-	updated_thing, err := th.thingService.GetThing(c.Request().Context(), thingId, authCtx.User.UserId)
+	updated_thing, err := th.thingService.EditThing(c.Request().Context(), thingId, authCtx.User.UserId, UpdateThingParamsToUpdateThingParams(thingParams))
 	if err != nil {
 		return err
 	}
@@ -269,7 +271,7 @@ func (th *ThingHandler) ThingHandlerPatch(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ThingFromModel(updated_thing, authCtx.User.UserId, sharedListIds))
+	return c.JSON(http.StatusOK, resources.ThingFromModel(updated_thing, authCtx.User.UserId, sharedListIds, nil))
 }
 
 func (th *ThingHandler) ThingHandlerShow(c echo.Context) error {
@@ -281,7 +283,7 @@ func (th *ThingHandler) ThingHandlerShow(c echo.Context) error {
 		return utils.NotAuthenticatedError{}
 	}
 	thingId := c.Param("thingId")
-	thing, err := th.thingService.GetThing(c.Request().Context(), thingId, authCtx.User.UserId)
+	thingWithReason, err := th.thingService.GetThing(c.Request().Context(), thingId, authCtx.User.UserId)
 	if err != nil {
 		return err
 	}
@@ -289,7 +291,11 @@ func (th *ThingHandler) ThingHandlerShow(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, resources.ThingFromModel(thing, authCtx.User.UserId, sharedListIds))
+
+	reasonMap := make(map[string]*resources.AccessReason)
+	reasonMap[thingWithReason.Thing.ID] = resources.AccessReasonFromOperations(thingWithReason.Reason)
+
+	return c.JSON(http.StatusOK, resources.ThingFromModel(&thingWithReason.Thing, authCtx.User.UserId, sharedListIds, reasonMap))
 }
 
 func (th *ThingHandler) ThingHandlerDelete(c echo.Context) error {

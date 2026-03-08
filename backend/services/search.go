@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/stashsphere/backend/models"
+	"github.com/stashsphere/backend/operations"
 )
 
 type SearchService struct {
@@ -27,21 +28,23 @@ type SearchParams struct {
 }
 
 type SearchResult struct {
-	Things []models.Thing `json:"things"`
-	Lists  []models.List  `json:"lists"`
+	Things         []models.Thing
+	Lists          []models.List
+	ThingReasonMap map[string]operations.AccessReasonInformation
+	ListReasonMap  map[string]operations.AccessReasonInformation
 }
 
 // Basic search using substring matchin
 // TODO add pagination
 func (sp *SearchService) Search(ctx context.Context, userId string, params *SearchParams) (*SearchResult, error) {
-	_, _, userThings, err := sp.thingService.GetThingsForUser(ctx, GetThingsForUserParams{
+	thingsResult, err := sp.thingService.GetThingsForUser(ctx, GetThingsForUserParams{
 		UserId:   userId,
 		Paginate: false,
 	})
 	if err != nil {
 		return nil, err
 	}
-	_, _, userLists, err := sp.listService.GetListsForUser(ctx, GetListsForUserParams{
+	listsResult, err := sp.listService.GetListsForUser(ctx, GetListsForUserParams{
 		UserId:   userId,
 		Paginate: false,
 	})
@@ -49,22 +52,32 @@ func (sp *SearchService) Search(ctx context.Context, userId string, params *Sear
 		return nil, err
 	}
 	filteredThings := []models.Thing{}
-	for _, thing := range userThings {
+	thingReasonMap := make(map[string]operations.AccessReasonInformation)
+	for _, thing := range thingsResult.Things {
 		if strings.Contains(strings.ToLower(thing.Name), strings.ToLower(params.Query)) ||
 			strings.Contains(strings.ToLower(thing.Description), strings.ToLower(params.Query)) ||
 			(userId == thing.OwnerID && strings.Contains(strings.ToLower(thing.PrivateNote), strings.ToLower(params.Query))) {
 			filteredThings = append(filteredThings, *thing)
+			if reason, ok := thingsResult.ThingReasonMap[thing.ID]; ok {
+				thingReasonMap[thing.ID] = reason
+			}
 		}
 	}
 	filteredLists := []models.List{}
-	for _, list := range userLists {
+	listReasonMap := make(map[string]operations.AccessReasonInformation)
+	for _, list := range listsResult.Lists {
 		if strings.Contains(strings.ToLower(list.Name), strings.ToLower(params.Query)) {
 			filteredLists = append(filteredLists, *list)
+			if reason, ok := listsResult.ListReasonMap[list.ID]; ok {
+				listReasonMap[list.ID] = reason
+			}
 		}
 	}
 	result := &SearchResult{
-		Things: filteredThings,
-		Lists:  filteredLists,
+		Things:         filteredThings,
+		Lists:          filteredLists,
+		ThingReasonMap: thingReasonMap,
+		ListReasonMap:  listReasonMap,
 	}
 	return result, nil
 }

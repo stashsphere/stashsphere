@@ -38,9 +38,13 @@ func ImageBelongsToUser(ctx context.Context, exec boil.ContextExecutor, userId s
 }
 
 func GetSharedImageIdsForUser(ctx context.Context, exec boil.ContextExecutor, userId string) ([]string, error) {
-	thingIds, err := GetSharedThingIdsForUser(ctx, exec, userId)
+	thingIdsWithReasons, err := GetSharedThingsIdWithReasonForUser(ctx, exec, userId)
 	if err != nil {
 		return nil, err
+	}
+	thingIds := make([]string, len(thingIdsWithReasons))
+	for idx, thingIdWithReason := range thingIdsWithReasons {
+		thingIds[idx] = thingIdWithReason.ThingId
 	}
 	things, err := models.Things(
 		qm.Load(qm.Rels(models.ThingRels.ImagesThings)),
