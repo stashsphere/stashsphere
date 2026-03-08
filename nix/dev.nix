@@ -22,7 +22,7 @@ let
 
   backendConfigFile = pkgs.writeText "backend-dev.json" (builtins.toJSON {
     listenAddress = ":${backendPort}";
-    baseUrl = "http://127.0.0.1:${backendPort}";
+    baseUrl = "http://localhost:${backendPort}";
     database = {
       host = "127.0.0.1";
       port = builtins.fromJSON pgPort;
