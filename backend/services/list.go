@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"math"
+	"strings"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
@@ -301,12 +303,18 @@ func (ls *ListService) UpdateList(ctx context.Context, listId string, userId str
 	return &listWithReason.List, nil
 }
 
+type ListOrder struct {
+	Field     OrderField
+	Direction OrderDirection
+}
+
 type GetListsForUserParams struct {
 	UserId         string
 	PerPage        uint64
 	Page           uint64
 	Paginate       bool
 	FilterOwnerIds []string
+	Order          []ListOrder
 }
 
 type GetListsForUserResult struct {
@@ -317,8 +325,77 @@ type GetListsForUserResult struct {
 	ThingReasonMap map[string]operations.AccessReasonInformation
 }
 
+func listOrderToQueryMod(order ListOrder, userId string, sharedListsWithReasons []operations.ListIdWithReason) qm.QueryMod {
+	// Separate shared lists by reason type for access-reason ordering
+	directShareIds := []string{}
+	friendIds := []string{}
+	friendOfFriendIds := []string{}
+
+	for _, s := range sharedListsWithReasons {
+		switch s.Reason.(type) {
+		case operations.AccessReasonSharedDirectly, operations.AccessReasonListSharedDirectly:
+			directShareIds = append(directShareIds, s.ListId)
+		case operations.AccessReasonFriend, operations.AccessReasonListFriend:
+			friendIds = append(friendIds, s.ListId)
+		case operations.AccessReasonFriendOfFriend, operations.AccessReasonListFriendOfFriend:
+			friendOfFriendIds = append(friendOfFriendIds, s.ListId)
+		}
+	}
+
+	if order.Field == OrderFieldAccessReason {
+		// Build CASE WHEN for access reason priority ordering
+		// Priority: owner (1) -> direct (2) -> friend (3) -> friend-of-friend (4)
+		caseSQL := "CASE WHEN owner_id = ? THEN 1"
+		args := []interface{}{userId}
+
+		if len(directShareIds) > 0 {
+			placeholders := make([]string, len(directShareIds))
+			for i, id := range directShareIds {
+				placeholders[i] = "?"
+				args = append(args, id)
+			}
+			caseSQL += fmt.Sprintf(" WHEN id IN (%s) THEN 2", strings.Join(placeholders, ","))
+		}
+
+		if len(friendIds) > 0 {
+			placeholders := make([]string, len(friendIds))
+			for i, id := range friendIds {
+				placeholders[i] = "?"
+				args = append(args, id)
+			}
+			caseSQL += fmt.Sprintf(" WHEN id IN (%s) THEN 3", strings.Join(placeholders, ","))
+		}
+
+		if len(friendOfFriendIds) > 0 {
+			placeholders := make([]string, len(friendOfFriendIds))
+			for i, id := range friendOfFriendIds {
+				placeholders[i] = "?"
+				args = append(args, id)
+			}
+			caseSQL += fmt.Sprintf(" WHEN id IN (%s) THEN 4", strings.Join(placeholders, ","))
+		}
+
+		caseSQL += " ELSE 5 END"
+
+		if order.Direction == OrderAscending {
+			caseSQL += " ASC"
+		} else {
+			caseSQL += " DESC"
+		}
+
+		return qm.OrderBy(caseSQL, args...)
+	} else {
+		// Default: order by created_at
+		if order.Direction == OrderAscending {
+			return qm.OrderBy(models.ListColumns.CreatedAt + " ASC")
+		} else {
+			return qm.OrderBy(models.ListColumns.CreatedAt + " DESC")
+		}
+	}
+}
+
 func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUserParams) (*GetListsForUserResult, error) {
-	userId, perPage, page, paginate, filterUserIds := params.UserId, params.PerPage, params.Page, params.Paginate, params.FilterOwnerIds
+	userId, perPage, page, paginate, filterUserIds, order := params.UserId, params.PerPage, params.Page, params.Paginate, params.FilterOwnerIds, params.Order
 
 	tx, err := ls.db.BeginTx(ctx, &sql.TxOptions{
 		ReadOnly: true,
@@ -332,20 +409,22 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 	if err != nil {
 		return nil, err
 	}
-	interfaceIds := make([]interface{}, len(sharedListsWithReasons))
-	listReasonMap := make(map[string]operations.AccessReasonInformation)
-	for i, s := range sharedListsWithReasons {
-		interfaceIds[i] = s.ListId
-		listReasonMap[s.ListId] = s.Reason
-	}
-
 	sharedThingsWithReasons, err := operations.GetSharedThingsIdWithReasonForUser(ctx, tx, userId)
 	if err != nil {
 		return nil, err
 	}
+
 	thingReasonMap := make(map[string]operations.AccessReasonInformation)
+	listReasonMap := make(map[string]operations.AccessReasonInformation)
+
 	for _, s := range sharedThingsWithReasons {
 		thingReasonMap[s.ThingId] = s.Reason
+	}
+
+	interfaceIds := make([]interface{}, len(sharedListsWithReasons))
+	for i, s := range sharedListsWithReasons {
+		interfaceIds[i] = s.ListId
+		listReasonMap[s.ListId] = s.Reason
 	}
 
 	searchCond := qm.Expr(
@@ -372,7 +451,12 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 		listQuery = append(listQuery, qm.Offset(int(perPage*page)), qm.Limit(int(perPage)))
 	}
 
-	sortCond := qm.OrderBy(models.ThingColumns.CreatedAt)
+	// Build ORDER BY clause
+	var sortCond []qm.QueryMod
+	for _, o := range order {
+		q := listOrderToQueryMod(o, userId, sharedListsWithReasons)
+		sortCond = append(sortCond, q)
+	}
 
 	listQuery = append(listQuery,
 		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.Owner)),
@@ -382,8 +466,11 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 		qm.Load(qm.Rels(models.ListRels.Shares, models.ShareRels.Owner)),
 		qm.Load(qm.Rels(models.ListRels.Shares, models.ShareRels.TargetUser)),
 		searchCond,
-		sortCond,
 	)
+
+	for _, sc := range sortCond {
+		listQuery = append(listQuery, sc)
+	}
 
 	lists, err := models.Lists(listQuery...).All(ctx, tx)
 	if err != nil {

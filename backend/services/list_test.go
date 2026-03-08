@@ -984,3 +984,118 @@ func TestThingsAddedToListDeduplicatesNotifications(t *testing.T) {
 	assert.Equal(t, bobParams.Email, emailService.Mails[0].To)
 	assert.Contains(t, emailService.Mails[0].Subject, "added things to a list")
 }
+
+func TestGetListsForUserOrderByAccessReason(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	userService := services.NewUserService(db, false, "", 60, nil)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	listService := services.NewListService(db, notificationService)
+	shareService := services.NewShareService(db, notificationService)
+
+	// Create users: alice, bob, charlie, dave
+	aliceParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	alice, err := userService.CreateUser(context.Background(), *aliceParams)
+	assert.NoError(t, err)
+
+	bobParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	bob, err := userService.CreateUser(context.Background(), *bobParams)
+	assert.NoError(t, err)
+
+	charlieParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	charlie, err := userService.CreateUser(context.Background(), *charlieParams)
+	assert.NoError(t, err)
+
+	daveParams := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+	dave, err := userService.CreateUser(context.Background(), *daveParams)
+	assert.NoError(t, err)
+
+	// Friendship: bob <-> alice <-> charlie
+	createFriendShip(t, db, alice.ID, bob.ID)
+	createFriendShip(t, db, alice.ID, charlie.ID)
+
+	// Bob creates an owned list
+	bobOwnedParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	bobOwnedParams.OwnerId = bob.ID
+	bobOwnedParams.Name = "Bob's Owned List"
+	bobOwnedList, err := listService.CreateList(context.Background(), *bobOwnedParams)
+	assert.NoError(t, err)
+
+	// Dave creates a list and shares it directly with bob
+	daveDirectParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	daveDirectParams.OwnerId = dave.ID
+	daveDirectParams.Name = "Dave's Direct Share"
+	daveDirectList, err := listService.CreateList(context.Background(), *daveDirectParams)
+	assert.NoError(t, err)
+	_, err = shareService.CreateListShare(context.Background(), services.CreateListShareParams{
+		ListId:       daveDirectList.ID,
+		OwnerId:      dave.ID,
+		TargetUserId: bob.ID,
+	})
+	assert.NoError(t, err)
+
+	// Alice creates a friend-shared list
+	aliceFriendParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	aliceFriendParams.OwnerId = alice.ID
+	aliceFriendParams.Name = "Alice's Friend List"
+	aliceFriendParams.SharingState = models.SharingStateFriends.String()
+	aliceFriendList, err := listService.CreateList(context.Background(), *aliceFriendParams)
+	assert.NoError(t, err)
+
+	// Charlie creates a friends-of-friends list (visible to bob through alice)
+	charlieFoFParams := factories.ListFactory.MustCreate().(*services.CreateListParams)
+	charlieFoFParams.OwnerId = charlie.ID
+	charlieFoFParams.Name = "Charlie's FoF List"
+	charlieFoFParams.SharingState = models.SharingStateFriendsOfFriends.String()
+	charlieFoFList, err := listService.CreateList(context.Background(), *charlieFoFParams)
+	assert.NoError(t, err)
+
+	// Get lists ordered by access reason (ascending)
+	result, err := listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+		UserId:   bob.ID,
+		Paginate: false,
+		Order: []services.ListOrder{
+			services.ListOrder{
+				Field:     services.OrderFieldAccessReason,
+				Direction: services.OrderAscending,
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, result.Lists, 4, "bob should see 4 lists")
+
+	// Verify ordering: owner -> direct -> friend -> friend-of-friend
+	assert.Equal(t, bobOwnedList.ID, result.Lists[0].ID, "first should be owned list")
+	assert.Equal(t, daveDirectList.ID, result.Lists[1].ID, "second should be direct share")
+	assert.Equal(t, aliceFriendList.ID, result.Lists[2].ID, "third should be friend share")
+	assert.Equal(t, charlieFoFList.ID, result.Lists[3].ID, "fourth should be friend-of-friend share")
+
+	// Get lists ordered by access reason (descending)
+	resultDesc, err := listService.GetListsForUser(context.Background(), services.GetListsForUserParams{
+		UserId:   bob.ID,
+		Paginate: false,
+		Order: []services.ListOrder{
+			services.ListOrder{
+				Field:     services.OrderFieldAccessReason,
+				Direction: services.OrderDescending,
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, resultDesc.Lists, 4, "bob should see 4 lists")
+
+	// Verify ordering: friend-of-friend -> friend -> direct -> owner
+	assert.Equal(t, charlieFoFList.ID, resultDesc.Lists[0].ID, "first should be friend-of-friend share")
+	assert.Equal(t, aliceFriendList.ID, resultDesc.Lists[1].ID, "second should be friend share")
+	assert.Equal(t, daveDirectList.ID, resultDesc.Lists[2].ID, "third should be direct share")
+	assert.Equal(t, bobOwnedList.ID, resultDesc.Lists[3].ID, "fourth should be owned list")
+}

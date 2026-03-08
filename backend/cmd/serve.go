@@ -896,6 +896,8 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.QueryInt("perPage", "Items per page (default: 50)", param.Example("50 items", 50)),
 		option.Query("filterOwnerId", "Filter by owner user ID (can be repeated)", param.Example("owner ID", "abc123")),
 		option.QueryBool("paginate", "Enable pagination (default: true)", param.Example("paginate", true)),
+		// fuego does not support this yet param.Enum("access-reason", "created-at")),
+		option.Query("order", "Field to sort by (can be repeated, order matters)", param.Example("field", "access-reason:desc")),
 		option.AddResponse(
 			200,
 			"Paginated list of lists",

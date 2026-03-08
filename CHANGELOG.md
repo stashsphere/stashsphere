@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - backend: expose the reason why a thing / list is visible to a user
 - backend: add `orderBy` and `orderDirection` to `/api/things`, allows to display directly shared things first
+- backend: add `orderBy` and `orderDirection` to `/api/lists`, allows to display directly shared lists first
 - add defaultSharingState to profile, creates things and lists with that sharing setting
 - development: a nix-based development environment is available
   with the `dev` flake output.
