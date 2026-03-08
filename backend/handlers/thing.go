@@ -8,6 +8,7 @@ import (
 
 	"github.com/benjajaja/jtug"
 	"github.com/labstack/echo/v4"
+	"github.com/stashsphere/backend/handlers/params"
 	"github.com/stashsphere/backend/middleware"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/resources"
@@ -25,11 +26,41 @@ func NewThingHandler(thingService *services.ThingService, listService *services.
 }
 
 type ThingsParams struct {
-	Page           uint64   `query:"page"`
-	PerPage        uint64   `query:"perPage"`
-	FilterOwnerIds []string `query:"filterOwnerId"`
-	SearchTerm     string   `query:"searchTerm"`
-	Paginate       *bool    `query:"paginate"`
+	Page           uint64         `query:"page"`
+	PerPage        uint64         `query:"perPage"`
+	FilterOwnerIds []string       `query:"filterOwnerId"`
+	SearchTerm     string         `query:"searchTerm"`
+	Paginate       *bool          `query:"paginate"`
+	Order          []params.Order `query:"order" validate:"max=2,dive"`
+}
+
+func ParamsOrderToThingServiceOrder(order []params.Order) ([]services.ThingOrder, error) {
+	res := make([]services.ThingOrder, len(order))
+	for i, o := range order {
+		so := services.ThingOrder{}
+		switch o.FieldName {
+		case "access_reason":
+			so.Field = services.OrderFieldAccessReason
+			break
+		case "created_at":
+			so.Field = services.OrderFieldCreatedAt
+			break
+		default:
+			return nil, utils.ParameterError{Err: fmt.Errorf("Invalid field.")}
+		}
+		switch o.FieldSortBy {
+		case "desc":
+			so.Direction = services.OrderDescending
+			break
+		case "asc":
+			so.Direction = services.OrderAscending
+			break
+		default:
+			return nil, utils.ParameterError{Err: fmt.Errorf("Invalid field.")}
+		}
+		res[i] = so
+	}
+	return res, nil
 }
 
 func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
@@ -44,12 +75,20 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
+	if err := c.Validate(&params); err != nil {
+		return &utils.ParameterError{Err: err}
+	}
 	if params.PerPage == 0 {
 		params.PerPage = 50
 	}
 	paginate := true
 	if params.Paginate != nil && *params.Paginate == false {
 		paginate = false
+	}
+
+	order, err := ParamsOrderToThingServiceOrder(params.Order)
+	if err != nil {
+		return err
 	}
 	result, err := th.thingService.GetThingsForUser(c.Request().Context(),
 		services.GetThingsForUserParams{
@@ -59,6 +98,7 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 			Paginate:       paginate,
 			FilterOwnerIds: params.FilterOwnerIds,
 			SearchTerm:     params.SearchTerm,
+			Order:          order,
 		},
 	)
 	if err != nil {

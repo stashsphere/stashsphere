@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
@@ -375,6 +376,24 @@ func (ts *ThingService) GetSummaryForUser(ctx context.Context, userId string) (*
 	}, nil
 }
 
+type OrderDirection int
+type OrderField string
+
+const (
+	OrderAscending OrderDirection = iota
+	OrderDescending
+)
+
+const (
+	OrderFieldAccessReason OrderField = "ACCESS_REASON"
+	OrderFieldCreatedAt    OrderField = "CREATED_AT"
+)
+
+type ThingOrder struct {
+	Field     OrderField
+	Direction OrderDirection
+}
+
 type GetThingsForUserParams struct {
 	UserId         string
 	PerPage        uint64
@@ -382,6 +401,7 @@ type GetThingsForUserParams struct {
 	Paginate       bool
 	FilterOwnerIds []string
 	SearchTerm     string
+	Order          []ThingOrder
 }
 
 type GetThingsForUserResult struct {
@@ -391,8 +411,77 @@ type GetThingsForUserResult struct {
 	ThingReasonMap map[string]operations.AccessReasonInformation
 }
 
+func thingOrderToQueryMod(order ThingOrder, userId string, sharedThingsWithReasons []operations.ThingIdWithReason) qm.QueryMod {
+	// Separate shared things by reason type for access-reason ordering
+	directShareIds := []string{}
+	friendIds := []string{}
+	friendOfFriendIds := []string{}
+
+	for _, s := range sharedThingsWithReasons {
+		switch s.Reason.(type) {
+		case operations.AccessReasonSharedDirectly, operations.AccessReasonListSharedDirectly:
+			directShareIds = append(directShareIds, s.ThingId)
+		case operations.AccessReasonFriend, operations.AccessReasonListFriend:
+			friendIds = append(friendIds, s.ThingId)
+		case operations.AccessReasonFriendOfFriend, operations.AccessReasonListFriendOfFriend:
+			friendOfFriendIds = append(friendOfFriendIds, s.ThingId)
+		}
+	}
+
+	if order.Field == OrderFieldAccessReason {
+		// Build CASE WHEN for access reason priority ordering
+		// Priority: owner (1) -> direct (2) -> friend (3) -> friend-of-friend (4)
+		caseSQL := "CASE WHEN owner_id = ? THEN 1"
+		args := []interface{}{userId}
+
+		if len(directShareIds) > 0 {
+			placeholders := make([]string, len(directShareIds))
+			for i, id := range directShareIds {
+				placeholders[i] = "?"
+				args = append(args, id)
+			}
+			caseSQL += fmt.Sprintf(" WHEN id IN (%s) THEN 2", strings.Join(placeholders, ","))
+		}
+
+		if len(friendIds) > 0 {
+			placeholders := make([]string, len(friendIds))
+			for i, id := range friendIds {
+				placeholders[i] = "?"
+				args = append(args, id)
+			}
+			caseSQL += fmt.Sprintf(" WHEN id IN (%s) THEN 3", strings.Join(placeholders, ","))
+		}
+
+		if len(friendOfFriendIds) > 0 {
+			placeholders := make([]string, len(friendOfFriendIds))
+			for i, id := range friendOfFriendIds {
+				placeholders[i] = "?"
+				args = append(args, id)
+			}
+			caseSQL += fmt.Sprintf(" WHEN id IN (%s) THEN 4", strings.Join(placeholders, ","))
+		}
+
+		caseSQL += " ELSE 5 END"
+
+		if order.Direction == OrderAscending {
+			caseSQL += " ASC"
+		} else {
+			caseSQL += " DESC"
+		}
+
+		return qm.OrderBy(caseSQL, args...)
+	} else {
+		// Default: order by created_at
+		if order.Direction == OrderAscending {
+			return qm.OrderBy(models.ThingColumns.CreatedAt + " ASC")
+		} else {
+			return qm.OrderBy(models.ThingColumns.CreatedAt + " DESC")
+		}
+	}
+}
+
 func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsForUserParams) (*GetThingsForUserResult, error) {
-	userId, perPage, page, paginate, filterUserIds, searchTerm := params.UserId, params.PerPage, params.Page, params.Paginate, params.FilterOwnerIds, params.SearchTerm
+	userId, perPage, page, paginate, filterUserIds, searchTerm, order := params.UserId, params.PerPage, params.Page, params.Paginate, params.FilterOwnerIds, params.SearchTerm, params.Order
 
 	tx, err := ts.db.BeginTx(ctx, &sql.TxOptions{
 		ReadOnly: true,
@@ -442,7 +531,12 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 		thingQuery = append(thingQuery, qm.Offset(int(perPage*page)), qm.Limit(int(perPage)))
 	}
 
-	sortCond := qm.OrderBy(models.ThingColumns.CreatedAt)
+	// Build ORDER BY clause
+	var sortCond []qm.QueryMod
+	for _, o := range order {
+		q := thingOrderToQueryMod(o, userId, sharedThingsWithReasons)
+		sortCond = append(sortCond, q)
+	}
 
 	thingQuery = append(thingQuery,
 		qm.Load(models.ThingRels.Properties),
@@ -453,8 +547,11 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 		qm.Load(qm.Rels(models.ThingRels.Shares, models.ShareRels.TargetUser)),
 		qm.Load(qm.Rels(models.ThingRels.ImagesThings, models.ImagesThingRels.Image)),
 		searchCond,
-		sortCond,
 	)
+
+	for _, sc := range sortCond {
+		thingQuery = append(thingQuery, sc)
+	}
 
 	things, err := models.Things(thingQuery...).All(ctx, tx)
 	if err != nil {
