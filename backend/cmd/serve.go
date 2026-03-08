@@ -22,6 +22,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/iancoleman/strcase"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -39,6 +40,7 @@ import (
 
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
+	"github.com/knadh/koanf/providers/env/v2"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	_ "github.com/lib/pq"
@@ -1739,23 +1741,21 @@ var serveCommand = &cobra.Command{
 		configPaths, _ := cmd.Flags().GetStringSlice("conf")
 		debug, _ := cmd.Flags().GetBool("debug")
 		serveOpenAPI, _ := cmd.Flags().GetBool("serve-openapi")
-		disableSecureCookies, _ := cmd.Flags().GetBool("disable-secure-cookies")
-
-		var config config.StashSphereServeConfig
-
-		stateDir := os.Getenv("STATE_DIRECTORY")
-		if stateDir == "" {
-			stateDir = "."
-		}
-		cacheDir := os.Getenv("CACHE_DIRECTORY")
-		if cacheDir == "" {
-			cacheDir = "."
-		}
-		imagePath := path.Join(stateDir, "image_store")
-		imageCachePath := path.Join(cacheDir, "image_cache")
+		var c config.StashSphereServeConfig
 
 		k := koanf.New(".")
-		k.Load(confmap.Provider(map[string]interface{}{
+
+		defaultImagePath := path.Join(".", "image_store")
+		defaultImageCachePath := path.Join(".", "image_cache")
+
+		if stateDir := os.Getenv("STATE_DIRECTORY"); stateDir != "" {
+			defaultImagePath = path.Join(stateDir, "image_store")
+		}
+		if cacheDir := os.Getenv("CACHE_DIRECTORY"); cacheDir != "" {
+			defaultImageCachePath = path.Join(cacheDir, "image_cache")
+		}
+
+		err := k.Load(confmap.Provider(map[string]interface{}{
 			"database": map[string]interface{}{
 				"user": "stashsphere",
 				"name": "stashsphere",
@@ -1763,19 +1763,25 @@ var serveCommand = &cobra.Command{
 			},
 			"listenAddress": ":8081",
 			"auth": map[string]interface{}{
-				"privateKey": "",
+				"privateKey":           "",
+				"disableSecureCookies": false,
+				"oidc": map[string]interface{}{
+					"enabled":   false,
+					"providers": []interface{}{},
+				},
 			},
 			"image": map[string]interface{}{
-				"path":      imagePath,
-				"cachePath": imageCachePath,
+				"path":      defaultImagePath,
+				"cachePath": defaultImageCachePath,
 			},
 			"invites": map[string]interface{}{
 				"enabled": false,
 				"code":    "",
 			},
 			"domains": map[string]interface{}{
-				"allowed": []string{"http://localhost"},
-				"own":     []string{"localhost"},
+				"allowed":      []string{"http://localhost"},
+				"cookieDomain": "localhost:8081",
+				"apiDomain":    "localhost",
 			},
 			"baseUrl":      "http://localhost:8081",
 			"frontendUrl":  "http://localhost",
@@ -1783,35 +1789,59 @@ var serveCommand = &cobra.Command{
 			"email": map[string]interface{}{
 				"backend": "stdout",
 			},
-		}, "."), nil)
+			"userDeletion": map[string]interface{}{
+				"gracePeriodMinutes": 1440,
+			},
+		}, ""), nil)
+
+		if err != nil {
+			log.Fatal().Msgf("error loading defaults: %v", err)
+		}
 
 		for _, configPath := range configPaths {
 			if err := k.Load(file.Provider(configPath), yaml.Parser()); err != nil {
-				log.Fatal().Msgf("error loading config: %v", err)
+				log.Fatal().Msgf("error loading config file: %v", err)
 			}
-			k.UnmarshalWithConf("", &config, koanf.UnmarshalConf{Tag: "koanf", FlatPaths: false})
 		}
 
-		// Flag takes precedence, then ENV, then config file
+		envVarPrefix := "STASHSPHERE_"
+		if err := k.Load(env.Provider(".", env.Opt{
+			Prefix: envVarPrefix,
+			TransformFunc: func(k, v string) (string, any) {
+				// Trim the prefix, lowercase, and replace "__" with the "." key delimiter
+				k = strings.Replace(strings.ToLower(strings.TrimPrefix(k, envVarPrefix)), "__", ".", -1)
+				parts := strings.Split(k, ".")
+				for idx, part := range parts {
+					parts[idx] = strcase.ToLowerCamel(part)
+				}
+				finalKey := strings.Join(parts, ".")
+				return finalKey, v
+			},
+		}), nil); err != nil {
+			log.Fatal().Msgf("error loading env: %v", err)
+		}
+
+		if err := k.UnmarshalWithConf("", &c, koanf.UnmarshalConf{Tag: "koanf", FlatPaths: false}); err != nil {
+			log.Fatal().Msgf("error unmarshaling config: %v", err)
+		}
+
+		disableSecureCookies, _ := cmd.Flags().GetBool("disable-secure-cookies")
 		if disableSecureCookies {
-			config.Auth.DisableSecureCookies = true
-		} else if os.Getenv("STASHSPHERE_DISABLE_SECURE_COOKIES") == "true" {
-			config.Auth.DisableSecureCookies = true
+			c.Auth.DisableSecureCookies = true
 		}
 
-		if config.Auth.DisableSecureCookies {
+		if c.Auth.DisableSecureCookies {
 			log.Warn().Msg("Secure cookies are disabled. Do not use in production.")
 		}
 
-		// Handle deprecated domains.api configuration
-		if config.Domains.ApiDomain != "" {
+		if c.Domains.ApiDomain != "" {
 			log.Warn().Msg("Configuration 'domains.api' is deprecated and will be removed in a future version. Please use 'domains.cookieDomain' instead.")
-			if config.Domains.CookieDomain == "" {
-				config.Domains.CookieDomain = config.Domains.ApiDomain
+			if c.Domains.CookieDomain == "" {
+				c.Domains.CookieDomain = c.Domains.ApiDomain
 			}
 		}
 
-		return Serve(config, debug, serveOpenAPI)
+		return Serve(c, debug, serveOpenAPI)
 	},
 }
 

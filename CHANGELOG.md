@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- backend: all config values may now be set by environment variables as well:
+  nesting is expressed as `__` while a single `_` is converted later to camelCase (`yaml`-like)
+  Example: `STASHSPHERE_AUTH__PRIVATE_KEY` -> `AUTH.PRIVATE_KEY` -> `auth.privateKey`
+  the existing value `STASHSPHERE_DISABLE_SECURE_COOKIES` must be changed to `STASHSPHERE_AUTH__DISABLE_SECURE_COOKIES`
 - backend: `domains.api` config is deprecated, use `domains.cookieDomain` instead
 
 ### Fixed
