@@ -42,19 +42,21 @@ let
     email = {
       backend = "stdout";
     };
-    auth.oidc = {
-      enabled = true;
+    auth = {
       disableSecureCookies = true;
-      providers = [
-        {
-          name = "dex";
-          display_name = "Dex";
-          issuer_url = "http://localhost:${dexPort}/dex";
-          client_id = dexConfig.oidcClientConfig.clientId;
-          client_secret = dexConfig.oidcClientConfig.clientSecret;
-          scopes = [ "openid" "profile" "email" ];
-        }
-      ];
+      oidc = {
+        enabled = true;
+        providers = [
+          {
+            name = "dex";
+            display_name = "Dex";
+            issuer_url = "http://localhost:${dexPort}/dex";
+            client_id = dexConfig.oidcClientConfig.clientId;
+            client_secret = dexConfig.oidcClientConfig.clientSecret;
+            scopes = [ "openid" "profile" "email" ];
+          }
+        ];
+      };
     };
   });
 
@@ -119,6 +121,18 @@ let
       backend = {
         command = pkgs.writeShellScript "backend-start" ''
           set -euo pipefail
+
+          AUTH_KEY_FILE="$DEV_DATA_DIR/auth.key"
+
+          if [ ! -f "$AUTH_KEY_FILE" ]; then
+            pushd backend
+            ${pkgs.go}/bin/go run ./... genkey > "$AUTH_KEY_FILE"
+            echo "Generated new auth secret at $AUTH_KEY_FILE"
+            popd
+          fi
+
+          export STASHSPHERE_AUTH__PRIVATE_KEY="$(cat "$AUTH_KEY_FILE")"
+
           cd backend
           ${pkgs.go}/bin/go run ./... migrate --conf ${backendConfigFile}
           exec ${pkgs.go}/bin/go run ./... serve --conf ${backendConfigFile} --serve-openapi

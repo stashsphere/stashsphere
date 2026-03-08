@@ -15,7 +15,9 @@ var genCommand = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Generated Private Key: %s\n", privateKey)
+
+		fmt.Errorf("Generated Private Key:\n")
+		fmt.Printf("%s", privateKey)
 		return nil
 	},
 }
