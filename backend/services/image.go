@@ -213,7 +213,7 @@ func (is *ImageService) ImageIndex(ctx context.Context, params ImageIndexParams)
 		for i, row := range idRows {
 			imageIds[i] = row.ImageId
 		}
-		err = models.NewQuery(qm.Distinct("image_id"), qm.From("profiles")).Bind(ctx, is.db, &idRows)
+		err = models.NewQuery(qm.Distinct("image_id"), qm.From("profiles"), qm.Where("image_id IS NOT NULL")).Bind(ctx, is.db, &idRows)
 		if err != nil {
 			return 0, 0, models.ImageSlice{}, err
 		}
