@@ -132,11 +132,27 @@ func ClearExifData(path string) ([]byte, error) {
 	return removed, nil
 }
 
+func GetSizeFromPath(path string) (int, int, error) {
+	imgFile, err := os.Open(path)
+	if err != nil {
+		return -1, -1, err
+	}
+	defer imgFile.Close()
+	// this does not work for webp
+	img, _, err := image.Decode(imgFile)
+	if err != nil {
+		return -1, -1, err
+	}
+	size := img.Bounds().Size()
+	return size.X, size.Y, nil
+}
+
 func RotateImage(path string, rotation Rotation) ([]byte, error) {
 	imgFile, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
+	defer imgFile.Close()
 	img, codec, err := image.Decode(imgFile)
 	if err != nil {
 		return nil, err

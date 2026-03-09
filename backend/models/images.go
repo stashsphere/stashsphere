@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
@@ -29,6 +30,8 @@ type Image struct {
 	Hash      string    `boil:"hash" json:"hash" toml:"hash" yaml:"hash"`
 	OwnerID   string    `boil:"owner_id" json:"owner_id" toml:"owner_id" yaml:"owner_id"`
 	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	Width     null.Int  `boil:"width" json:"width,omitempty" toml:"width" yaml:"width,omitempty"`
+	Height    null.Int  `boil:"height" json:"height,omitempty" toml:"height" yaml:"height,omitempty"`
 
 	R *imageR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L imageL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -41,6 +44,8 @@ var ImageColumns = struct {
 	Hash      string
 	OwnerID   string
 	CreatedAt string
+	Width     string
+	Height    string
 }{
 	ID:        "id",
 	Name:      "name",
@@ -48,6 +53,8 @@ var ImageColumns = struct {
 	Hash:      "hash",
 	OwnerID:   "owner_id",
 	CreatedAt: "created_at",
+	Width:     "width",
+	Height:    "height",
 }
 
 var ImageTableColumns = struct {
@@ -57,6 +64,8 @@ var ImageTableColumns = struct {
 	Hash      string
 	OwnerID   string
 	CreatedAt string
+	Width     string
+	Height    string
 }{
 	ID:        "images.id",
 	Name:      "images.name",
@@ -64,9 +73,49 @@ var ImageTableColumns = struct {
 	Hash:      "images.hash",
 	OwnerID:   "images.owner_id",
 	CreatedAt: "images.created_at",
+	Width:     "images.width",
+	Height:    "images.height",
 }
 
 // Generated where
+
+type whereHelpernull_Int struct{ field string }
+
+func (w whereHelpernull_Int) EQ(x null.Int) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, false, x)
+}
+func (w whereHelpernull_Int) NEQ(x null.Int) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, true, x)
+}
+func (w whereHelpernull_Int) LT(x null.Int) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpernull_Int) LTE(x null.Int) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpernull_Int) GT(x null.Int) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpernull_Int) GTE(x null.Int) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+func (w whereHelpernull_Int) IN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelpernull_Int) NIN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
+
+func (w whereHelpernull_Int) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
+func (w whereHelpernull_Int) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
 var ImageWhere = struct {
 	ID        whereHelperstring
@@ -75,6 +124,8 @@ var ImageWhere = struct {
 	Hash      whereHelperstring
 	OwnerID   whereHelperstring
 	CreatedAt whereHelpertime_Time
+	Width     whereHelpernull_Int
+	Height    whereHelpernull_Int
 }{
 	ID:        whereHelperstring{field: "\"images\".\"id\""},
 	Name:      whereHelperstring{field: "\"images\".\"name\""},
@@ -82,6 +133,8 @@ var ImageWhere = struct {
 	Hash:      whereHelperstring{field: "\"images\".\"hash\""},
 	OwnerID:   whereHelperstring{field: "\"images\".\"owner_id\""},
 	CreatedAt: whereHelpertime_Time{field: "\"images\".\"created_at\""},
+	Width:     whereHelpernull_Int{field: "\"images\".\"width\""},
+	Height:    whereHelpernull_Int{field: "\"images\".\"height\""},
 }
 
 // ImageRels is where relationship names are stored.
@@ -159,9 +212,9 @@ func (r *imageR) GetProfiles() ProfileSlice {
 type imageL struct{}
 
 var (
-	imageAllColumns            = []string{"id", "name", "mime", "hash", "owner_id", "created_at"}
+	imageAllColumns            = []string{"id", "name", "mime", "hash", "owner_id", "created_at", "width", "height"}
 	imageColumnsWithoutDefault = []string{"id", "name", "mime", "hash", "owner_id"}
-	imageColumnsWithDefault    = []string{"created_at"}
+	imageColumnsWithDefault    = []string{"created_at", "width", "height"}
 	imagePrimaryKeyColumns     = []string{"id"}
 	imageGeneratedColumns      = []string{}
 )

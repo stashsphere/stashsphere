@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -124,23 +125,39 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 	if err != nil {
 		return nil, err
 	}
-	image := models.Image{
-		Name:    name,
-		Mime:    mime,
-		Hash:    string(hash32),
-		OwnerID: ownerId,
-		ID:      imageID,
-	}
-	err = image.Insert(ctx, is.db, boil.Infer())
-	if err != nil {
-		return nil, err
-	}
 
 	err = os.WriteFile(newPath, srcData, 0640)
 	if err != nil {
 		return nil, err
 	}
 	log.Info().Msgf("Created %s", newPath)
+
+	width, height, err := operations.GetSizeFromPath(newPath)
+	widthNulled := null.IntFrom(width)
+	heightNulled := null.IntFrom(height)
+	if err != nil {
+		widthNulled = null.NewInt(0, false)
+		heightNulled = null.NewInt(0, false)
+	}
+
+	image := models.Image{
+		Name:    name,
+		Mime:    mime,
+		Hash:    string(hash32),
+		OwnerID: ownerId,
+		ID:      imageID,
+		Width:   widthNulled,
+		Height:  heightNulled,
+	}
+	err = image.Insert(ctx, is.db, boil.Infer())
+	if err != nil {
+		err := os.Remove(newPath)
+		if err != nil {
+			log.Error().Msgf("Failed to remove path %s while recovering from a database error. Manual cleanup might be necessary", newPath)
+		}
+		return nil, err
+	}
+
 	return &image, nil
 }
 
@@ -179,13 +196,25 @@ func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string
 		return nil, nil, utils.UserHasNoAccessRightsError{}
 	}
 
-	path := filepath.Join(is.storePath, images[0].Hash)
+	image := images[0]
+	path := filepath.Join(is.storePath, image.Hash)
+
+	if image.Height.IsZero() || image.Width.IsZero() {
+		width, height, err := operations.GetSizeFromPath(path)
+		if err == nil {
+			// do not persist this to the database yet, GET should not modify the database
+			image.Height = null.IntFrom(height)
+			image.Width = null.IntFrom(width)
+		} else {
+			log.Error().Msgf("Could not determine size of image with hash %s, id: %s ", hash, image.ID)
+		}
+	}
 
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, nil, err
 	}
-	return file, images[0], nil
+	return file, image, nil
 }
 
 type ImageIndexParams struct {
@@ -246,6 +275,22 @@ func (is *ImageService) ImageIndex(ctx context.Context, params ImageIndexParams)
 	if err != nil {
 		return 0, 0, models.ImageSlice{}, err
 	}
+
+	for _, image := range images {
+		path := filepath.Join(is.storePath, image.Hash)
+
+		if image.Height.IsZero() || image.Width.IsZero() {
+			width, height, err := operations.GetSizeFromPath(path)
+			if err != nil {
+				log.Error().Msgf("Could not determine size of image with hash %s, id: %s ", image.Hash, image.ID)
+				continue
+			}
+			// do not persist this to the database yet, GET should not modify the database
+			image.Height = null.IntFrom(height)
+			image.Width = null.IntFrom(width)
+		}
+	}
+
 	totalPages := uint64(math.Ceil(float64(imageCount) / float64(perPage)))
 	return uint64(imageCount), totalPages, images, nil
 }
@@ -302,6 +347,14 @@ func (is *ImageService) ModifyImage(ctx context.Context, userId string, imageId 
 		return nil, err
 	}
 	image.Hash = hash32
+
+	width, height, err := operations.GetSizeFromPath(newPath)
+	if err != nil {
+		return nil, err
+	}
+	image.Width = null.IntFrom(width)
+	image.Height = null.IntFrom(height)
+
 	_, err = image.Update(ctx, is.db, boil.Infer())
 	if err != nil {
 		return nil, err

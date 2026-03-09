@@ -56,6 +56,7 @@ func TestPurgeUser(t *testing.T) {
 	assert.NoError(t, err)
 	profileImage, err := imageService.CreateImage(context.Background(), alice.ID, "test.png", pngFile)
 	assert.NoError(t, err)
+	assert.NotNil(t, profileImage, "Expected profileImage to be not nil")
 
 	_, err = userService.UpdateUser(context.Background(), services.UpdateUserParams{
 		UserId:  alice.ID,
