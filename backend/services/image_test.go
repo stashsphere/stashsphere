@@ -52,6 +52,10 @@ func TestImageCreation(t *testing.T) {
 	webpImage, err := imageService.CreateImage(context.Background(), testUser.ID, "test.webp", webpFile)
 	assert.NoError(t, err)
 	assert.Equal(t, webpImage.Mime, "image/webp", "expected mime type to be webp")
+	assert.True(t, webpImage.Width.Valid)
+	assert.True(t, webpImage.Height.Valid)
+	assert.NotZero(t, webpImage.Width.Int)
+	assert.NotZero(t, webpImage.Height.Int)
 
 	binFile, err := testcommon.Assets.Open("assets/test.bin")
 	assert.NoError(t, err)

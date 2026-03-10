@@ -13,6 +13,8 @@ import (
 	"image/png"
 	_ "image/png"
 
+	_ "golang.org/x/image/webp"
+
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/disintegration/imaging"
@@ -138,7 +140,6 @@ func GetSizeFromPath(path string) (int, int, error) {
 		return -1, -1, err
 	}
 	defer imgFile.Close()
-	// this does not work for webp
 	img, _, err := image.Decode(imgFile)
 	if err != nil {
 		return -1, -1, err
