@@ -1733,6 +1733,8 @@ func Serve(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool) 
 	purgeWorker := workers.NewPurgeWorker(db, config.Image.Path, 1*time.Minute)
 	purgeWorker.Start()
 	defer purgeWorker.Stop()
+	imageWorker := workers.NewImageSizeWorker(db, config.Image.Path)
+	imageWorker.Start()
 
 	log.Info().Msgf("stashsphere listening on %s", config.ListenAddress)
 	return echo.Start(config.ListenAddress)

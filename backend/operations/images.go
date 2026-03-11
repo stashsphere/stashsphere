@@ -134,7 +134,7 @@ func ClearExifData(path string) ([]byte, error) {
 	return removed, nil
 }
 
-func GetSizeFromPath(path string) (int, int, error) {
+func GetImageSizeFromPath(path string) (int, int, error) {
 	imgFile, err := os.Open(path)
 	if err != nil {
 		return -1, -1, err

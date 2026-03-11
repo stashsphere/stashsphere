@@ -132,7 +132,7 @@ func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name st
 	}
 	log.Info().Msgf("Created %s", newPath)
 
-	width, height, err := operations.GetSizeFromPath(newPath)
+	width, height, err := operations.GetImageSizeFromPath(newPath)
 	widthNulled := null.IntFrom(width)
 	heightNulled := null.IntFrom(height)
 	if err != nil {
@@ -198,17 +198,6 @@ func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string
 
 	image := images[0]
 	path := filepath.Join(is.storePath, image.Hash)
-
-	if image.Height.IsZero() || image.Width.IsZero() {
-		width, height, err := operations.GetSizeFromPath(path)
-		if err == nil {
-			// do not persist this to the database yet, GET should not modify the database
-			image.Height = null.IntFrom(height)
-			image.Width = null.IntFrom(width)
-		} else {
-			log.Error().Msgf("Could not determine size of image with hash %s, id: %s ", hash, image.ID)
-		}
-	}
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -276,21 +265,6 @@ func (is *ImageService) ImageIndex(ctx context.Context, params ImageIndexParams)
 		return 0, 0, models.ImageSlice{}, err
 	}
 
-	for _, image := range images {
-		path := filepath.Join(is.storePath, image.Hash)
-
-		if image.Height.IsZero() || image.Width.IsZero() {
-			width, height, err := operations.GetSizeFromPath(path)
-			if err != nil {
-				log.Error().Msgf("Could not determine size of image with hash %s, id: %s ", image.Hash, image.ID)
-				continue
-			}
-			// do not persist this to the database yet, GET should not modify the database
-			image.Height = null.IntFrom(height)
-			image.Width = null.IntFrom(width)
-		}
-	}
-
 	totalPages := uint64(math.Ceil(float64(imageCount) / float64(perPage)))
 	return uint64(imageCount), totalPages, images, nil
 }
@@ -348,7 +322,7 @@ func (is *ImageService) ModifyImage(ctx context.Context, userId string, imageId 
 	}
 	image.Hash = hash32
 
-	width, height, err := operations.GetSizeFromPath(newPath)
+	width, height, err := operations.GetImageSizeFromPath(newPath)
 	if err != nil {
 		return nil, err
 	}
