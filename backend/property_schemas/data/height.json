@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Height",
+  "description": "Vertical extent of an object",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "height"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "mm",
+        "cm",
+        "m",
+        "km",
+        "in",
+        "ft"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "h"
+  ],
+  "x-icons": [
+    "mdi:human-male-height"
+  ]
+}

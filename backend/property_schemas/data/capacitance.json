@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Capacitance",
+  "description": "Electrical capacitance of a component",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "capacitance"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "F",
+        "mF",
+        "microF",
+        "nF",
+        "pF"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "C",
+    "cap"
+  ],
+  "x-icons": [
+    "mdi:drag-vertical-variant"
+  ]
+}

@@ -37,7 +37,8 @@ func setupTestEnv(t *testing.T) *testEnv {
 		os.Remove(is.StorePath())
 	})
 
-	propertyService := services.NewPropertyService(db)
+	propertyService, err := services.NewPropertyService(db)
+	assert.NoError(t, err)
 
 	return &testEnv{
 		db:              db,

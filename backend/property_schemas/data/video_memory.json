@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Video Memory",
+  "description": "Dedicated memory on a graphics card",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "video_memory"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "B",
+        "KiB",
+        "MiB",
+        "GiB",
+        "TiB"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "vram",
+    "gpu_mem"
+  ],
+  "x-icons": [
+    "mdi:expansion-card"
+  ]
+}

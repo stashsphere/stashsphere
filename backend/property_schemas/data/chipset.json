@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Chipset",
+  "description": "Processor or controller chipset model",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "chipset"
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "value"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "chip",
+    "soc"
+  ],
+  "x-icons": [
+    "mdi:chip"
+  ]
+}

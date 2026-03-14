@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Impedance",
+  "description": "AC electrical impedance of a component",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "impedance"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "Ω",
+        "mΩ",
+        "kΩ",
+        "MΩ"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:omega"
+  ]
+}

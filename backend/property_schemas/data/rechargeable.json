@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rechargeable",
+  "description": "Whether the battery can be recharged",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "rechargeable"
+    },
+    "value": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "name",
+    "value"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:battery-charging"
+  ]
+}

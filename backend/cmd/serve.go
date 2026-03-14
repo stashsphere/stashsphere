@@ -33,6 +33,7 @@ import (
 	"github.com/stashsphere/backend/handlers"
 	ss_middleware "github.com/stashsphere/backend/middleware"
 	"github.com/stashsphere/backend/operations"
+	propertyschemas "github.com/stashsphere/backend/property_schemas"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
 	"github.com/stashsphere/backend/utils"
@@ -203,7 +204,10 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 
 	thingService := services.NewThingService(db, imageService, notificationService)
 	listService := services.NewListService(db, notificationService)
-	propertyService := services.NewPropertyService(db)
+	propertyService, err := services.NewPropertyService(db)
+	if err != nil {
+		log.Fatal().Msgf("Could not initialize PropertyService: %v", err)
+	}
 	searchService := services.NewSearchService(db, thingService, listService)
 	shareService := services.NewShareService(db, notificationService)
 	friendService := services.NewFriendService(db, notificationService)
@@ -259,6 +263,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	emailVerificationHandler := handlers.NewEmailVerificationHandler(userService)
 	infoHandler := handlers.NewInfoHandler(config.Invites.Enabled, oidcService.GetProviderConfigs())
 	oidcHandler := handlers.NewOIDCHandler(oidcService, authService, config.Domains.AllowedDomains, !config.Auth.DisableSecureCookies)
+	propertyHandler := handlers.NewPropertyHandler(propertyService)
 
 	a := e.Group("/api")
 	userGroup := a.Group("/user")
@@ -285,6 +290,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	friendRequestGroup := a.Group("/friend_requests")
 	notificationsGroup := a.Group("/notifications")
 	cartGroup := a.Group("/cart")
+	propertyGroup := a.Group("/properties")
 
 	// user group
 	commonUserOptions := option.Group(
@@ -1661,6 +1667,34 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 			},
 		),
 		commonSearchOptions,
+	)
+
+	// property group
+	commonPropertyOptions := option.Group(
+		option.Tags("Properties"),
+		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
+		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
+	)
+	fuegoecho.GetEcho(engine, propertyGroup, "/schemas", propertyHandler.GetSchemaCollection,
+		option.Summary("Get Properties"),
+		option.Description("Get the collection of all Schemas configured on this instance"),
+		option.AddResponse(
+			200,
+			"Schema Collection",
+			fuego.Response{
+				Type:         propertyschemas.SchemaCollection{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			401,
+			"Not authenticated",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		commonPropertyOptions,
 	)
 
 	// assets group

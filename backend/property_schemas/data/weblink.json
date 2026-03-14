@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": { "const": "weblink" },
+    "value": { "type": "string", "format": "uri", "pattern": "^https?://" }
+  },
+  "required": ["name", "value"],
+  "additionalProperties": false,
+  "x-aliases": ["url", "link", "website", "homepage"],
+  "x-icons": ["mdi:link-variant"]
+}

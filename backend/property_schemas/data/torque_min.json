@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Minimum Torque",
+  "description": "Lower torque limit of a device or motor",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "torque_min"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "Nm",
+        "ft-lb"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "min_torque"
+  ],
+  "x-icons": [
+    "mdi:rotate-left"
+  ]
+}

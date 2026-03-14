@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Resistance",
+  "description": "Electrical resistance of a component",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "resistance"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "microOhm",
+        "Ohm",
+        "mOhm",
+        "kOhm",
+        "MOhm"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "R",
+    "ohms"
+  ],
+  "x-icons": [
+    "mdi:omega"
+  ]
+}

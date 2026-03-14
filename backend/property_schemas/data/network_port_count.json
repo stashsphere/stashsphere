@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Network Port Count",
+  "description": "Number of network ports on a device",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "network_port_count"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "value"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:ethernet"
+  ]
+}

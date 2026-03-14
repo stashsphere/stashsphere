@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Maximum Torque",
+  "description": "Upper torque limit of a device or motor",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "torque_max"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "Nm",
+        "ft-lb"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "max_torque"
+  ],
+  "x-icons": [
+    "mdi:rotate-right"
+  ]
+}

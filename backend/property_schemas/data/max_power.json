@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Maximum Power",
+  "description": "Upper power limit a device can draw or deliver",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "max_power"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "W",
+        "mW",
+        "kW"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "p_max"
+  ],
+  "x-icons": [
+    "mdi:flash-alert"
+  ]
+}

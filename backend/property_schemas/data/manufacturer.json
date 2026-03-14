@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Manufacturer",
+  "description": "Company that produced the item",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "manufacturer"
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "value"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:factory"
+  ]
+}

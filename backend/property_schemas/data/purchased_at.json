@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": { "const": "purchased_at" },
+    "value": { "type": "string", "format": "date-time" }
+  },
+  "required": ["name", "value"],
+  "additionalProperties": false,
+  "x-aliases": ["bought", "bought_at", "purchase_date", "date_of_purchase"],
+  "x-icons": ["mdi:calendar-clock"]
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Output Voltage",
+  "description": "Electrical voltage delivered at the output",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "output_voltage"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "V",
+        "mV",
+        "kV"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "v_out"
+  ],
+  "x-icons": [
+    "mdi:logout-variant"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Managed",
+  "description": "Whether the device is centrally managed",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "managed"
+    },
+    "value": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "name",
+    "value"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:shield-check"
+  ]
+}

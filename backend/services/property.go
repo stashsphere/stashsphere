@@ -10,14 +10,27 @@ import (
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/operations"
+	propertyschemas "github.com/stashsphere/backend/property_schemas"
 )
 
 type PropertyService struct {
 	db *sql.DB
+	// all schemas, includes upstream and instance-local schemas
+	collection *propertyschemas.SchemaCollection
 }
 
-func NewPropertyService(db *sql.DB) *PropertyService {
-	return &PropertyService{db}
+// TODO allow local paths
+func NewPropertyService(db *sql.DB) (*PropertyService, error) {
+	rootSchemaValidator, err := propertyschemas.NewRootSchemaValidator()
+	if err != nil {
+		return nil, err
+	}
+	collection, err := rootSchemaValidator.BuildCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	return &PropertyService{db, collection}, nil
 }
 
 type PropertyNameSuggestion struct {
@@ -173,4 +186,8 @@ func (ps *PropertyService) autoCompleteValue(ctx context.Context, name string, v
 		CompletionType: "value",
 		Values:         result,
 	}, nil
+}
+
+func (ps *PropertyService) SchemaCollection() *propertyschemas.SchemaCollection {
+	return ps.collection
 }

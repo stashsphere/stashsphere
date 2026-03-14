@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Material",
+  "description": "Primary material a product is made from",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "material"
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "value"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:texture-box"
+  ]
+}

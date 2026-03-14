@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mounting Technique",
+  "description": "How a component is physically mounted or attached",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "mounting_technique"
+    },
+    "value": {
+      "enum": [
+        "DIN rail",
+        "SMT",
+        "through-hole",
+        "panel mount",
+        "rack mount",
+        "snap-in"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:wrench"
+  ]
+}

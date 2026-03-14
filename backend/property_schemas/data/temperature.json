@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": { "const": "temperature" },
+    "value": { "type": "number" },
+    "unit": { "enum": ["celsius", "fahrenheit", "kelvin"] }
+  },
+  "required": ["name", "value", "unit"],
+  "additionalProperties": false,
+  "x-aliases": ["temp"],
+  "x-icons": ["mdi:thermometer"]
+}

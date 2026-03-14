@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TRIM Support",
+  "description": "Whether the device supports TRIM commands",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "trim_support"
+    },
+    "value": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "name",
+    "value"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:content-cut"
+  ]
+}

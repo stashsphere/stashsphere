@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inductance",
+  "description": "Electrical inductance of a component",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "inductance"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "H",
+        "mH",
+        "microH",
+        "nH"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "L",
+    "ind"
+  ],
+  "x-icons": [
+    "mdi:wave"
+  ]
+}

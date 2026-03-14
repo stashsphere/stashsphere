@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Storage Capacity",
+  "description": "Data storage size in binary units",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "storage_capacity"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "B",
+        "KiB",
+        "MiB",
+        "GiB",
+        "TiB"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "disk_space",
+    "storage",
+    "storage_size"
+  ],
+  "x-icons": [
+    "mdi:harddisk"
+  ]
+}

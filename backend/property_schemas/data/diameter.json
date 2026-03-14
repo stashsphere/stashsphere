@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Diameter",
+  "description": "Diameter of a circular cross-section",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "diameter"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "mm",
+        "cm",
+        "m",
+        "in"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "dia",
+    "d"
+  ],
+  "x-icons": [
+    "mdi:diameter-variant"
+  ]
+}

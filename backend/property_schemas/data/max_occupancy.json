@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Maximum Occupancy",
+  "description": "Max number of occupants allowed",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "max_occupancy"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "value"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:account-group"
+  ]
+}

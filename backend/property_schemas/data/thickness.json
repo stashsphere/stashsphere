@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Thickness",
+  "description": "Material or wall thickness",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "thickness"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "mm",
+        "cm",
+        "m",
+        "in"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:format-line-weight"
+  ]
+}

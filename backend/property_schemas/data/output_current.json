@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Output Current",
+  "description": "Electrical current delivered at the output",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "output_current"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "A",
+        "mA"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:logout"
+  ]
+}

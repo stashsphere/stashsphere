@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Data Rate",
+  "description": "Network or disk transfer speed",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "data_rate"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "bps",
+        "kbps",
+        "Mbps",
+        "Gbps",
+        "Mbit/s",
+        "Gbit/s",
+        "KiB/s",
+        "MiB/s",
+        "GiB/s"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-icons": [
+    "mdi:speedometer"
+  ]
+}

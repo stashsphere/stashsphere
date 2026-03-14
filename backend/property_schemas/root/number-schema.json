@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stashsphere.com/schemas/root/number-with-unit",
+  "title": "Meta-schema for Number with Unit Schemas",
+  "description": "Validates JSON schemas for numeric values with units",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "type": {
+      "type": "string",
+      "const": "object"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "$comment": {
+      "type": "string"
+    },
+    "$id": {
+      "type": "string"
+    },
+    "properties": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "object",
+          "properties": {
+            "const": { "type": "string" }
+          },
+          "required": ["const"]
+        },
+        "value": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "const": "number" },
+            "minimum": { "type": "number" },
+            "maximum": { "type": "number" }
+          },
+          "required": ["type"]
+        },
+        "unit": {
+          "type": "object",
+          "oneOf": [
+            {
+              "properties": {
+                "enum": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "minItems": 1
+                }
+              },
+              "required": ["enum"]
+            },
+            {
+              "properties": {
+                "type": { "type": "string", "const": "string" }
+              },
+              "required": ["type"]
+            }
+          ]
+        }
+      },
+      "required": ["name", "value"],
+      "additionalProperties": false
+    },
+    "required": {
+      "type": "array",
+      "enum": [
+        ["name", "value", "unit"],
+        ["name", "value"]
+      ]
+    },
+    "additionalProperties": {
+      "type": "boolean",
+      "const": false
+    },
+    "x-aliases": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "x-icons": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    }
+  },
+  "required": ["$schema", "type", "properties", "required", "additionalProperties"],
+  "additionalProperties": false
+}

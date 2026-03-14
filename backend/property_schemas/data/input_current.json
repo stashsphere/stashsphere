@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Input Current",
+  "description": "Electrical current accepted at the input",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "input_current"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "A",
+        "mA",
+        "microA"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "i_in"
+  ],
+  "x-icons": [
+    "mdi:login"
+  ]
+}

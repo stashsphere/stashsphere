@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Width",
+  "description": "Horizontal extent of an object",
+  "type": "object",
+  "properties": {
+    "name": {
+      "const": "width"
+    },
+    "value": {
+      "type": "number"
+    },
+    "unit": {
+      "enum": [
+        "mm",
+        "cm",
+        "m",
+        "km",
+        "in",
+        "ft"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "unit"
+  ],
+  "additionalProperties": false,
+  "x-aliases": [
+    "w"
+  ],
+  "x-icons": [
+    "mdi:arrow-left-right"
+  ]
+}
