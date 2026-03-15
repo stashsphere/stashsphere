@@ -203,10 +203,10 @@ type NewThingParams struct {
 	SharingState string       `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
 }
 
-func NewThingParamsToCreateThingParams(param NewThingParams, ownerId string) services.CreateThingParams {
+func PropertyListToOperationParams(v PropertyList) []operations.CreatePropertyParams {
 	properties := []operations.CreatePropertyParams{}
-	for i := range param.Properties {
-		switch t := param.Properties[i].(type) {
+	for i := range v {
+		switch t := v[i].(type) {
 		case PropertyStringParam:
 			properties = append(properties, operations.CreatePropertyStringParams{
 				Name:  t.Name,
@@ -230,6 +230,11 @@ func NewThingParamsToCreateThingParams(param NewThingParams, ownerId string) ser
 			})
 		}
 	}
+	return properties
+}
+
+func NewThingParamsToCreateThingParams(param NewThingParams, ownerId string) services.CreateThingParams {
+	properties := PropertyListToOperationParams(param.Properties)
 	return services.CreateThingParams{
 		Name:         param.Name,
 		OwnerId:      ownerId,
@@ -268,32 +273,7 @@ func (th *ThingHandler) ThingHandlerPost(c echo.Context) error {
 type UpdateThingParams = NewThingParams
 
 func UpdateThingParamsToUpdateThingParams(param UpdateThingParams) services.UpdateThingParams {
-	properties := []operations.CreatePropertyParams{}
-	for i := range param.Properties {
-		switch t := param.Properties[i].(type) {
-		case PropertyStringParam:
-			properties = append(properties, operations.CreatePropertyStringParams{
-				Name:  t.Name,
-				Value: t.Value,
-			})
-		case PropertyFloatParam:
-			properties = append(properties, operations.CreatePropertyFloatParams{
-				Name:  t.Name,
-				Value: t.Value,
-				Unit:  t.Unit,
-			})
-		case PropertyDatetimeParam:
-			properties = append(properties, operations.CreatePropertyDatetimeParams{
-				Name:  t.Name,
-				Value: t.Value,
-			})
-		case PropertyBooleanParam:
-			properties = append(properties, operations.CreatePropertyBooleanParams{
-				Name:  t.Name,
-				Value: t.Value,
-			})
-		}
-	}
+	properties := PropertyListToOperationParams(param.Properties)
 	return services.UpdateThingParams{
 		Name:         param.Name,
 		Properties:   properties,
