@@ -145,6 +145,7 @@ const (
 	PropertyTypeString   = PropertyTypeTag("string")
 	PropertyTypeFloat    = PropertyTypeTag("float")
 	PropertyTypeDatetime = PropertyTypeTag("datetime")
+	PropertyTypeBoolean  = PropertyTypeTag("boolean")
 )
 
 type PropertyStringParam struct {
@@ -163,6 +164,11 @@ type PropertyDatetimeParam struct {
 	Value time.Time `json:"value"`
 }
 
+type PropertyBooleanParam struct {
+	Name  string `json:"name" validate:"gt=0"`
+	Value bool   `json:"value"`
+}
+
 type PropertyUnion = jtug.Union[PropertyTypeTag]
 type PropertyList = jtug.UnionList[PropertyTypeTag, PropertyMapper]
 type PropertyMapper struct{}
@@ -177,6 +183,9 @@ func (PropertyMapper) Unmarshal(b []byte, t PropertyTypeTag) (jtug.Union[Propert
 		return value, json.Unmarshal(b, &value)
 	case PropertyTypeDatetime:
 		var value PropertyDatetimeParam
+		return value, json.Unmarshal(b, &value)
+	case PropertyTypeBoolean:
+		var value PropertyBooleanParam
 		return value, json.Unmarshal(b, &value)
 	default:
 		return nil, fmt.Errorf("unknown property type: %v", t)
@@ -211,6 +220,11 @@ func NewThingParamsToCreateThingParams(param NewThingParams, ownerId string) ser
 			})
 		case PropertyDatetimeParam:
 			properties = append(properties, operations.CreatePropertyDatetimeParams{
+				Name:  t.Name,
+				Value: t.Value,
+			})
+		case PropertyBooleanParam:
+			properties = append(properties, operations.CreatePropertyBooleanParams{
 				Name:  t.Name,
 				Value: t.Value,
 			})
@@ -270,6 +284,11 @@ func UpdateThingParamsToUpdateThingParams(param UpdateThingParams) services.Upda
 			})
 		case PropertyDatetimeParam:
 			properties = append(properties, operations.CreatePropertyDatetimeParams{
+				Name:  t.Name,
+				Value: t.Value,
+			})
+		case PropertyBooleanParam:
+			properties = append(properties, operations.CreatePropertyBooleanParams{
 				Name:  t.Name,
 				Value: t.Value,
 			})

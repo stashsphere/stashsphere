@@ -13,6 +13,7 @@ const (
 	DateTime PropertyType = "datetime"
 	String   PropertyType = "string"
 	Float    PropertyType = "float"
+	Boolean  PropertyType = "boolean"
 )
 
 type PropertyDatetime struct {
@@ -32,6 +33,12 @@ type PropertyFloat struct {
 	Name  string  `json:"name"`
 	Value float64 `json:"value"`
 	Unit  string  `json:"unit"`
+}
+
+type PropertyBoolean struct {
+	Type  string `json:"type"`
+	Name  string `json:"name"`
+	Value bool   `json:"value"`
 }
 
 func PropertyFromModel(property *models.Property) interface{} {
@@ -78,6 +85,18 @@ func PropertyFromModel(property *models.Property) interface{} {
 			Name:  property.Name,
 			Value: valueAsFloat,
 			Unit:  unit,
+		}
+	case models.PropertyTypeBoolean:
+		var valueAsBool bool
+		if property.ValueBoolean.Valid {
+			valueAsBool = property.ValueBoolean.Bool
+		} else {
+			valueAsBool = false
+		}
+		return &PropertyBoolean{
+			Type:  "boolean",
+			Name:  property.Name,
+			Value: valueAsBool,
 		}
 	default:
 		return nil

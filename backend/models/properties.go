@@ -33,6 +33,7 @@ type Property struct {
 	Unit          null.String  `boil:"unit" json:"unit,omitempty" toml:"unit" yaml:"unit,omitempty"`
 	CreatedAt     time.Time    `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	ThingID       string       `boil:"thing_id" json:"thing_id" toml:"thing_id" yaml:"thing_id"`
+	ValueBoolean  null.Bool    `boil:"value_boolean" json:"value_boolean,omitempty" toml:"value_boolean" yaml:"value_boolean,omitempty"`
 
 	R *propertyR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L propertyL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -48,6 +49,7 @@ var PropertyColumns = struct {
 	Unit          string
 	CreatedAt     string
 	ThingID       string
+	ValueBoolean  string
 }{
 	ID:            "id",
 	Type:          "type",
@@ -58,6 +60,7 @@ var PropertyColumns = struct {
 	Unit:          "unit",
 	CreatedAt:     "created_at",
 	ThingID:       "thing_id",
+	ValueBoolean:  "value_boolean",
 }
 
 var PropertyTableColumns = struct {
@@ -70,6 +73,7 @@ var PropertyTableColumns = struct {
 	Unit          string
 	CreatedAt     string
 	ThingID       string
+	ValueBoolean  string
 }{
 	ID:            "properties.id",
 	Type:          "properties.type",
@@ -80,6 +84,7 @@ var PropertyTableColumns = struct {
 	Unit:          "properties.unit",
 	CreatedAt:     "properties.created_at",
 	ThingID:       "properties.thing_id",
+	ValueBoolean:  "properties.value_boolean",
 }
 
 // Generated where
@@ -157,6 +162,30 @@ func (w whereHelpernull_Float64) NIN(slice []float64) qm.QueryMod {
 func (w whereHelpernull_Float64) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
 func (w whereHelpernull_Float64) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
+type whereHelpernull_Bool struct{ field string }
+
+func (w whereHelpernull_Bool) EQ(x null.Bool) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, false, x)
+}
+func (w whereHelpernull_Bool) NEQ(x null.Bool) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, true, x)
+}
+func (w whereHelpernull_Bool) LT(x null.Bool) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpernull_Bool) LTE(x null.Bool) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpernull_Bool) GT(x null.Bool) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpernull_Bool) GTE(x null.Bool) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
+func (w whereHelpernull_Bool) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
+func (w whereHelpernull_Bool) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
+
 var PropertyWhere = struct {
 	ID            whereHelperstring
 	Type          whereHelperPropertyType
@@ -167,6 +196,7 @@ var PropertyWhere = struct {
 	Unit          whereHelpernull_String
 	CreatedAt     whereHelpertime_Time
 	ThingID       whereHelperstring
+	ValueBoolean  whereHelpernull_Bool
 }{
 	ID:            whereHelperstring{field: "\"properties\".\"id\""},
 	Type:          whereHelperPropertyType{field: "\"properties\".\"type\""},
@@ -177,6 +207,7 @@ var PropertyWhere = struct {
 	Unit:          whereHelpernull_String{field: "\"properties\".\"unit\""},
 	CreatedAt:     whereHelpertime_Time{field: "\"properties\".\"created_at\""},
 	ThingID:       whereHelperstring{field: "\"properties\".\"thing_id\""},
+	ValueBoolean:  whereHelpernull_Bool{field: "\"properties\".\"value_boolean\""},
 }
 
 // PropertyRels is where relationship names are stored.
@@ -216,9 +247,9 @@ func (r *propertyR) GetThing() *Thing {
 type propertyL struct{}
 
 var (
-	propertyAllColumns            = []string{"id", "type", "name", "value_string", "value_datetime", "value_float", "unit", "created_at", "thing_id"}
+	propertyAllColumns            = []string{"id", "type", "name", "value_string", "value_datetime", "value_float", "unit", "created_at", "thing_id", "value_boolean"}
 	propertyColumnsWithoutDefault = []string{"id", "type", "name", "thing_id"}
-	propertyColumnsWithDefault    = []string{"value_string", "value_datetime", "value_float", "unit", "created_at"}
+	propertyColumnsWithDefault    = []string{"value_string", "value_datetime", "value_float", "unit", "created_at", "value_boolean"}
 	propertyPrimaryKeyColumns     = []string{"id"}
 	propertyGeneratedColumns      = []string{}
 )

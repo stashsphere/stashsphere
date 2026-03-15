@@ -146,6 +146,7 @@ const (
 	PropertyTypeFloat    PropertyType = "float"
 	PropertyTypeDatetime PropertyType = "datetime"
 	PropertyTypeString   PropertyType = "string"
+	PropertyTypeBoolean  PropertyType = "boolean"
 )
 
 func AllPropertyType() []PropertyType {
@@ -153,12 +154,13 @@ func AllPropertyType() []PropertyType {
 		PropertyTypeFloat,
 		PropertyTypeDatetime,
 		PropertyTypeString,
+		PropertyTypeBoolean,
 	}
 }
 
 func (e PropertyType) IsValid() error {
 	switch e {
-	case PropertyTypeFloat, PropertyTypeDatetime, PropertyTypeString:
+	case PropertyTypeFloat, PropertyTypeDatetime, PropertyTypeString, PropertyTypeBoolean:
 		return nil
 	default:
 		return errors.New("enum is not valid")
@@ -177,6 +179,8 @@ func (e PropertyType) Ordinal() int {
 		return 1
 	case PropertyTypeString:
 		return 2
+	case PropertyTypeBoolean:
+		return 3
 
 	default:
 		panic(errors.New("enum is not valid"))
