@@ -74,10 +74,12 @@ export type CreatePropertyFloatParam = {
   unit?: string;
 };
 export type CreatePropertyDatetimeParam = { name: string; value: string; type: 'datetime' };
+export type CreatePropertyBooleanParam = { name: string; value: boolean; type: 'boolean' };
 export type CreatePropertyParam =
   | CreatePropertyDatetimeParam
   | CreatePropertyStringParam
-  | CreatePropertyFloatParam;
+  | CreatePropertyFloatParam
+  | CreatePropertyBooleanParam;
 
 export interface CreateThingParams {
   name: string;

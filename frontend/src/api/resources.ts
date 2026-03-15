@@ -30,6 +30,12 @@ export type PropertyFloat = {
   unit: string;
 };
 
+export type PropertyBoolean = {
+  type: 'boolean';
+  name: string;
+  value: boolean;
+};
+
 export type PropertyDatetime = {
   type: 'datetime';
   name: string;
@@ -43,7 +49,7 @@ export type ThingActions = {
   canDelete: boolean;
 };
 
-export type Property = PropertyString | PropertyFloat | PropertyDatetime;
+export type Property = PropertyString | PropertyFloat | PropertyDatetime | PropertyBoolean;
 export type SharingState = 'private' | 'friends' | 'friends-of-friends';
 
 export interface Thing {

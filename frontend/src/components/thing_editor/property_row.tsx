@@ -2,6 +2,7 @@ import { useContext, useEffect, useId, useRef, useState } from 'react';
 import { Property, PropertyNameSuggestion } from '../../api/resources';
 import { AxiosContext } from '../../context/axios';
 import { getAutoComplete } from '../../api/search';
+import { Toggle } from '../shared/toggle';
 
 interface PropertyRowProps {
   property: Property;
@@ -59,7 +60,6 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
     }, 300);
   };
 
-  // AC5 + AC6: apply type and unit from a matched name suggestion
   const applyNameSuggestion = (suggestion: PropertyNameSuggestion, name: string) => {
     setUnitSuggestions(suggestion.units);
 
@@ -67,27 +67,24 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
       case 'float': {
         let value: number;
         if (property.type === 'string') {
-          // AC1: try to parse current string as float, fall back to 0
           const parsed = parseFloat(property.value);
           value = isNaN(parsed) ? 0 : parsed;
         } else if (property.type === 'float') {
           value = property.value;
         } else {
-          // AC3: datetime → float: clear
           value = 0;
         }
-        // AC6: prefill unit with most-used unit (units[0])
         onChange({ type: 'float', name, value, unit: suggestion.units[0] ?? '' });
         break;
       }
       case 'string': {
         let value: string;
         if (property.type === 'float') {
-          // AC2: convert float to string
           value = String(property.value);
         } else if (property.type === 'datetime') {
-          // AC3: clear
           value = '';
+        } else if (property.type === 'boolean') {
+          value = String(property.value);
         } else {
           value = property.value;
         }
@@ -95,7 +92,6 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
         break;
       }
       case 'datetime': {
-        // AC3: always clear when entering datetime
         onChange({ type: 'datetime', name, value: new Date().toISOString(), unit: undefined });
         break;
       }
@@ -105,7 +101,6 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
   const handleNameChange = (name: string) => {
     const suggestion = nameSuggestions.find((s) => s.name === name);
     if (suggestion) {
-      // AC3, AC5, AC6: exact match — apply preselected type and unit
       applyNameSuggestion(suggestion, name);
     } else {
       setUnitSuggestions([]);
@@ -118,6 +113,9 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
           break;
         case 'datetime':
           onChange({ type: 'datetime', name, value: property.value, unit: undefined });
+          break;
+        case 'boolean':
+          onChange({ type: 'boolean', name, value: property.value });
           break;
       }
     }
@@ -139,10 +137,13 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
     }
   };
 
+  const handleBooleanChange = (value: boolean) => {
+    onChange({ type: 'boolean', name: property.name, value });
+  };
+
   const handleTypeChange = (type: string) => {
     switch (type) {
       case 'datetime': {
-        // AC3: switching to datetime always uses current date (blank datetime is invalid)
         onChange({
           type: 'datetime',
           name: property.name,
@@ -154,32 +155,34 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
       case 'string': {
         let value: string;
         if (property.type === 'float') {
-          // AC2: Number → String: convert
           value = String(property.value);
         } else if (property.type === 'datetime') {
-          // AC3: Datetime → String: clear
           value = '';
+        } else if (property.type === 'boolean') {
+          value = String(property.value);
         } else {
           value = property.value;
         }
-        // AC4: unit cleared implicitly (string has no unit)
         onChange({ type: 'string', name: property.name, value, unit: undefined });
         break;
       }
       case 'float': {
         let value: number;
         if (property.type === 'string') {
-          // AC1: String → Number: try to parse, fall back to 0
           const parsed = parseFloat(property.value);
           value = isNaN(parsed) ? 0 : parsed;
         } else if (property.type === 'datetime') {
-          // AC3: Datetime → Number: clear
+          value = 0;
+        } else if (property.type == 'boolean') {
           value = 0;
         } else {
           value = property.value;
         }
-        // AC4: unit reset — user picks from unitSuggestions or types their own
         onChange({ type: 'float', name: property.name, value, unit: '' });
+        break;
+      }
+      case 'boolean': {
+        onChange({ type: 'boolean', name: property.name, value: false });
         break;
       }
       default:
@@ -235,6 +238,18 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
           />
         );
       }
+      case 'boolean': {
+        return (
+          <div className="flex my-auto gap-5">
+            <Toggle
+              value={property.value}
+              onChange={(newValue) => handleBooleanChange(newValue)}
+              children={undefined}
+            />
+            <span className="text-display">{property.value ? 'true' : 'false'}</span>
+          </div>
+        );
+      }
     }
   };
 
@@ -257,7 +272,7 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
         </datalist>
       </div>
 
-      <div className="sm:col-span-2">
+      <div className="sm:col-span-2 h-full flex flex-col justify-between">
         <label className="block text-xs font-medium text-display mb-1">Value</label>
         {renderValueInput()}
       </div>
@@ -272,6 +287,7 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
           <option value="string">Text</option>
           <option value="float">Number</option>
           <option value="datetime">Date</option>
+          <option value="boolean">Bool</option>
         </select>
         {property.type === 'float' && (
           <>

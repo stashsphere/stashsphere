@@ -159,7 +159,7 @@ const definedSVGColors = [
   'yellowgreen',
 ];
 
-const formatColor = (color: string | number) => {
+const formatColor = (color: string | number | boolean) => {
   const asString = color.toString();
   if (definedSVGColors.includes(asString)) {
     const elementStyle = {
@@ -185,7 +185,7 @@ const isValidURI = (uri: string): boolean => {
   }
 };
 
-const formatValue = (value: string | number) => {
+const formatValue = (value: string | number | boolean) => {
   const asString = value.toString();
   if (isValidURI(asString)) {
     return (
@@ -193,15 +193,16 @@ const formatValue = (value: string | number) => {
         {asString}
       </a>
     );
-  } else {
-    return <>{asString}</>;
+  } else if (typeof value === 'boolean') {
+    return <Icon icon={value ? 'mdi--check' : 'mdi--do-not-disturb-alt'}></Icon>;
   }
+  return <>{asString}</>;
 };
 
 type NamedConfig = {
   icon: string;
   label: string;
-  format?: (v: string | number) => React.ReactNode;
+  format?: (v: string | number | boolean) => React.ReactNode;
 };
 
 const namedProperties: Record<string, NamedConfig> = {
@@ -220,11 +221,12 @@ const namedProperties: Record<string, NamedConfig> = {
 
 const typeDefaults: Record<
   string,
-  { icon: string; format?: (v: string | number) => React.ReactNode }
+  { icon: string; format?: (v: string | number | boolean) => React.ReactNode }
 > = {
   string: { icon: 'mdi--format-text', format: formatValue },
   datetime: { icon: 'mdi--date-range' },
   float: { icon: 'mdi--hashtag' },
+  boolean: { icon: 'mdi--question-mark', format: formatValue },
 };
 
 const PropertyComponent = ({ property, keyWidth }: PropertyProps) => {
