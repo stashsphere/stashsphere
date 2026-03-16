@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-.copilot-valera-instructions.md
+public/icons
 
 # Editor directories and files
 .vscode/*
