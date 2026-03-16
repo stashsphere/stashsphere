@@ -1,22 +1,29 @@
 import { useContext, useEffect, useId, useRef, useState } from 'react';
-import { Property, PropertyNameSuggestion } from '../../api/resources';
-import { AxiosContext } from '../../context/axios';
-import { getAutoComplete } from '../../api/search';
-import { Toggle } from '../shared/toggle';
+import { Property, PropertyNameSuggestion } from '../../../api/resources';
+import { AxiosContext } from '../../../context/axios';
+import { getAutoComplete } from '../../../api/search';
+import { Toggle } from '../../shared/toggle';
+import { EditorRow } from './editor_row';
+import { Icon } from '../../shared';
 
 interface PropertyRowProps {
-  property: Property;
-  onChange: (property: Property) => void;
-  onDelete: () => void;
+  onSave: (property: Property) => void;
+  onClear: () => void;
+  initialKey: string | undefined;
+  initialValue: Property | undefined;
 }
 
-const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete }) => {
+const CustomEditor = ({ onSave, onClear, initialKey, initialValue }: PropertyRowProps) => {
+  const isEditing = !!initialValue;
   const axiosInstance = useContext(AxiosContext);
   const [nameSuggestions, setNameSuggestions] = useState<PropertyNameSuggestion[]>([]);
   const [valueSuggestions, setValueSuggestions] = useState<string[]>([]);
   const [unitSuggestions, setUnitSuggestions] = useState<string[]>([]);
   const nameDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const valueDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [localProperty, setLocalProperty] = useState<Property>(
+    initialValue || { name: initialKey || '', value: '', type: 'string', unit: undefined }
+  );
   const rowId = useId();
 
   useEffect(() => {
@@ -66,33 +73,38 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
     switch (suggestion.type) {
       case 'float': {
         let value: number;
-        if (property.type === 'string') {
-          const parsed = parseFloat(property.value);
+        if (localProperty.type === 'string') {
+          const parsed = parseFloat(localProperty.value);
           value = isNaN(parsed) ? 0 : parsed;
-        } else if (property.type === 'float') {
-          value = property.value;
+        } else if (localProperty.type === 'float') {
+          value = localProperty.value;
         } else {
           value = 0;
         }
-        onChange({ type: 'float', name, value, unit: suggestion.units[0] ?? '' });
+        setLocalProperty({ type: 'float', name, value, unit: suggestion.units[0] ?? '' });
         break;
       }
       case 'string': {
         let value: string;
-        if (property.type === 'float') {
-          value = String(property.value);
-        } else if (property.type === 'datetime') {
+        if (localProperty.type === 'float') {
+          value = String(localProperty.value);
+        } else if (localProperty.type === 'datetime') {
           value = '';
-        } else if (property.type === 'boolean') {
-          value = String(property.value);
+        } else if (localProperty.type === 'boolean') {
+          value = String(localProperty.value);
         } else {
-          value = property.value;
+          value = localProperty.value;
         }
-        onChange({ type: 'string', name, value, unit: undefined });
+        setLocalProperty({ type: 'string', name, value, unit: undefined });
         break;
       }
       case 'datetime': {
-        onChange({ type: 'datetime', name, value: new Date().toISOString(), unit: undefined });
+        setLocalProperty({
+          type: 'datetime',
+          name,
+          value: new Date().toISOString(),
+          unit: undefined,
+        });
         break;
       }
     }
@@ -104,18 +116,28 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
       applyNameSuggestion(suggestion, name);
     } else {
       setUnitSuggestions([]);
-      switch (property.type) {
+      switch (localProperty.type) {
         case 'string':
-          onChange({ type: 'string', name, value: property.value, unit: undefined });
+          setLocalProperty({ type: 'string', name, value: localProperty.value, unit: undefined });
           break;
         case 'float':
-          onChange({ type: 'float', name, value: property.value, unit: property.unit });
+          setLocalProperty({
+            type: 'float',
+            name,
+            value: localProperty.value,
+            unit: localProperty.unit,
+          });
           break;
         case 'datetime':
-          onChange({ type: 'datetime', name, value: property.value, unit: undefined });
+          setLocalProperty({ type: 'datetime', name, value: localProperty.value, unit: undefined });
           break;
         case 'boolean':
-          onChange({ type: 'boolean', name, value: property.value });
+          setLocalProperty({
+            type: 'boolean',
+            name,
+            value: localProperty.value,
+            unit: undefined,
+          });
           break;
       }
     }
@@ -123,30 +145,40 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
   };
 
   const handleValueChange = (value: string) => {
-    switch (property.type) {
+    switch (localProperty.type) {
       case 'float':
-        onChange({ type: 'float', name: property.name, value: Number(value), unit: property.unit });
+        setLocalProperty({
+          type: 'float',
+          name: localProperty.name,
+          value: Number(value),
+          unit: localProperty.unit,
+        });
         break;
       case 'string':
-        onChange({ type: 'string', name: property.name, value, unit: undefined });
-        if (property.name) fetchValueSuggestions(property.name, value);
+        setLocalProperty({ type: 'string', name: localProperty.name, value, unit: undefined });
+        if (localProperty.name) fetchValueSuggestions(localProperty.name, value);
         break;
       case 'datetime':
-        onChange({ type: 'datetime', name: property.name, value, unit: undefined });
+        setLocalProperty({ type: 'datetime', name: localProperty.name, value, unit: undefined });
         break;
     }
   };
 
   const handleBooleanChange = (value: boolean) => {
-    onChange({ type: 'boolean', name: property.name, value });
+    setLocalProperty({
+      type: 'boolean',
+      name: localProperty.name,
+      value,
+      unit: undefined,
+    });
   };
 
   const handleTypeChange = (type: string) => {
     switch (type) {
       case 'datetime': {
-        onChange({
+        setLocalProperty({
           type: 'datetime',
-          name: property.name,
+          name: localProperty.name,
           value: new Date().toISOString(),
           unit: undefined,
         });
@@ -154,35 +186,40 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
       }
       case 'string': {
         let value: string;
-        if (property.type === 'float') {
-          value = String(property.value);
-        } else if (property.type === 'datetime') {
+        if (localProperty.type === 'float') {
+          value = String(localProperty.value);
+        } else if (localProperty.type === 'datetime') {
           value = '';
-        } else if (property.type === 'boolean') {
-          value = String(property.value);
+        } else if (localProperty.type === 'boolean') {
+          value = String(localProperty.value);
         } else {
-          value = property.value;
+          value = localProperty.value;
         }
-        onChange({ type: 'string', name: property.name, value, unit: undefined });
+        setLocalProperty({ type: 'string', name: localProperty.name, value, unit: undefined });
         break;
       }
       case 'float': {
         let value: number;
-        if (property.type === 'string') {
-          const parsed = parseFloat(property.value);
+        if (localProperty.type === 'string') {
+          const parsed = parseFloat(localProperty.value);
           value = isNaN(parsed) ? 0 : parsed;
-        } else if (property.type === 'datetime') {
+        } else if (localProperty.type === 'datetime') {
           value = 0;
-        } else if (property.type == 'boolean') {
+        } else if (localProperty.type == 'boolean') {
           value = 0;
         } else {
-          value = property.value;
+          value = localProperty.value;
         }
-        onChange({ type: 'float', name: property.name, value, unit: '' });
+        setLocalProperty({ type: 'float', name: localProperty.name, value, unit: '' });
         break;
       }
       case 'boolean': {
-        onChange({ type: 'boolean', name: property.name, value: false });
+        setLocalProperty({
+          type: 'boolean',
+          name: localProperty.name,
+          value: false,
+          unit: undefined,
+        });
         break;
       }
       default:
@@ -191,18 +228,23 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
   };
 
   const handleUnitChange = (unit: string) => {
-    if (property.type === 'float') {
-      onChange({ type: 'float', name: property.name, value: property.value, unit });
+    if (localProperty.type === 'float') {
+      setLocalProperty({
+        type: 'float',
+        name: localProperty.name,
+        value: localProperty.value,
+        unit,
+      });
     }
   };
 
   const renderValueInput = () => {
-    switch (property.type) {
+    switch (localProperty.type) {
       case 'float':
         return (
           <input
             type="number"
-            value={property.value}
+            value={localProperty.value}
             onFocus={(e) => e.target.select()}
             onChange={(e) => handleValueChange(e.target.value)}
             className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
@@ -214,7 +256,7 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
           <>
             <input
               type="text"
-              value={property.value}
+              value={localProperty.value}
               onChange={(e) => handleValueChange(e.target.value)}
               className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
               placeholder="Enter text"
@@ -228,7 +270,7 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
           </>
         );
       case 'datetime': {
-        const formattedDate = new Date(property.value).toISOString().split('T')[0];
+        const formattedDate = new Date(localProperty.value).toISOString().split('T')[0];
         return (
           <input
             type="date"
@@ -242,11 +284,11 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
         return (
           <div className="flex my-auto gap-5">
             <Toggle
-              value={property.value}
+              value={localProperty.value}
               onChange={(newValue) => handleBooleanChange(newValue)}
               children={undefined}
             />
-            <span className="text-display">{property.value ? 'true' : 'false'}</span>
+            <span className="text-display">{localProperty.value ? 'true' : 'false'}</span>
           </div>
         );
       }
@@ -254,49 +296,60 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 p-3 border border-gray-200 rounded-sm items-start">
-      <div className="sm:col-span-1">
-        <label className="block text-xs font-medium text-display mb-1">Name</label>
-        <input
-          type="text"
-          value={property.name}
-          onChange={(e) => handleNameChange(e.target.value)}
-          className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
-          placeholder="Property name"
-          list={`${rowId}-name-suggestions`}
-        />
-        <datalist id={`${rowId}-name-suggestions`}>
-          {nameSuggestions.map((suggestion, i) => (
-            <option key={i} value={suggestion.name} />
-          ))}
-        </datalist>
-      </div>
+    <EditorRow
+      onSubmit={() => onSave(localProperty)}
+      isEditing={isEditing}
+      disabled={false}
+      error={null}
+    >
+      <div
+        className={`grid gap-x-2 gap-y-1 items-end ${localProperty.type === 'float' ? 'grid-cols-[1fr_2fr_auto_auto_auto]' : 'grid-cols-[1fr_2fr_auto_auto]'}`}
+      >
+        <label className="text-xs font-medium text-display">Name</label>
+        <label className="text-xs font-medium text-display">Value</label>
+        <label className="text-xs font-medium text-display">Type</label>
+        {localProperty.type === 'float' && (
+          <label className="text-xs font-medium text-display">Unit</label>
+        )}
+        <span />
 
-      <div className="sm:col-span-2 h-full flex flex-col justify-between">
-        <label className="block text-xs font-medium text-display mb-1">Value</label>
-        {renderValueInput()}
-      </div>
+        <div>
+          <input
+            type="text"
+            value={localProperty.name}
+            onChange={(e) => handleNameChange(e.target.value)}
+            className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
+            placeholder="Property name"
+            list={`${rowId}-name-suggestions`}
+          />
+          <datalist id={`${rowId}-name-suggestions`}>
+            {nameSuggestions.map((suggestion, i) => (
+              <option key={i} value={suggestion.name} />
+            ))}
+          </datalist>
+        </div>
 
-      <div className="sm:col-span-1">
-        <label className="block text-xs font-medium text-display mb-1">Type</label>
+        <div>{renderValueInput()}</div>
+
         <select
           onChange={(e) => handleTypeChange(e.target.value)}
-          value={property.type}
-          className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
+          value={localProperty.type}
+          className="text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
         >
           <option value="string">Text</option>
           <option value="float">Number</option>
           <option value="datetime">Date</option>
           <option value="boolean">Bool</option>
         </select>
-        {property.type === 'float' && (
-          <>
+
+        {localProperty.type === 'float' && (
+          <div>
             <input
               type="text"
-              value={property.unit || ''}
+              value={localProperty.unit || ''}
               onChange={(e) => handleUnitChange(e.target.value)}
               placeholder="Unit"
-              className="w-full mt-1 text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1 text-xs"
+              className="w-full text-display border border-secondary shadow-xs focus:border-secondary rounded-sm px-2 py-1"
               list={`${rowId}-unit-suggestions`}
             />
             {unitSuggestions.length > 0 && (
@@ -306,21 +359,19 @@ const PropertyRow: React.FC<PropertyRowProps> = ({ property, onChange, onDelete 
                 ))}
               </datalist>
             )}
-          </>
+          </div>
         )}
-      </div>
 
-      <div className="sm:col-span-1">
-        <label className="block text-xs font-medium text-display mb-1 invisible">Actions</label>
         <button
-          onClick={onDelete}
-          className="w-full sm:w-auto px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-sm transition-colors"
+          type="button"
+          onClick={onClear}
+          className="text-display-light hover:text-accent transition-colors px-1 py-1"
         >
-          Delete
+          <Icon icon="mdi--clear" />
         </button>
       </div>
-    </div>
+    </EditorRow>
   );
 };
 
-export default PropertyRow;
+export default CustomEditor;

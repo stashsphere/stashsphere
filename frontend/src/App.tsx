@@ -21,7 +21,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Search } from './routes/search';
 import { getProfile } from './api/profile';
-import { Profile } from './api/resources';
+import { Profile, SchemaCollection } from './api/resources';
 import { ShowProfile } from './routes/profile/show';
 import { EditProfile } from './routes/profile/edit';
 import { EditList } from './routes/lists/edit';
@@ -42,6 +42,8 @@ import { useCart } from './hooks/useCart';
 import { CartContext } from './context/cart';
 import { OIDCCallback } from './routes/auth/callback';
 import React from 'react';
+import { PropertySchemaCollectionContext } from './context/property_schema';
+import { getSchemaCollection } from './api/properties';
 
 export const App = () => {
   const navigate = useNavigate();
@@ -51,6 +53,10 @@ export const App = () => {
   const refreshInfoCookie = cookies['stashsphere-refresh-info'] as string | undefined;
   const [profileKey, setProfileKey] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [propertySchemaCollection, setPropertySchemaCollection] = useState<SchemaCollection>({
+    aliases: {},
+    schemas: {},
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const searchContextValue = useMemo(
     () => ({ searchTerm, setSearchTerm }),
@@ -87,6 +93,7 @@ export const App = () => {
             navigate('/user/logout');
           }
         });
+      getSchemaCollection(axiosInstance).then(setPropertySchemaCollection);
     } else {
       setProfile(null);
     }
@@ -147,170 +154,172 @@ export const App = () => {
         <AxiosContext.Provider value={axiosInstance}>
           <AuthContext.Provider value={authContextValue}>
             <SearchContext.Provider value={searchContextValue}>
-              <CartContext.Provider
-                value={{
-                  cart,
-                  addToCart,
-                  removeFromCart,
-                  clearCart,
-                  cartByUser,
-                }}
-              >
-                <Routes>
-                  <Route path="/" element={<Layout />}>
-                    <Route path="/" element={<Navigate to="/things" />} />
-                    <Route path="/user/login" element={<Login />} />
-                    <Route path="/user/logout" element={<Logout />} />
-                    <Route path="/user/register" element={<Register />} />
-                    <Route path="/auth/callback" element={<OIDCCallback />} />
-                    <Route
-                      path="/user"
-                      element={
-                        <RequireAuth>
-                          <UserLayout />
-                        </RequireAuth>
-                      }
-                    >
-                      <Route index element={<Navigate to="/user/profile" />} />
-                      <Route path="profile" element={<ShowProfile />} />
-                      <Route path="account" element={<Account />} />
-                      <Route path="profile/edit" element={<EditProfile />} />
-                      <Route path="verify-email" element={<VerifyEmail />} />
+              <PropertySchemaCollectionContext.Provider value={propertySchemaCollection}>
+                <CartContext.Provider
+                  value={{
+                    cart,
+                    addToCart,
+                    removeFromCart,
+                    clearCart,
+                    cartByUser,
+                  }}
+                >
+                  <Routes>
+                    <Route path="/" element={<Layout />}>
+                      <Route path="/" element={<Navigate to="/things" />} />
+                      <Route path="/user/login" element={<Login />} />
+                      <Route path="/user/logout" element={<Logout />} />
+                      <Route path="/user/register" element={<Register />} />
+                      <Route path="/auth/callback" element={<OIDCCallback />} />
+                      <Route
+                        path="/user"
+                        element={
+                          <RequireAuth>
+                            <UserLayout />
+                          </RequireAuth>
+                        }
+                      >
+                        <Route index element={<Navigate to="/user/profile" />} />
+                        <Route path="profile" element={<ShowProfile />} />
+                        <Route path="account" element={<Account />} />
+                        <Route path="profile/edit" element={<EditProfile />} />
+                        <Route path="verify-email" element={<VerifyEmail />} />
+                      </Route>
+
+                      <Route
+                        path="/things"
+                        element={
+                          <RequireAuth>
+                            <Things />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/things/create"
+                        element={
+                          <RequireAuth>
+                            <CreateThing />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/things/:thingId"
+                        element={
+                          <RequireAuth>
+                            <ShowThing />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/things/:thingId/edit"
+                        element={
+                          <RequireAuth>
+                            <EditThing />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/things/:thingId/share"
+                        element={
+                          <RequireAuth>
+                            <ShareThing />
+                          </RequireAuth>
+                        }
+                      />
+
+                      <Route
+                        path="/lists"
+                        element={
+                          <RequireAuth>
+                            <Lists />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/lists/create"
+                        element={
+                          <RequireAuth>
+                            <CreateList />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/lists/:listId"
+                        element={
+                          <RequireAuth>
+                            <ShowList />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/lists/:listId/edit"
+                        element={
+                          <RequireAuth>
+                            <EditList />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/lists/:listId/share"
+                        element={
+                          <RequireAuth>
+                            <ShareList />
+                          </RequireAuth>
+                        }
+                      />
+
+                      <Route
+                        path="/friends"
+                        element={
+                          <RequireAuth>
+                            <ShowFriends />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/images"
+                        element={
+                          <RequireAuth>
+                            <Images />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/search"
+                        element={
+                          <RequireAuth>
+                            <Search />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/notifications"
+                        element={
+                          <RequireAuth>
+                            <ShowNotifications />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/cart"
+                        element={
+                          <RequireAuth>
+                            <ShowCart />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/users/:userId"
+                        element={
+                          <RequireAuth>
+                            <ShowUser />
+                          </RequireAuth>
+                        }
+                      />
                     </Route>
-
-                    <Route
-                      path="/things"
-                      element={
-                        <RequireAuth>
-                          <Things />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/things/create"
-                      element={
-                        <RequireAuth>
-                          <CreateThing />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/things/:thingId"
-                      element={
-                        <RequireAuth>
-                          <ShowThing />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/things/:thingId/edit"
-                      element={
-                        <RequireAuth>
-                          <EditThing />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/things/:thingId/share"
-                      element={
-                        <RequireAuth>
-                          <ShareThing />
-                        </RequireAuth>
-                      }
-                    />
-
-                    <Route
-                      path="/lists"
-                      element={
-                        <RequireAuth>
-                          <Lists />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/lists/create"
-                      element={
-                        <RequireAuth>
-                          <CreateList />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/lists/:listId"
-                      element={
-                        <RequireAuth>
-                          <ShowList />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/lists/:listId/edit"
-                      element={
-                        <RequireAuth>
-                          <EditList />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/lists/:listId/share"
-                      element={
-                        <RequireAuth>
-                          <ShareList />
-                        </RequireAuth>
-                      }
-                    />
-
-                    <Route
-                      path="/friends"
-                      element={
-                        <RequireAuth>
-                          <ShowFriends />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/images"
-                      element={
-                        <RequireAuth>
-                          <Images />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/search"
-                      element={
-                        <RequireAuth>
-                          <Search />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/notifications"
-                      element={
-                        <RequireAuth>
-                          <ShowNotifications />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/cart"
-                      element={
-                        <RequireAuth>
-                          <ShowCart />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/users/:userId"
-                      element={
-                        <RequireAuth>
-                          <ShowUser />
-                        </RequireAuth>
-                      }
-                    />
-                  </Route>
-                </Routes>
-              </CartContext.Provider>
+                  </Routes>
+                </CartContext.Provider>
+              </PropertySchemaCollectionContext.Provider>
             </SearchContext.Provider>
           </AuthContext.Provider>
         </AxiosContext.Provider>

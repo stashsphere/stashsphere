@@ -1,9 +1,11 @@
 import { Thing } from '../../api/resources';
 import { Icon } from '.';
-import { PropertyList } from '../thing_details';
+import { PropertyList } from './property_list';
 import { ImageComponent } from '../shared';
 import { UserNameAndUserId } from './user';
 import CartButton from './cart_button';
+import { useContext } from 'react';
+import { PropertySchemaCollectionContext } from '../../context/property_schema';
 
 type ThingInfoProps = {
   thing: Thing;
@@ -11,6 +13,7 @@ type ThingInfoProps = {
 };
 
 export const ThingInfo = ({ thing, hideCart }: ThingInfoProps) => {
+  const schemaCollection = useContext(PropertySchemaCollectionContext);
   const firstImage = thing.images[0];
   const firstImageContent = firstImage ? (
     <ImageComponent
@@ -46,7 +49,11 @@ export const ThingInfo = ({ thing, hideCart }: ThingInfoProps) => {
           </h2>
           {!hideCart && <CartButton thingId={thing.id} />}
         </div>
-        <PropertyList properties={thing.properties} collapsable={true} keyWidth="8rem" />
+        <PropertyList
+          properties={thing.properties}
+          schemaCollection={schemaCollection}
+          collapsable
+        />
       </div>
     </div>
   );

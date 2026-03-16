@@ -34,6 +34,7 @@ export type PropertyBoolean = {
   type: 'boolean';
   name: string;
   value: boolean;
+  unit: undefined;
 };
 
 export type PropertyDatetime = {
@@ -273,4 +274,29 @@ export type OIDCProviderInfo = {
 export type InstanceInfo = {
   inviteRequired: boolean;
   oidcProviders: OIDCProviderInfo[];
+};
+
+export type SchemaEntry = {
+  schema: {
+    $schema: string;
+    $id?: string;
+    title?: string;
+    description?: string;
+    additionalProperties: boolean;
+    properties: {
+      name: { const: string };
+      value: Record<string, unknown>;
+      unit?: Record<string, unknown>;
+    };
+    required: string[];
+    type: string;
+    'x-aliases'?: string[];
+    'x-icons'?: string[];
+  };
+  icons?: string[];
+};
+
+export type SchemaCollection = {
+  schemas: Record<string, SchemaEntry>;
+  aliases: Record<string, string>;
 };

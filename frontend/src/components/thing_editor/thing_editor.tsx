@@ -1,5 +1,5 @@
 import { ChangeEvent, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import PropertyEditor from './property_editor';
+import Properties from './properties';
 import { Property, ReducedImage, Image, SharingState, List } from '../../api/resources';
 import { ConfigContext } from '../../context/config';
 import { PrimaryButton, SecondaryButton, SelectableList } from '../shared';
@@ -380,7 +380,7 @@ export const ThingEditor = ({
             />
           </div>
 
-          <PropertyEditor properties={properties} onUpdateProperties={setProperties} />
+          <Properties properties={properties} onUpdateProperties={setProperties} />
 
           <div>
             <Headline type="h2">Description</Headline>

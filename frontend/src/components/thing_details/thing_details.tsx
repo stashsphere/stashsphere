@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { Thing } from '../../api/resources';
 import { ThingImages } from './thing_images';
-import { PropertyList } from './property_list';
+import { PropertyList } from '../shared/property_list';
 import { Headline, PrimaryButton, SecondaryButton } from '../shared';
 import { Icon } from '../shared';
 import { SharingStateComponent } from '../shared/sharing_state';
 import { UserNameAndUserId } from '../shared/user';
 import CartButton from '../shared/cart_button';
 import { FetchedListInfo } from '../fetched_list_info';
+import { PropertySchemaCollectionContext } from '../../context/property_schema';
 
 interface ThingDetailsProps {
   thing: Thing;
@@ -74,6 +75,7 @@ const ThingActions = ({ thing, onDeleteClick }: { thing: Thing; onDeleteClick: (
 
 export const ThingDetails = ({ thing, onDelete }: ThingDetailsProps) => {
   const [showDeleteDialog, setDeleteDialog] = useState(false);
+  const schemaCollection = useContext(PropertySchemaCollectionContext);
 
   return (
     <div className="flex flex-col gap-8">
@@ -114,7 +116,7 @@ export const ThingDetails = ({ thing, onDelete }: ThingDetailsProps) => {
               {thing.quantity} {thing.quantityUnit}
             </p>
           </div>
-          <PropertyList properties={thing.properties} keyWidth="14rem" />
+          <PropertyList properties={thing.properties} schemaCollection={schemaCollection} />
           <div>
             <Headline type="h2">Description</Headline>
             <div className="text-display">{thing.description}</div>

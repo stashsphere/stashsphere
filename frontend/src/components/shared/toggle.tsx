@@ -7,7 +7,7 @@ export const Toggle = ({
 }: {
   value: boolean;
   onChange: (newValue: boolean) => void;
-  children: ReactNode;
+  children?: ReactNode;
 }) => {
   return (
     <label className="inline-flex items-center cursor-pointer">

@@ -24,3 +24,4 @@ export { PasswordInput } from './password_input';
 export { Select } from './select';
 export { usePasswordValidation } from './usePasswordValidation';
 export { VerificationCodeForm } from './verification_code_form';
+export { PropertyList } from './property_list';
