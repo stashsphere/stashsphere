@@ -3,15 +3,16 @@ import { AxiosContext } from '../../context/axios';
 import { PagedThings, ThingsSummary } from '../../api/resources';
 import { getThings, getThingsSummary } from '../../api/things';
 import { Pages } from '../../components/pages';
-import { ThingInfo } from '../../components/shared';
-import { PrimaryButton } from '../../components/shared';
+import { ThingInfo, PrimaryButton, Select } from '../../components/shared';
 import { UserNameAndUserId } from '../../components/shared/user';
+import { OrderParam } from '../../api/common';
 
 export const Things = () => {
   const axiosInstance = useContext(AxiosContext);
   const [things, setThings] = useState<PagedThings | undefined>(undefined);
   const [summary, setSummary] = useState<ThingsSummary | undefined>(undefined);
   const [selectedOwners, setSelectedOwners] = useState<string[] | undefined>(undefined);
+  const [order, setOrder] = useState<OrderParam>(OrderParam.AccessReasonDescending);
 
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -37,12 +38,12 @@ export const Things = () => {
     if (selectedOwners === undefined) {
       return;
     }
-    getThings(axiosInstance, currentPage, 10, selectedOwners, undefined)
+    getThings(axiosInstance, currentPage, 10, selectedOwners, undefined, [order])
       .then(setThings)
       .catch((reason) => {
         console.log(reason);
       });
-  }, [axiosInstance, currentPage, selectedOwners]);
+  }, [axiosInstance, currentPage, order, selectedOwners]);
 
   const toggleOwnerId = useCallback(
     (id: string) => {
@@ -95,7 +96,13 @@ export const Things = () => {
               </div>
             ))}
         </div>
-        <div className="flex-none">
+        <div className="flex flex-row gap-2 items-center flex-none">
+          <Select value={order} onChange={(e) => setOrder(e.target.value as OrderParam)}>
+            <option value={OrderParam.AccessReasonDescending}>Access Reason ↓</option>
+            <option value={OrderParam.AccessReasonAscending}>Access Reason ↑</option>
+            <option value={OrderParam.CreatedAtDescending}>Newest</option>
+            <option value={OrderParam.CreatedAtAscending}>Oldest</option>
+          </Select>
           <a href="/things/create">
             <PrimaryButton>Add Thing</PrimaryButton>
           </a>

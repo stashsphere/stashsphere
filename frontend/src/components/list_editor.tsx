@@ -93,7 +93,7 @@ export const ListEditor = ({
     if (authCtx.profile === null) {
       return;
     }
-    getThings(axiosInstance, currentPage, thingsPerPage, [authCtx.profile.id], textFilter)
+    getThings(axiosInstance, currentPage, thingsPerPage, [authCtx.profile.id], textFilter, [])
       .then(setSelectableThingsPages)
       .catch((reason) => {
         console.log(reason);

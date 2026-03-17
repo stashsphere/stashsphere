@@ -1,12 +1,14 @@
 import { Axios } from 'axios';
 import { List, PagedLists, SharingState } from './resources';
+import { OrderParam } from './common';
 
 export const getLists = async (
   axios: Axios,
   currentPage: number,
   perPage: number,
   ownerIds: string[],
-  paginate: boolean | undefined
+  paginate: boolean | undefined,
+  order: OrderParam[]
 ) => {
   const response = await axios.get(`/lists`, {
     headers: {
@@ -17,6 +19,7 @@ export const getLists = async (
       filterOwnerId: ownerIds,
       perPage: perPage,
       paginate: paginate,
+      order,
     },
     paramsSerializer: {
       indexes: null,

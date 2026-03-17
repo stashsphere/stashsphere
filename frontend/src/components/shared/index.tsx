@@ -21,5 +21,6 @@ export { SelectableThing } from './selectable_thing';
 export { FetchedSelectableThing } from './fetched_selectable_thing';
 export { SelectableList } from './selectable_list';
 export { PasswordInput } from './password_input';
+export { Select } from './select';
 export { usePasswordValidation } from './usePasswordValidation';
 export { VerificationCodeForm } from './verification_code_form';
