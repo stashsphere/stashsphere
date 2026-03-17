@@ -31,7 +31,7 @@ type ThingsParams struct {
 	FilterOwnerIds []string       `query:"filterOwnerId"`
 	SearchTerm     string         `query:"searchTerm"`
 	Paginate       *bool          `query:"paginate"`
-	Order          []params.Order `query:"order" validate:"max=2,dive"`
+	Orders         []params.Order `query:"order" validate:"max=2,unique=FieldName,dive"`
 }
 
 func ParamsOrderToThingServiceOrder(order []params.Order) ([]services.ThingOrder, error) {
@@ -86,7 +86,7 @@ func (th *ThingHandler) ThingHandlerIndex(c echo.Context) error {
 		paginate = false
 	}
 
-	order, err := ParamsOrderToThingServiceOrder(params.Order)
+	order, err := ParamsOrderToThingServiceOrder(params.Orders)
 	if err != nil {
 		return err
 	}

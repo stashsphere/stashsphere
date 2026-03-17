@@ -87,7 +87,7 @@ type ListsParams struct {
 	PerPage        uint64         `query:"perPage"`
 	FilterOwnerIds []string       `query:"filterOwnerId"`
 	Paginate       *bool          `query:"paginate"`
-	Order          []params.Order `query:"order" validate:"max=2,dive"`
+	Orders         []params.Order `query:"order" validate:"max=2,unique=FieldName,dive"`
 }
 
 func ParamsOrderToListServiceOrder(order []params.Order) ([]services.ListOrder, error) {
@@ -142,7 +142,7 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 		paginate = true
 	}
 
-	order, err := ParamsOrderToListServiceOrder(params.Order)
+	order, err := ParamsOrderToListServiceOrder(params.Orders)
 	if err != nil {
 		return err
 	}
