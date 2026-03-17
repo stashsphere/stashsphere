@@ -24,7 +24,7 @@ export const CreateThing = () => {
     if (!authContext.profile) {
       return;
     }
-    getLists(axiosInstance, 0, 0, [authContext.profile.id], false).then((lists) =>
+    getLists(axiosInstance, 0, 0, [authContext.profile.id], false, []).then((lists) =>
       setLists(lists.lists)
     );
   }, [authContext.profile, axiosInstance]);
