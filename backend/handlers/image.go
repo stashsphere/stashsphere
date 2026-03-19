@@ -72,7 +72,7 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 	file, image, err := is.imageService.ImageGet(c.Request().Context(), authCtx.User.UserId, hash)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return c.String(http.StatusNotFound, "Image Not Found")
+			return utils.NotFoundError{EntityName: "Image"}
 		}
 		return err
 	}
@@ -123,7 +123,7 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 
 	oldETag := c.Request().Header.Get("If-None-Match")
 	if oldETag == etag {
-		return c.String(http.StatusNotModified, "Image Not Modified")
+		return c.NoContent(http.StatusNotModified)
 	}
 	c.Response().Header().Set("ETag", etag)
 	c.Response().Header().Set("Cache-Control", "no-cache")
