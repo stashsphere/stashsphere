@@ -430,12 +430,12 @@ export const ThingEditor = ({
 
           {!thing && (
             <div className="bg-neutral-900 border border-neutral-700 rounded-sm p-3">
-              <p className="text-display text-sm flex">
+              <div className="text-display text-sm flex">
                 Sharing: <SharingStateComponent state={sharingState} />
                 {usingDefaultSharingState && (
                   <span className="text-secondary text-sm">(from your profile default)</span>
                 )}
-              </p>
+              </div>
             </div>
           )}
           {children}
