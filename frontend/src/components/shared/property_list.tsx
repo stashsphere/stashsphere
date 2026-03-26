@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Property, SchemaCollection } from '../../api/resources';
 import { Icon } from './icon';
 import { SchemaIcon } from './svg_icon';
 import { substituteUnits } from '../../lib/units';
+import { contrastBackground } from '../../lib/contrast';
+import { validateColor } from '../../lib/validate_color';
 
 const formatValue = (prop: Property): string => {
   if (prop.type === 'datetime') {
@@ -28,6 +30,12 @@ const PropertyRow: React.FC<PropertyRowProps> = ({
 }) => {
   const isClickable = !!onEdit;
 
+  const iconOrDefault = icon ?? 'mdi:help-rhombus';
+  const color = useMemo(
+    () => (property.name === 'color' ? validateColor(property.value) : undefined),
+    [property.name, property.value]
+  );
+
   return (
     <div
       onClick={onEdit}
@@ -40,14 +48,16 @@ const PropertyRow: React.FC<PropertyRowProps> = ({
       }`}
     >
       <span className="inline-flex items-center justify-center w-6 h-6">
-        {icon &&
-          (property.name === 'color' ? (
-            <span className="inline-flex items-center justify-center shrink-0 w-6 h-6 rounded-sm bg-secondary-200">
-              <SchemaIcon icon={icon} className="text-base" color={property.value as string} />
-            </span>
-          ) : (
-            <SchemaIcon icon={icon} className="text-base text-display-light" />
-          ))}
+        {property.name === 'color' ? (
+          <span
+            className="inline-flex items-center justify-center shrink-0 w-6 h-6 rounded-sm"
+            style={{ backgroundColor: contrastBackground(color) }}
+          >
+            <SchemaIcon icon={iconOrDefault} className="text-base" color={color} />
+          </span>
+        ) : (
+          <SchemaIcon icon={iconOrDefault} className="text-base text-display-light" />
+        )}
       </span>
       <span className="font-medium text-display text-sm whitespace-nowrap">{property.name}</span>
       <span className="text-display-light">=</span>
