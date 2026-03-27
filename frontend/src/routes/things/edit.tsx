@@ -121,7 +121,7 @@ export const EditThing = () => {
     <ThingEditor onChange={setEditedData} thing={data} lists={lists}>
       <div className="flex gap-4">
         <PrimaryButton onClick={() => edit()}>Save</PrimaryButton>
-        <GrayButton>Abort</GrayButton>
+        <GrayButton onClick={() => navigate(`/things/${thing?.id}`)}>Abort</GrayButton>
       </div>
     </ThingEditor>
   );
