@@ -36,6 +36,18 @@ const PropertyRow: React.FC<PropertyRowProps> = ({
     [property.name, property.value]
   );
 
+  const isLink = useMemo(() => {
+    if (typeof property.value !== 'string') {
+      return false;
+    }
+    try {
+      new URL(property.value);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [property.value]);
+
   return (
     <div
       onClick={onEdit}
@@ -62,7 +74,13 @@ const PropertyRow: React.FC<PropertyRowProps> = ({
       <span className="font-medium text-display text-sm whitespace-nowrap">{property.name}</span>
       <span className="text-display-light">=</span>
       <span className="flex items-center gap-1.5 min-w-0">
-        <span className="truncate text-sm text-display">{formatValue(property)}</span>
+        {typeof property.value === 'string' && isLink ? (
+          <a href={property.value} target="_blank">
+            <span className="truncate text-sm text-display underline">{formatValue(property)}</span>
+          </a>
+        ) : (
+          <span className="truncate text-sm text-display">{formatValue(property)}</span>
+        )}
         {property.unit && (
           <span className="shrink-0 rounded-sm bg-secondary-900 px-1.5 py-0.5 text-xs text-display-light whitespace-nowrap">
             {substituteUnits(property.unit)}
