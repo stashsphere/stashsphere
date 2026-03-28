@@ -107,8 +107,8 @@ export const Lists = () => {
             <option value={OrderParam.CreatedAtDescending}>Newest</option>
             <option value={OrderParam.CreatedAtAscending}>Oldest</option>
           </Select>
-          <a href="/things/create">
-            <PrimaryButton>Add Thing</PrimaryButton>
+          <a href="/lists/create">
+            <PrimaryButton>Add List</PrimaryButton>
           </a>
         </div>
       </div>
