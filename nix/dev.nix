@@ -181,7 +181,7 @@ let
             set -euo pipefail
             echo "Serving Nix-built frontend on port ${frontendNixPort}..."
             cd ${frontend-dev}/dist
-            exec ${pkgs.python3}/bin/python3 -m http.server ${frontendNixPort}
+            exec ${pkgs.nodePackages.serve}/bin/serve -s -l ${frontendNixPort}
           '';
         depends_on = {
           backend.condition = "process_healthy";
