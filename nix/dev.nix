@@ -7,6 +7,8 @@ let
   pgPort = "5433";
   dexPort = "5557";
   backendPort = "8082";
+  frontendPort = "5173";
+  frontendNixPort = "5174";
 
   dexConfig = import ./dex-config.nix;
 
@@ -36,7 +38,7 @@ let
       code = "1234";
     };
     domains = {
-      allowed = [ "http://localhost:5173" "http://localhost:5174" ];
+      allowed = [ "http://localhost:${frontendPort}" "http://localhost:${frontendNixPort}" ];
       cookieDomain = "localhost";
     };
     email = {
@@ -160,8 +162,27 @@ let
           if [ ! -d node_modules ]; then
             ${pkgs.pnpm}/bin/pnpm install
           fi
-          exec ${pkgs.pnpm}/bin/pnpm dev
+          exec ${pkgs.pnpm}/bin/pnpm dev -- --port ${frontendPort}
         '';
+        depends_on = {
+          backend.condition = "process_healthy";
+        };
+        availability.restart = "on_failure";
+      };
+
+      frontend-nix = {
+        command =
+          let
+            frontend-dev = pkgs.stashsphere-frontend.override {
+              apiHost = "http://localhost:${backendPort}";
+            };
+          in
+          pkgs.writeShellScript "frontend-nix-start" ''
+            set -euo pipefail
+            echo "Serving Nix-built frontend on port ${frontendNixPort}..."
+            cd ${frontend-dev}/dist
+            exec ${pkgs.python3}/bin/python3 -m http.server ${frontendNixPort}
+          '';
         depends_on = {
           backend.condition = "process_healthy";
         };
@@ -183,7 +204,8 @@ pkgs.writeShellApplication {
     echo "PostgreSQL: 127.0.0.1:${pgPort}"
     echo "Dex OIDC:   http://localhost:${dexPort}/dex"
     echo "Backend:    http://localhost:${backendPort}"
-    echo "Frontend:   http://localhost:5173 (Vite default)"
+    echo "Frontend:   http://localhost:${frontendPort} (Vite default)"
+    echo "Frontend (Nix): http://localhost:${frontendNixPort}"
     exec process-compose up -f ${processComposeConfig} --port 9847
   '';
 }
