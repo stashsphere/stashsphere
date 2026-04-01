@@ -29,7 +29,10 @@
           inherit system;
           overlays = [
             self.overlay
-            (final: prev: { stashsphereVersion = version; })
+            (final: prev: {
+              stashsphereVersion = version;
+              stashsphereGitRevision = self.rev or self.dirtyRev or "unknown";
+            })
           ];
         }
       );

@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { Header } from './header';
+import { Footer } from './footer';
 import { AuthContext } from '../context/auth';
 import { Outlet } from 'react-router';
 import { AxiosContext } from '../context/axios';
@@ -36,6 +37,7 @@ export const Layout = () => {
       <div className="bg-content p-1 md:p-2">
         <Outlet />
       </div>
+      <Footer />
     </>
   );
 };

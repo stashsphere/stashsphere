@@ -4,10 +4,14 @@
 , version
 , writeText
 , apiHost ? "https://api.stashsphere.com"
+, gitRevision ? "unknown"
 }:
 let
   config = writeText "config.json" (builtins.toJSON ({
     inherit apiHost;
+  }));
+  versionInfo = writeText "version.json" (builtins.toJSON ({
+    inherit version gitRevision;
   }));
 in
 stdenv.mkDerivation (finalAttrs: {
@@ -31,9 +35,11 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildPhase = ''
     runHook preBuild
-    
+
+    cp ${versionInfo} src/version.json
+
     pnpm build
-    
+
     runHook postBuild
   '';
 
