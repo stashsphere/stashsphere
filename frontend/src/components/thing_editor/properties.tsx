@@ -6,6 +6,9 @@ import { PropertyList } from '../shared/property_list';
 import { KeyAutocomplete } from './key_autocomplete';
 import { PropertyEditor } from './property_editors/editor';
 import CustomEditor from './property_editors/custom';
+import { Modal } from '../shared/modal';
+import { SchemaGrid } from './schema_grid';
+import { SecondaryButton } from '../shared/button';
 
 interface Props {
   properties: Property[];
@@ -20,6 +23,7 @@ const Properties: React.FC<Props> = ({ properties, onUpdateProperties }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [customMode, setCustomMode] = useState(false);
   const [customInitialKey, setCustomInitialKey] = useState('');
+  const [showSchemaBrowser, setShowSchemaBrowser] = useState(false);
 
   useEffect(() => {
     if (axiosInstance === null) {
@@ -103,20 +107,29 @@ const Properties: React.FC<Props> = ({ properties, onUpdateProperties }) => {
     <>
       <h2 className="text-xl font-bold mb-4 text-secondary">Properties</h2>
 
-      <KeyAutocomplete
-        collection={schemaCollection}
-        onSelect={(key) => {
-          setSelectedKey(key);
-          setEditingIndex(null);
-          setCustomMode(false);
-          setCustomInitialKey('');
-        }}
-        onCustom={handleCustom}
-        selectedKey={selectedKey}
-        isCustom={customMode}
-        onClear={handleClearEditor}
-        usedKeys={usedKeys}
-      />
+      <div className="flex gap-2 items-start">
+        <div className="flex-1">
+          <KeyAutocomplete
+            collection={schemaCollection}
+            onSelect={(key) => {
+              setSelectedKey(key);
+              setEditingIndex(null);
+              setCustomMode(false);
+              setCustomInitialKey('');
+            }}
+            onCustom={handleCustom}
+            selectedKey={selectedKey}
+            isCustom={customMode}
+            onClear={handleClearEditor}
+            usedKeys={usedKeys}
+          />
+        </div>
+        {!selectedKey && !customMode && (
+          <SecondaryButton onClick={() => setShowSchemaBrowser(true)} className="whitespace-nowrap">
+            Browse All
+          </SecondaryButton>
+        )}
+      </div>
 
       {schema && selectedKey && (
         <div className="border-t border-secondary-800 pt-4">
@@ -150,6 +163,24 @@ const Properties: React.FC<Props> = ({ properties, onUpdateProperties }) => {
         onEdit={handleEditProperty}
         onDelete={deleteProperty}
       />
+
+      <Modal
+        isOpen={showSchemaBrowser}
+        onClose={() => setShowSchemaBrowser(false)}
+        title="Browse Property Schemas"
+        size="xl"
+      >
+        <SchemaGrid
+          schemas={schemaCollection}
+          onSelectSchema={(key) => {
+            setSelectedKey(key);
+            setShowSchemaBrowser(false);
+            setEditingIndex(null);
+            setCustomMode(false);
+            setCustomInitialKey('');
+          }}
+        />
+      </Modal>
     </>
   );
 };
