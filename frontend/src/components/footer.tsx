@@ -4,11 +4,10 @@ import { getVersionInfo } from '../lib/version';
 export const Footer = () => {
   const [versionInfo, setVersionInfo] = useState({
     version: 'dev',
-    gitRevision: 'xxxxxunknown',
+    gitRevision: 'unknown',
   });
 
   useEffect(() => {
-    console.log('foo');
     getVersionInfo().then(setVersionInfo);
   }, []);
 
