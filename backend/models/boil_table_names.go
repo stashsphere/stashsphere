@@ -7,6 +7,7 @@ var TableNames = struct {
 	CartEntries            string
 	EmailVerificationCodes string
 	EmailVerifications     string
+	Exports                string
 	ExternalAuth           string
 	FriendRequests         string
 	Friendships            string
@@ -27,6 +28,7 @@ var TableNames = struct {
 	CartEntries:            "cart_entries",
 	EmailVerificationCodes: "email_verification_codes",
 	EmailVerifications:     "email_verifications",
+	Exports:                "exports",
 	ExternalAuth:           "external_auth",
 	FriendRequests:         "friend_requests",
 	Friendships:            "friendships",

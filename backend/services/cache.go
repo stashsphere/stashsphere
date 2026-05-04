@@ -12,7 +12,7 @@ type CacheService struct {
 }
 
 func NewCacheService(cachePath string) (*CacheService, error) {
-	err := os.MkdirAll(cachePath, 0755)
+	err := os.MkdirAll(cachePath, 0750)
 	if err != nil {
 		return nil, err
 	}

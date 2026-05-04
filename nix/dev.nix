@@ -134,6 +134,7 @@ let
           fi
 
           export STASHSPHERE_AUTH__PRIVATE_KEY="$(cat "$AUTH_KEY_FILE")"
+          export STATE_DIRECTORY="$DEV_DATA_DIR"
 
           cd backend
           ${pkgs.go}/bin/go run ./... migrate --conf ${backendConfigFile}

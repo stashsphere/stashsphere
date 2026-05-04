@@ -51,6 +51,54 @@ func makeCacheKey(cols boil.Columns, nzDefaults []string) string {
 	return str
 }
 
+type ExportStatus string
+
+// Enum values for ExportStatus
+const (
+	ExportStatusPending    ExportStatus = "pending"
+	ExportStatusProcessing ExportStatus = "processing"
+	ExportStatusDone       ExportStatus = "done"
+	ExportStatusError      ExportStatus = "error"
+)
+
+func AllExportStatus() []ExportStatus {
+	return []ExportStatus{
+		ExportStatusPending,
+		ExportStatusProcessing,
+		ExportStatusDone,
+		ExportStatusError,
+	}
+}
+
+func (e ExportStatus) IsValid() error {
+	switch e {
+	case ExportStatusPending, ExportStatusProcessing, ExportStatusDone, ExportStatusError:
+		return nil
+	default:
+		return errors.New("enum is not valid")
+	}
+}
+
+func (e ExportStatus) String() string {
+	return string(e)
+}
+
+func (e ExportStatus) Ordinal() int {
+	switch e {
+	case ExportStatusPending:
+		return 0
+	case ExportStatusProcessing:
+		return 1
+	case ExportStatusDone:
+		return 2
+	case ExportStatusError:
+		return 3
+
+	default:
+		panic(errors.New("enum is not valid"))
+	}
+}
+
 type FriendRequestState string
 
 // Enum values for FriendRequestState

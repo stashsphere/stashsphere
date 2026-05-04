@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stashsphere/backend/cmd"
 	"github.com/stashsphere/backend/config"
@@ -15,6 +16,7 @@ import (
 func testConfig(t *testing.T) config.StashSphereServeConfig {
 	imageDir := t.TempDir()
 	cacheDir := t.TempDir()
+	tmpDir := t.TempDir()
 
 	return config.StashSphereServeConfig{
 		ListenAddress: ":8081",
@@ -36,6 +38,14 @@ func testConfig(t *testing.T) config.StashSphereServeConfig {
 		},
 		FrontendUrl:  "http://localhost",
 		InstanceName: "test",
+		Export: struct {
+			StorePath         string        "koanf:\"storePath\""
+			RetentionDuration time.Duration "koanf:\"retentionDuration\""
+		}{
+			StorePath:         tmpDir,
+			RetentionDuration: time.Hour,
+		},
+		TmpPath: tmpDir,
 	}
 }
 

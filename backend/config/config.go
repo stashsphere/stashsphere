@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 type StashSphereDatabaseConfig struct {
 	User     string  `koanf:"user"`
 	Name     string  `koanf:"name"`
@@ -55,6 +57,13 @@ type StashSphereServeConfig struct {
 		CookieDomain   string   `koanf:"cookieDomain"`
 		ApiDomain      string   `koanf:"api"` // Deprecated: use CookieDomain instead
 	} `koanf:"domains"`
+
+	TmpPath string `koanf:"tmpPath"`
+
+	Export struct {
+		StorePath         string        `koanf:"storePath"`
+		RetentionDuration time.Duration `koanf:"retentionDuration"`
+	} `koanf:"export"`
 
 	BaseURL      string `koanf:"baseUrl"`
 	FrontendUrl  string `koanf:"frontendUrl"`

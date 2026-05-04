@@ -26,6 +26,7 @@ const (
 	ErrOIDCCallbackFailed          = "oidc-callback-failed"
 	ErrOIDCLinkChallengExpired     = "oidc-link-challenge-expired"
 	ErrOIDCLinkIncorrectPassword   = "oidc-link-incorrect-password"
+	ErrExportAlreadyInProgress     = "export-already-in-progress"
 )
 
 type StashsphereError interface {
@@ -154,3 +155,8 @@ type OIDCLinkIncorrectPasswordError struct{}
 
 func (r OIDCLinkIncorrectPasswordError) ErrorType() string { return ErrOIDCLinkIncorrectPassword }
 func (r OIDCLinkIncorrectPasswordError) Error() string     { return "Incorrect password" }
+
+type ExportAlreadyInProgressError struct{}
+
+func (r ExportAlreadyInProgressError) ErrorType() string { return ErrExportAlreadyInProgress }
+func (r ExportAlreadyInProgressError) Error() string     { return "An export is already in progress" }

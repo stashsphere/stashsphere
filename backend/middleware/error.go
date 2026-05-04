@@ -76,6 +76,9 @@ func CreateStashSphereHTTPErrorHandler(echoInstance *echo.Echo) func(err error, 
 			case utils.ErrOIDCLinkIncorrectPassword:
 				statusCode = http.StatusUnauthorized
 				message = "Incorrect password"
+			case utils.ErrExportAlreadyInProgress:
+				statusCode = http.StatusConflict
+				message = "Export already in progress"
 			}
 		default:
 			echoInstance.DefaultHTTPErrorHandler(err, c)

@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stashsphere/backend/cmd"
 	"github.com/stashsphere/backend/config"
@@ -23,6 +24,7 @@ import (
 func oidcBaseConfig(t *testing.T) config.StashSphereServeConfig {
 	imageDir := t.TempDir()
 	cacheDir := t.TempDir()
+	tmpDir := t.TempDir()
 
 	keyStr, err := crypto.GenerateEd25519StringKey()
 	assert.NoError(t, err)
@@ -53,9 +55,17 @@ func oidcBaseConfig(t *testing.T) config.StashSphereServeConfig {
 			PrivateKey:           keyStr,
 			DisableSecureCookies: true,
 		},
+		TmpPath:      tmpDir,
 		FrontendUrl:  "http://localhost",
 		InstanceName: "test",
 		BaseURL:      "http://localhost:8081",
+		Export: struct {
+			StorePath         string        "koanf:\"storePath\""
+			RetentionDuration time.Duration "koanf:\"retentionDuration\""
+		}{
+			StorePath:         tmpDir,
+			RetentionDuration: time.Hour,
+		},
 	}
 }
 

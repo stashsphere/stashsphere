@@ -177,6 +177,17 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		}
 		return name
 	})
+
+	if err := os.MkdirAll(config.Image.Path, 0750); err != nil {
+		log.Fatal().Err(err).Msgf("failed to create directory for images %s", config.Image.Path)
+	}
+	if err := os.MkdirAll(config.TmpPath, 0750); err != nil {
+		log.Fatal().Err(err).Msgf("failed to create directory for temporary storage %s", config.TmpPath)
+	}
+	if err := os.MkdirAll(config.Export.StorePath, 0750); err != nil {
+		log.Fatal().Err(err).Msgf("failed to create directory for export %s", config.Export.StorePath)
+	}
+
 	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, 24*7*time.Hour, config.Domains.CookieDomain, !config.Auth.DisableSecureCookies)
 
 	oidcService := services.NewOIDCService(db, config.Auth.OIDC, config.BaseURL, privateKey, publicKey)
@@ -187,7 +198,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 			FrontendUrl:  config.FrontendUrl,
 			InstanceName: config.InstanceName,
 		}, emailService)
-	imageService, err := services.NewImageService(db, config.Image.Path)
+	imageService, err := services.NewImageService(db, config.Image.Path, config.TmpPath)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -201,7 +212,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		gracePeriodMinutes = 1440 // default: 24 hours
 	}
 	userService := services.NewUserService(db, config.Invites.Enabled, config.Invites.InviteCode, gracePeriodMinutes, notificationService)
-
 	thingService := services.NewThingService(db, imageService, notificationService)
 	listService := services.NewListService(db, notificationService)
 	propertyService, err := services.NewPropertyService(db)
@@ -212,6 +222,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	shareService := services.NewShareService(db, notificationService)
 	friendService := services.NewFriendService(db, notificationService)
 	cartService := services.NewCartService(db)
+	exportService := services.NewExportService(db)
 
 	e.Validator = &CustomValidator{validator: validate, trans: &trans}
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -225,6 +236,9 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     config.Domains.AllowedDomains,
 		AllowCredentials: true,
+		ExposeHeaders: []string{
+			"Content-Disposition",
+		},
 	}))
 	e.Use(echojwt.WithConfig(echojwt.Config{
 		SigningKey:    publicKey,
@@ -260,6 +274,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	friendHandler := handlers.NewFriendHandler(friendService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	cartHandler := handlers.NewCartHandler(cartService)
+	exportHandler := handlers.NewExportHandler(exportService, config.Export.StorePath)
 	emailVerificationHandler := handlers.NewEmailVerificationHandler(userService)
 	infoHandler := handlers.NewInfoHandler(config.Invites.Enabled, oidcService.GetProviderConfigs())
 	oidcHandler := handlers.NewOIDCHandler(oidcService, authService, config.Domains.AllowedDomains, !config.Auth.DisableSecureCookies)
@@ -291,6 +306,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	notificationsGroup := a.Group("/notifications")
 	cartGroup := a.Group("/cart")
 	propertyGroup := a.Group("/properties")
+	exportGroup := a.Group("/export")
 
 	// user group
 	commonUserOptions := option.Group(
@@ -1747,6 +1763,34 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	e.HEAD("/assets/:hash", imageHandler.ImageHandlerGet)
 
+	// export group
+	commonExportOptions := option.Group(
+		option.Tags("Export"),
+		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
+		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
+	)
+	fuegoecho.PostEcho(engine, exportGroup, "", exportHandler.Post,
+		option.Summary("Trigger Export"),
+		option.Description("Create a new export for the current user"),
+		option.AddResponse(202, "Export created", fuego.Response{Type: resources.ExportStatus{}, ContentTypes: []string{"application/json"}}),
+		option.AddResponse(409, "Export already in progress", fuego.Response{Type: ss_middleware.ErrorResponse{}, ContentTypes: []string{"application/json"}}),
+		commonExportOptions,
+	)
+	fuegoecho.GetEcho(engine, exportGroup, "", exportHandler.Get,
+		option.Summary("Get Export Status"),
+		option.Description("Get the most recent export for the current user"),
+		option.AddResponse(200, "Export status", fuego.Response{Type: resources.ExportStatus{}, ContentTypes: []string{"application/json"}}),
+		option.AddResponse(404, "No export found", fuego.Response{Type: ss_middleware.ErrorResponse{}, ContentTypes: []string{"application/json"}}),
+		commonExportOptions,
+	)
+	fuegoecho.GetEcho(engine, exportGroup, "/download", exportHandler.DownloadGet,
+		option.Summary("Download Export"),
+		option.Description("Download the finished export ZIP archive"),
+		option.AddResponse(200, "Export ZIP file", fuego.Response{Type: []byte{}, ContentTypes: []string{"application/zip"}}),
+		option.AddResponse(404, "No finished export found", fuego.Response{Type: ss_middleware.ErrorResponse{}, ContentTypes: []string{"application/json"}}),
+		commonExportOptions,
+	)
+
 	engine.RegisterOpenAPIRoutes(&fuegoecho.OpenAPIHandler{Echo: e})
 
 	return e, engine, nil
@@ -1769,6 +1813,9 @@ func Serve(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool) 
 	defer purgeWorker.Stop()
 	imageWorker := workers.NewImageSizeWorker(db, config.Image.Path)
 	imageWorker.Start()
+	exportWorker := workers.NewExportWorker(db, config.Image.Path, config.Export.StorePath, config.TmpPath, config.Export.RetentionDuration, 1*time.Minute)
+	exportWorker.Start()
+	defer exportWorker.Stop()
 
 	log.Info().Msgf("stashsphere listening on %s", config.ListenAddress)
 	return echo.Start(config.ListenAddress)
@@ -1785,51 +1832,60 @@ var serveCommand = &cobra.Command{
 
 		k := koanf.New(".")
 
-		defaultImagePath := path.Join(".", "image_store")
-		defaultImageCachePath := path.Join(".", "image_cache")
-
-		if stateDir := os.Getenv("STATE_DIRECTORY"); stateDir != "" {
-			defaultImagePath = path.Join(stateDir, "image_store")
+		stateDir := "."
+		if s := os.Getenv("STATE_DIRECTORY"); s != "" {
+			stateDir = s
 		}
+
+		defaultImagePath := path.Join(stateDir, "image_store")
+		defaultImageCachePath := path.Join(".", "image_cache")
+		defaultTmpPath := os.TempDir()
+		defaultExportStorePath := path.Join(stateDir, "export_store")
+
 		if cacheDir := os.Getenv("CACHE_DIRECTORY"); cacheDir != "" {
 			defaultImageCachePath = path.Join(cacheDir, "image_cache")
 		}
 
-		err := k.Load(confmap.Provider(map[string]interface{}{
-			"database": map[string]interface{}{
+		err := k.Load(confmap.Provider(map[string]any{
+			"database": map[string]any{
 				"user": "stashsphere",
 				"name": "stashsphere",
 				"host": "127.0.0.1",
 			},
 			"listenAddress": ":8081",
-			"auth": map[string]interface{}{
+			"auth": map[string]any{
 				"privateKey":           "",
 				"disableSecureCookies": false,
-				"oidc": map[string]interface{}{
+				"oidc": map[string]any{
 					"enabled":   false,
-					"providers": []interface{}{},
+					"providers": []any{},
 				},
 			},
-			"image": map[string]interface{}{
+			"image": map[string]any{
 				"path":      defaultImagePath,
 				"cachePath": defaultImageCachePath,
 			},
-			"invites": map[string]interface{}{
+			"invites": map[string]any{
 				"enabled": false,
 				"code":    "",
 			},
-			"domains": map[string]interface{}{
+			"domains": map[string]any{
 				"allowed":      []string{"http://localhost"},
 				"cookieDomain": "localhost:8081",
 				"apiDomain":    "localhost",
 			},
+			"tmpPath": defaultTmpPath,
+			"export": map[string]any{
+				"storePath":         defaultExportStorePath,
+				"retentionDuration": "240h", // 10 days
+			},
 			"baseUrl":      "http://localhost:8081",
 			"frontendUrl":  "http://localhost",
 			"instanceName": "stashsphereDev",
-			"email": map[string]interface{}{
+			"email": map[string]any{
 				"backend": "stdout",
 			},
-			"userDeletion": map[string]interface{}{
+			"userDeletion": map[string]any{
 				"gracePeriodMinutes": 1440,
 			},
 		}, ""), nil)

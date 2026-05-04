@@ -31,6 +31,7 @@ var openApiDumpCommand = &cobra.Command{
 		}
 		imagePath := path.Join(stateDir, "image_store")
 		imageCachePath := path.Join(cacheDir, "image_cache")
+		tmpPath := os.TempDir()
 
 		k := koanf.New(".")
 		k.Load(confmap.Provider(map[string]interface{}{
@@ -54,6 +55,11 @@ var openApiDumpCommand = &cobra.Command{
 			"domains": map[string]interface{}{
 				"allowed": []string{"http://localhost"},
 				"own":     []string{"localhost"},
+			},
+			"tmpPath": "/tmp",
+			"export": map[string]interface{}{
+				"storePath":       tmpPath,
+				"retentionPeriod": "240h",
 			},
 			"frontendUrl":  "http://localhost",
 			"instanceName": "stashsphereDev",

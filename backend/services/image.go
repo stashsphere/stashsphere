@@ -9,7 +9,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -27,37 +26,35 @@ import (
 type ImageService struct {
 	db          *sql.DB
 	storePath   string
+	tmpPath     string
 	mimeDecoder *magicmime.Decoder
 }
 
-func NewImageService(db *sql.DB, storePath string) (*ImageService, error) {
+func NewImageService(db *sql.DB, storePath, tmpPath string) (*ImageService, error) {
 	mimeDecoder, err := magicmime.NewDecoder(magicmime.MAGIC_MIME_TYPE | magicmime.MAGIC_SYMLINK | magicmime.MAGIC_ERROR)
 	if err != nil {
 		return nil, err
 	}
-	is := &ImageService{db, storePath, mimeDecoder}
-	err = os.MkdirAll(storePath, 0755)
-	if err != nil {
+	if _, err := os.Stat(storePath); err != nil {
 		return nil, err
 	}
-	err = os.MkdirAll(is.tmpPath(), 0755)
-	if err != nil {
+	if _, err := os.Stat(tmpPath); err != nil {
 		return nil, err
 	}
-	return is, nil
+	return &ImageService{db, storePath, tmpPath, mimeDecoder}, nil
 }
 
-// / for testing purposes
+// for testing purposes
 func NewTmpImageService(db *sql.DB) (*ImageService, error) {
-	dir, err := os.MkdirTemp("", "image_service")
+	storePath, err := os.MkdirTemp("", "image_service")
 	if err != nil {
 		return nil, err
 	}
-	return NewImageService(db, dir)
-}
-
-func (is *ImageService) tmpPath() string {
-	return path.Join(is.storePath, "tmp")
+	tmpPath, err := os.MkdirTemp("", "image_service_tmp")
+	if err != nil {
+		return nil, err
+	}
+	return NewImageService(db, storePath, tmpPath)
 }
 
 func (is *ImageService) StorePath() string {
@@ -70,7 +67,7 @@ type ImageFile interface {
 }
 
 func (is *ImageService) CreateImage(ctx context.Context, ownerId string, name string, src ImageFile) (*models.Image, error) {
-	tmp, err := os.CreateTemp(is.tmpPath(), "tmpfile")
+	tmp, err := os.CreateTemp(is.tmpPath, "tmpfile")
 	if err != nil {
 		return nil, err
 	}
