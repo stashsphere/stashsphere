@@ -30,6 +30,7 @@ export const UserLayout = () => {
           <div className="flex items-center space-x-1">
             <UserNavItem to="/user/profile">Profile</UserNavItem>
             <UserNavItem to="/user/account">Account</UserNavItem>
+            <UserNavItem to="/user/import-export">Import &amp; Export</UserNavItem>
           </div>
         </div>
       </nav>

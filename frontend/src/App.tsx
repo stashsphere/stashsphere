@@ -34,6 +34,7 @@ import { ShowNotifications } from './routes/notifications';
 import { ShowUser } from './routes/users/show';
 import { UserLayout } from './components/user_layout';
 import { Account } from './routes/profile/account';
+import { ImportExport } from './routes/profile/import_export';
 import { VerifyEmail } from './routes/user/verify-email';
 import { jwtDecode } from 'jwt-decode';
 import { refreshTokens } from './api/auth';
@@ -184,6 +185,7 @@ export const App = () => {
                         <Route path="account" element={<Account />} />
                         <Route path="profile/edit" element={<EditProfile />} />
                         <Route path="verify-email" element={<VerifyEmail />} />
+                        <Route path="import-export" element={<ImportExport />} />
                       </Route>
 
                       <Route
