@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -187,6 +188,10 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	if err := os.MkdirAll(config.Export.StorePath, 0750); err != nil {
 		log.Fatal().Err(err).Msgf("failed to create directory for export %s", config.Export.StorePath)
 	}
+	importDir := filepath.Join(config.TmpPath, "imports")
+	if err := os.MkdirAll(importDir, 0750); err != nil {
+		log.Fatal().Err(err).Msgf("failed to create directory for import %s", importDir)
+	}
 
 	authService := services.NewAuthService(db, privateKey, publicKey, 6*time.Hour, 24*7*time.Hour, config.Domains.CookieDomain, !config.Auth.DisableSecureCookies)
 
@@ -223,6 +228,10 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	friendService := services.NewFriendService(db, notificationService)
 	cartService := services.NewCartService(db)
 	exportService := services.NewExportService(db)
+	importService, err := services.NewImportService(db, importDir)
+	if err != nil {
+		log.Fatal().Msgf("Could not initialize ImportService: %v", err)
+	}
 
 	e.Validator = &CustomValidator{validator: validate, trans: &trans}
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -275,6 +284,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	cartHandler := handlers.NewCartHandler(cartService)
 	exportHandler := handlers.NewExportHandler(exportService, config.Export.StorePath)
+	importHandler := handlers.NewImportHandler(importService, config.Import.MaxUploadMB*1024*1024)
 	emailVerificationHandler := handlers.NewEmailVerificationHandler(userService)
 	infoHandler := handlers.NewInfoHandler(config.Invites.Enabled, oidcService.GetProviderConfigs())
 	oidcHandler := handlers.NewOIDCHandler(oidcService, authService, config.Domains.AllowedDomains, !config.Auth.DisableSecureCookies)
@@ -307,6 +317,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	cartGroup := a.Group("/cart")
 	propertyGroup := a.Group("/properties")
 	exportGroup := a.Group("/export")
+	importGroup := a.Group("/import")
 
 	// user group
 	commonUserOptions := option.Group(
@@ -1791,6 +1802,28 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonExportOptions,
 	)
 
+	// import group
+	commonImportOptions := option.Group(
+		option.Tags("Import"),
+		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
+		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
+	)
+	fuegoecho.PostEcho(engine, importGroup, "", importHandler.Post,
+		option.Summary("Upload Import"),
+		option.Description("Upload a ZIP archive to import into the current user's collection"),
+		option.AddResponse(202, "Import queued", fuego.Response{Type: resources.ImportStatus{}, ContentTypes: []string{"application/json"}}),
+		option.AddResponse(400, "Invalid file", fuego.Response{Type: ss_middleware.ErrorResponse{}, ContentTypes: []string{"application/json"}}),
+		option.AddResponse(409, "Import already in progress", fuego.Response{Type: ss_middleware.ErrorResponse{}, ContentTypes: []string{"application/json"}}),
+		commonImportOptions,
+	)
+	fuegoecho.GetEcho(engine, importGroup, "", importHandler.Get,
+		option.Summary("Get Import Status"),
+		option.Description("Get the most recent import for the current user"),
+		option.AddResponse(200, "Import status", fuego.Response{Type: resources.ImportStatus{}, ContentTypes: []string{"application/json"}}),
+		option.AddResponse(404, "No import found", fuego.Response{Type: ss_middleware.ErrorResponse{}, ContentTypes: []string{"application/json"}}),
+		commonImportOptions,
+	)
+
 	engine.RegisterOpenAPIRoutes(&fuegoecho.OpenAPIHandler{Echo: e})
 
 	return e, engine, nil
@@ -1816,6 +1849,15 @@ func Serve(config config.StashSphereServeConfig, debug bool, serveOpenAPI bool) 
 	exportWorker := workers.NewExportWorker(db, config.Image.Path, config.Export.StorePath, config.TmpPath, config.Export.RetentionDuration, 1*time.Minute)
 	exportWorker.Start()
 	defer exportWorker.Stop()
+	// construct a ImageService for the ImportWorker, potentially
+	// can be reused from `setup`, no need atm
+	imageService, err := services.NewImageService(db, config.Image.Path, config.TmpPath)
+	if err != nil {
+		return err
+	}
+	importWorkerInst := workers.NewImportWorker(db, imageService, filepath.Join(config.TmpPath, "imports"), 1*time.Minute)
+	importWorkerInst.Start()
+	defer importWorkerInst.Stop()
 
 	log.Info().Msgf("stashsphere listening on %s", config.ListenAddress)
 	return echo.Start(config.ListenAddress)
@@ -1878,6 +1920,9 @@ var serveCommand = &cobra.Command{
 			"export": map[string]any{
 				"storePath":         defaultExportStorePath,
 				"retentionDuration": "240h", // 10 days
+			},
+			"import": map[string]any{
+				"maxUploadMb": 512,
 			},
 			"baseUrl":      "http://localhost:8081",
 			"frontendUrl":  "http://localhost",

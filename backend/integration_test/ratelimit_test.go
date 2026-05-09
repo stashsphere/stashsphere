@@ -46,6 +46,11 @@ func testConfig(t *testing.T) config.StashSphereServeConfig {
 			RetentionDuration: time.Hour,
 		},
 		TmpPath: tmpDir,
+		Import: struct {
+			MaxUploadMB int64 "koanf:\"maxUploadMb\""
+		}{
+			MaxUploadMB: 1024,
+		},
 	}
 }
 

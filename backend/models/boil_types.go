@@ -143,6 +143,54 @@ func (e FriendRequestState) Ordinal() int {
 	}
 }
 
+type ImportStatus string
+
+// Enum values for ImportStatus
+const (
+	ImportStatusPending    ImportStatus = "pending"
+	ImportStatusProcessing ImportStatus = "processing"
+	ImportStatusDone       ImportStatus = "done"
+	ImportStatusError      ImportStatus = "error"
+)
+
+func AllImportStatus() []ImportStatus {
+	return []ImportStatus{
+		ImportStatusPending,
+		ImportStatusProcessing,
+		ImportStatusDone,
+		ImportStatusError,
+	}
+}
+
+func (e ImportStatus) IsValid() error {
+	switch e {
+	case ImportStatusPending, ImportStatusProcessing, ImportStatusDone, ImportStatusError:
+		return nil
+	default:
+		return errors.New("enum is not valid")
+	}
+}
+
+func (e ImportStatus) String() string {
+	return string(e)
+}
+
+func (e ImportStatus) Ordinal() int {
+	switch e {
+	case ImportStatusPending:
+		return 0
+	case ImportStatusProcessing:
+		return 1
+	case ImportStatusDone:
+		return 2
+	case ImportStatusError:
+		return 3
+
+	default:
+		panic(errors.New("enum is not valid"))
+	}
+}
+
 type SharingState string
 
 // Enum values for SharingState

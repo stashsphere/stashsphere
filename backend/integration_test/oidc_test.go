@@ -66,6 +66,12 @@ func oidcBaseConfig(t *testing.T) config.StashSphereServeConfig {
 			StorePath:         tmpDir,
 			RetentionDuration: time.Hour,
 		},
+		Import: struct {
+			MaxUploadMB int64 "koanf:\"maxUploadMb\""
+		}{
+			MaxUploadMB: 1024,
+		},
+		Email: config.StashSphereMailConfig{},
 	}
 }
 

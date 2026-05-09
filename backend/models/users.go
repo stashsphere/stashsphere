@@ -81,6 +81,7 @@ var UserWhere = struct {
 // UserRels is where relationship names are stored.
 var UserRels = struct {
 	OwnerExport            string
+	OwnerImport            string
 	Profile                string
 	CartEntries            string
 	EmailVerificationCodes string
@@ -98,6 +99,7 @@ var UserRels = struct {
 	OwnerThings            string
 }{
 	OwnerExport:            "OwnerExport",
+	OwnerImport:            "OwnerImport",
 	Profile:                "Profile",
 	CartEntries:            "CartEntries",
 	EmailVerificationCodes: "EmailVerificationCodes",
@@ -118,6 +120,7 @@ var UserRels = struct {
 // userR is where relationships are stored.
 type userR struct {
 	OwnerExport            *Export                    `boil:"OwnerExport" json:"OwnerExport" toml:"OwnerExport" yaml:"OwnerExport"`
+	OwnerImport            *Import                    `boil:"OwnerImport" json:"OwnerImport" toml:"OwnerImport" yaml:"OwnerImport"`
 	Profile                *Profile                   `boil:"Profile" json:"Profile" toml:"Profile" yaml:"Profile"`
 	CartEntries            CartEntrySlice             `boil:"CartEntries" json:"CartEntries" toml:"CartEntries" yaml:"CartEntries"`
 	EmailVerificationCodes EmailVerificationCodeSlice `boil:"EmailVerificationCodes" json:"EmailVerificationCodes" toml:"EmailVerificationCodes" yaml:"EmailVerificationCodes"`
@@ -154,6 +157,22 @@ func (r *userR) GetOwnerExport() *Export {
 	}
 
 	return r.OwnerExport
+}
+
+func (o *User) GetOwnerImport() *Import {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetOwnerImport()
+}
+
+func (r *userR) GetOwnerImport() *Import {
+	if r == nil {
+		return nil
+	}
+
+	return r.OwnerImport
 }
 
 func (o *User) GetProfile() *Profile {
@@ -723,6 +742,17 @@ func (o *User) OwnerExport(mods ...qm.QueryMod) exportQuery {
 	return Exports(queryMods...)
 }
 
+// OwnerImport pointed to by the foreign key.
+func (o *User) OwnerImport(mods ...qm.QueryMod) importQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"owner_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Imports(queryMods...)
+}
+
 // Profile pointed to by the foreign key.
 func (o *User) Profile(mods ...qm.QueryMod) profileQuery {
 	queryMods := []qm.QueryMod{
@@ -1037,6 +1067,123 @@ func (userL) LoadOwnerExport(ctx context.Context, e boil.ContextExecutor, singul
 				local.R.OwnerExport = foreign
 				if foreign.R == nil {
 					foreign.R = &exportR{}
+				}
+				foreign.R.Owner = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadOwnerImport allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-1 relationship.
+func (userL) LoadOwnerImport(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`imports`),
+		qm.WhereIn(`imports.owner_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Import")
+	}
+
+	var resultSlice []*Import
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Import")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for imports")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for imports")
+	}
+
+	if len(importAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.OwnerImport = foreign
+		if foreign.R == nil {
+			foreign.R = &importR{}
+		}
+		foreign.R.Owner = object
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.ID == foreign.OwnerID {
+				local.R.OwnerImport = foreign
+				if foreign.R == nil {
+					foreign.R = &importR{}
 				}
 				foreign.R.Owner = local
 				break
@@ -2774,6 +2921,56 @@ func (o *User) SetOwnerExport(ctx context.Context, exec boil.ContextExecutor, in
 
 	if related.R == nil {
 		related.R = &exportR{
+			Owner: o,
+		}
+	} else {
+		related.R.Owner = o
+	}
+	return nil
+}
+
+// SetOwnerImport of the user to the related item.
+// Sets o.R.OwnerImport to related.
+// Adds o to related.R.Owner.
+func (o *User) SetOwnerImport(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Import) error {
+	var err error
+
+	if insert {
+		related.OwnerID = o.ID
+
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	} else {
+		updateQuery := fmt.Sprintf(
+			"UPDATE \"imports\" SET %s WHERE %s",
+			strmangle.SetParamNames("\"", "\"", 1, []string{"owner_id"}),
+			strmangle.WhereClause("\"", "\"", 2, importPrimaryKeyColumns),
+		)
+		values := []interface{}{o.ID, related.ID}
+
+		if boil.IsDebug(ctx) {
+			writer := boil.DebugWriterFrom(ctx)
+			fmt.Fprintln(writer, updateQuery)
+			fmt.Fprintln(writer, values)
+		}
+		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+			return errors.Wrap(err, "failed to update foreign table")
+		}
+
+		related.OwnerID = o.ID
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			OwnerImport: related,
+		}
+	} else {
+		o.R.OwnerImport = related
+	}
+
+	if related.R == nil {
+		related.R = &importR{
 			Owner: o,
 		}
 	} else {

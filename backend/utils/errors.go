@@ -27,6 +27,8 @@ const (
 	ErrOIDCLinkChallengExpired     = "oidc-link-challenge-expired"
 	ErrOIDCLinkIncorrectPassword   = "oidc-link-incorrect-password"
 	ErrExportAlreadyInProgress     = "export-already-in-progress"
+	ErrImportAlreadyInProgress     = "import-already-in-progress"
+	ErrInvalidImportFile           = "invalid-import-file"
 )
 
 type StashsphereError interface {
@@ -160,3 +162,13 @@ type ExportAlreadyInProgressError struct{}
 
 func (r ExportAlreadyInProgressError) ErrorType() string { return ErrExportAlreadyInProgress }
 func (r ExportAlreadyInProgressError) Error() string     { return "An export is already in progress" }
+
+type ImportAlreadyInProgressError struct{}
+
+func (r ImportAlreadyInProgressError) ErrorType() string { return ErrImportAlreadyInProgress }
+func (r ImportAlreadyInProgressError) Error() string     { return "An import is already in progress" }
+
+type InvalidImportFileError struct{ Msg string }
+
+func (r InvalidImportFileError) ErrorType() string { return ErrInvalidImportFile }
+func (r InvalidImportFileError) Error() string     { return r.Msg }

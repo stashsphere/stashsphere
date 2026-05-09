@@ -79,6 +79,12 @@ func CreateStashSphereHTTPErrorHandler(echoInstance *echo.Echo) func(err error, 
 			case utils.ErrExportAlreadyInProgress:
 				statusCode = http.StatusConflict
 				message = "Export already in progress"
+			case utils.ErrImportAlreadyInProgress:
+				statusCode = http.StatusConflict
+				message = "Import already in progress"
+			case utils.ErrInvalidImportFile:
+				statusCode = http.StatusBadRequest
+				message = e.Error()
 			}
 		default:
 			echoInstance.DefaultHTTPErrorHandler(err, c)

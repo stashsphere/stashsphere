@@ -65,6 +65,10 @@ type StashSphereServeConfig struct {
 		RetentionDuration time.Duration `koanf:"retentionDuration"`
 	} `koanf:"export"`
 
+	Import struct {
+		MaxUploadMB int64 `koanf:"maxUploadMb"`
+	} `koanf:"import"`
+
 	BaseURL      string `koanf:"baseUrl"`
 	FrontendUrl  string `koanf:"frontendUrl"`
 	InstanceName string `koanf:"instanceName"`
