@@ -5,54 +5,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stashsphere/backend/cmd"
-	"github.com/stashsphere/backend/config"
 	testcommon "github.com/stashsphere/backend/test_common"
 	"github.com/stretchr/testify/assert"
 )
-
-func testConfig(t *testing.T) config.StashSphereServeConfig {
-	imageDir := t.TempDir()
-	cacheDir := t.TempDir()
-	tmpDir := t.TempDir()
-
-	return config.StashSphereServeConfig{
-		ListenAddress: ":8081",
-		Image: struct {
-			Path      string `koanf:"path"`
-			CachePath string `koanf:"cachePath"`
-		}{
-			Path:      imageDir,
-			CachePath: cacheDir,
-		},
-		Domains: struct {
-			AllowedDomains []string `koanf:"allowed"`
-			CookieDomain   string   `koanf:"cookieDomain"`
-			ApiDomain      string   `koanf:"api"`
-		}{
-			AllowedDomains: []string{"http://localhost"},
-			CookieDomain:   "",
-			ApiDomain:      "",
-		},
-		FrontendUrl:  "http://localhost",
-		InstanceName: "test",
-		Export: struct {
-			StorePath         string        "koanf:\"storePath\""
-			RetentionDuration time.Duration "koanf:\"retentionDuration\""
-		}{
-			StorePath:         tmpDir,
-			RetentionDuration: time.Hour,
-		},
-		TmpPath: tmpDir,
-		Import: struct {
-			MaxUploadMB int64 "koanf:\"maxUploadMb\""
-		}{
-			MaxUploadMB: 1024,
-		},
-	}
-}
 
 func TestLoginRateLimiting(t *testing.T) {
 	db, tearDown, err := testcommon.CreateTestSchema()
@@ -60,7 +17,7 @@ func TestLoginRateLimiting(t *testing.T) {
 	t.Cleanup(tearDown)
 	t.Cleanup(func() { db.Close() })
 
-	e, _, err := cmd.SetupWithDB(db, testConfig(t), false, false, "")
+	e, _, err := cmd.SetupWithDB(db, testcommon.BaseTestConfig(t), false, false, "")
 	assert.NoError(t, err)
 
 	// Make 6 requests - first 5 should succeed (or fail auth), 6th should be rate limited
@@ -88,7 +45,7 @@ func TestRegisterRateLimiting(t *testing.T) {
 	t.Cleanup(tearDown)
 	t.Cleanup(func() { db.Close() })
 
-	e, _, err := cmd.SetupWithDB(db, testConfig(t), false, false, "")
+	e, _, err := cmd.SetupWithDB(db, testcommon.BaseTestConfig(t), false, false, "")
 	assert.NoError(t, err)
 
 	// Make 6 requests - first 5 should succeed (or fail validation), 6th should be rate limited
@@ -116,7 +73,7 @@ func TestRateLimitingPerIP(t *testing.T) {
 	t.Cleanup(tearDown)
 	t.Cleanup(func() { db.Close() })
 
-	e, _, err := cmd.SetupWithDB(db, testConfig(t), false, false, "")
+	e, _, err := cmd.SetupWithDB(db, testcommon.BaseTestConfig(t), false, false, "")
 	assert.NoError(t, err)
 
 	// Exhaust rate limit for IP 1.1.1.1

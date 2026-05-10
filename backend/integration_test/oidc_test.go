@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stashsphere/backend/cmd"
 	"github.com/stashsphere/backend/config"
@@ -22,57 +21,14 @@ import (
 )
 
 func oidcBaseConfig(t *testing.T) config.StashSphereServeConfig {
-	imageDir := t.TempDir()
-	cacheDir := t.TempDir()
-	tmpDir := t.TempDir()
-
 	keyStr, err := crypto.GenerateEd25519StringKey()
 	assert.NoError(t, err)
 
-	return config.StashSphereServeConfig{
-		ListenAddress: ":8081",
-		Image: struct {
-			Path      string `koanf:"path"`
-			CachePath string `koanf:"cachePath"`
-		}{
-			Path:      imageDir,
-			CachePath: cacheDir,
-		},
-		Domains: struct {
-			AllowedDomains []string `koanf:"allowed"`
-			CookieDomain   string   `koanf:"cookieDomain"`
-			ApiDomain      string   `koanf:"api"`
-		}{
-			AllowedDomains: []string{"http://localhost"},
-			CookieDomain:   "",
-			ApiDomain:      "",
-		},
-		Auth: struct {
-			PrivateKey           string            `koanf:"privateKey"`
-			DisableSecureCookies bool              `koanf:"disableSecureCookies"`
-			OIDC                 config.OIDCConfig `koanf:"oidc"`
-		}{
-			PrivateKey:           keyStr,
-			DisableSecureCookies: true,
-		},
-		TmpPath:      tmpDir,
-		FrontendUrl:  "http://localhost",
-		InstanceName: "test",
-		BaseURL:      "http://localhost:8081",
-		Export: struct {
-			StorePath         string        "koanf:\"storePath\""
-			RetentionDuration time.Duration "koanf:\"retentionDuration\""
-		}{
-			StorePath:         tmpDir,
-			RetentionDuration: time.Hour,
-		},
-		Import: struct {
-			MaxUploadMB int64 "koanf:\"maxUploadMb\""
-		}{
-			MaxUploadMB: 1024,
-		},
-		Email: config.StashSphereMailConfig{},
-	}
+	cfg := testcommon.BaseTestConfig(t)
+	cfg.Auth.PrivateKey = keyStr
+	cfg.Auth.DisableSecureCookies = true
+	cfg.BaseURL = "http://localhost:8081"
+	return cfg
 }
 
 func oidcTestConfig(t *testing.T) config.StashSphereServeConfig {
