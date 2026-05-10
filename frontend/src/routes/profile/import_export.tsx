@@ -94,7 +94,7 @@ const ExportSection = () => {
     );
   }
 
-  if (status?.status === 'pending') {
+  if (status?.status === 'pending' || status?.status === 'processing') {
     return (
       <div className="bg-neutral-900 border border-neutral-700 rounded-sm p-4">
         <p className="text-display">Export in progress… This page will update automatically.</p>
