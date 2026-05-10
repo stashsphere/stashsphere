@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- ability to export and import all data, useful when changing instances and backups
 - added schema based properties with dynamic, validating editors
 - added the boolean property type
 - backend: expose the reason why a thing / list is visible to a user
