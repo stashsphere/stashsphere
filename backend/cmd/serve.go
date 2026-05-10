@@ -1875,13 +1875,14 @@ var serveCommand = &cobra.Command{
 		k := koanf.New(".")
 
 		stateDir := "."
+		defaultTmpPath := path.Join(os.TempDir(), "stashsphere")
 		if s := os.Getenv("STATE_DIRECTORY"); s != "" {
 			stateDir = s
+			defaultTmpPath = path.Join(s, "tmp")
 		}
 
 		defaultImagePath := path.Join(stateDir, "image_store")
 		defaultImageCachePath := path.Join(".", "image_cache")
-		defaultTmpPath := os.TempDir()
 		defaultExportStorePath := path.Join(stateDir, "export_store")
 
 		if cacheDir := os.Getenv("CACHE_DIRECTORY"); cacheDir != "" {
