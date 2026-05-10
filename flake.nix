@@ -31,14 +31,16 @@
             self.overlay
             (final: prev: {
               stashsphereVersion = version;
-              stashsphereGitRevision = self.rev or self.dirtyRev or "unknown";
             })
           ];
         }
       );
     in
     {
-      overlay = import ./nix/overlay.nix;
+      overlay = final: prev:
+        (import ./nix/overlay.nix final prev) // {
+          stashsphereGitRevision = self.rev or self.dirtyRev or "unknown";
+        };
       packages = forAllSystems (system: {
         inherit (nixpkgsFor.${system}) stashsphere;
         backend = (nixpkgsFor.${system}).stashsphere;
