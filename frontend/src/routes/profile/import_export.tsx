@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { AxiosContext } from '../../context/axios';
 import { PrimaryButton, SecondaryButton } from '../../components/shared';
-import { triggerExport, getExportStatus, downloadExport, ExportStatus } from '../../api/export';
+import { triggerExport, getExportStatus, ExportStatus } from '../../api/export';
 import { queueImport, getImportStatus, ImportStatus } from '../../api/import';
 
 const POLL_INTERVAL_MS = 3000;
@@ -64,15 +64,10 @@ const ExportSection = () => {
     }
   };
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (axiosInstance === null) return;
-    const { blob, filename } = await downloadExport(axiosInstance);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+    const baseURL = axiosInstance.defaults.baseURL ?? '/api';
+    window.location.href = `${baseURL}/export/download`;
   };
 
   const formatDate = (iso: string) =>
