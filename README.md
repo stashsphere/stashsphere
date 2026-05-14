@@ -20,7 +20,7 @@ You can find the backend in `./backend`, the frontend in `./frontend`.
 
 More information on [stashsphere.com](https://stashsphere.com)
 
-Try out the demo on [demo.stashsphere.com](https://stashspere.com) (Instance resets every few days).
+Try out the demo on [demo.stashsphere.com](https://demo.stashsphere.com) (Instance resets every few days).
 
 Join the matrix channel [#stashsphere:matrix.org](https://matrix.to/#/#stashsphere:matrix.org)
 
