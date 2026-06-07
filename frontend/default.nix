@@ -1,18 +1,23 @@
-{ stdenv
-, nodejs
-, pnpm
-, version
-, writeText
-, apiHost ? "https://api.stashsphere.com"
-, gitRevision ? "unknown"
+{
+  stdenv,
+  nodejs,
+  pnpm,
+  version,
+  writeText,
+  apiHost ? "https://api.stashsphere.com",
+  gitRevision ? "unknown",
 }:
 let
-  config = writeText "config.json" (builtins.toJSON ({
-    inherit apiHost;
-  }));
-  versionInfo = writeText "version.json" (builtins.toJSON ({
-    inherit version gitRevision;
-  }));
+  config = writeText "config.json" (
+    builtins.toJSON ({
+      inherit apiHost;
+    })
+  );
+  versionInfo = writeText "version.json" (
+    builtins.toJSON ({
+      inherit version gitRevision;
+    })
+  );
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "stashsphere";
@@ -25,11 +30,11 @@ stdenv.mkDerivation (finalAttrs: {
     pnpm.configHook
   ];
 
-  pnpmDepsHash = "sha256-quuHACEcfJkl2SrEPUCX2OBPovrVR+pvnMK5pGeIYEQ=";
+  pnpmDepsHash = "sha256-V1zgXDS0NiIczVpnPCHMs7SicajYcXLyqQwOaCFpU40=";
 
   pnpmDeps = pnpm.fetchDeps {
     inherit (finalAttrs) pname version src;
-    fetcherVersion = 2;
+    fetcherVersion = 3;
     hash = finalAttrs.pnpmDepsHash;
   };
 

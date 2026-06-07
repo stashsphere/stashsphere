@@ -37,8 +37,10 @@
       );
     in
     {
-      overlay = final: prev:
-        (import ./nix/overlay.nix final prev) // {
+      overlay =
+        final: prev:
+        (import ./nix/overlay.nix final prev)
+        // {
           stashsphereGitRevision = self.rev or self.dirtyRev or "unknown";
         };
       packages = forAllSystems (system: {
@@ -84,7 +86,7 @@
               sqlboiler-fixed
               go-migrate-pg
               postgresql
-              nodePackages.npm
+              nodejs_22
             ];
             env = {
               "PGHOST" = "127.0.0.1";
@@ -99,7 +101,6 @@
             name = "frontend";
             buildInputs = with pkgs; [
               create-logo-and-favicon
-              nodePackages.npm
               nodejs_22
               pnpm
             ];
@@ -107,7 +108,6 @@
           default = pkgs.mkShell {
             name = "default";
             buildInputs = with pkgs; [
-              nodePackages.npm
               nodejs_22
             ];
           };
