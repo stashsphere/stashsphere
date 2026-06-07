@@ -1,14 +1,19 @@
-{ buildGoModule
-, version
-, file
-, postgresql
-, postgresqlTestHook
+{
+  buildGoModule,
+  version,
+  file,
+  postgresql,
+  postgresqlTestHook,
 }:
 buildGoModule {
   pname = "stashsphere-backend";
   inherit version;
 
-  src = builtins.filterSource (path: type: baseNameOf path != "nix") ../.;
+  src = builtins.path {
+    name = "backend-src";
+    filter = (path: type: baseNameOf path != "nix");
+    path = ../.;
+  };
 
   vendorHash = "sha256-g6Xwe9IBQW9AlvjdQ2gwxrMoce+EI5GeV9++6azjq24=";
 
@@ -16,7 +21,7 @@ buildGoModule {
     # libmagic
     file
   ];
-  
+
   doCheck = true;
 
   nativeCheckInputs = [
@@ -24,7 +29,10 @@ buildGoModule {
     postgresqlTestHook
   ];
 
-  outputs = [ "out" "doc" ];
+  outputs = [
+    "out"
+    "doc"
+  ];
 
   postInstall = ''
     mkdir -p $doc
