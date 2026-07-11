@@ -1,12 +1,22 @@
 import { ThingInfo } from './shared';
 import { FormEvent, useContext, useEffect, useMemo, useState } from 'react';
-import { List, Profile, Share, SharingState, Thing, User, UserProfile } from '../api/resources';
+import {
+  List,
+  Profile,
+  PublicShareInfo,
+  Share,
+  SharingState,
+  Thing,
+  User,
+  UserProfile,
+} from '../api/resources';
 import { ListInfo } from './list_info';
 import { UserList } from './user_list';
 import { Icon } from './shared';
 import { DangerButton, PrimaryButton, SecondaryButton } from './shared';
 import { AxiosContext } from '../context/axios';
 import { deleteShare } from '../api/share';
+import { createPublicShare, deletePublicShare, urlForPublicShare } from '../api/public_share';
 import { UserNameAndProfile } from './shared/user';
 
 type ShareDeleterProps = {
@@ -49,6 +59,92 @@ const ShareDeleter = ({ share, onDelete }: ShareDeleterProps) => {
       </div>
     );
   }
+};
+
+type PublicLinkDeleterProps = {
+  share: PublicShareInfo;
+  onDelete: () => void;
+};
+
+const PublicLinkDeleter = ({ share, onDelete }: PublicLinkDeleterProps) => {
+  const axiosInstance = useContext(AxiosContext);
+  const [wantDelete, setWantDelete] = useState(false);
+
+  const url = urlForPublicShare(share.id);
+
+  const onDeleteClick = () => {
+    if (axiosInstance === null) {
+      return;
+    }
+    deletePublicShare(axiosInstance, share.id).then(() => {
+      onDelete();
+    });
+  };
+
+  if (!wantDelete) {
+    return (
+      <div className="flex flex-row gap-4 my-2 items-center justify-between">
+        <div className="text-display truncate">{url}</div>
+        <div className="flex flex-row gap-2">
+          <SecondaryButton
+            className="py-0 px-1"
+            onClick={() => navigator.clipboard.writeText(url)}
+            title="Copy public link"
+          >
+            <Icon icon="mdi--content-copy" />
+          </SecondaryButton>
+          <SecondaryButton className="py-0 px-1" onClick={() => setWantDelete(true)}>
+            <Icon icon="mdi--trash" />
+          </SecondaryButton>
+        </div>
+      </div>
+    );
+  } else {
+    return (
+      <div className="flex flex-row gap-4 my-2 items-center justify-between">
+        <div className="text-display">Revoke this public link?</div>
+        <div className="flex flex-row gap-2">
+          <DangerButton className="py-0 px-1" onClick={() => onDeleteClick()}>
+            Yes
+          </DangerButton>
+          <SecondaryButton className="py-0 px-1" onClick={() => setWantDelete(false)}>
+            No
+          </SecondaryButton>
+        </div>
+      </div>
+    );
+  }
+};
+
+type PublicLinkSectionProps = {
+  objectId: string;
+  publicShares: PublicShareInfo[];
+  onMutate: () => void;
+};
+
+const PublicLinkSection = ({ objectId, publicShares, onMutate }: PublicLinkSectionProps) => {
+  const axiosInstance = useContext(AxiosContext);
+
+  const onCreateClick = () => {
+    if (axiosInstance === null) {
+      return;
+    }
+    createPublicShare(axiosInstance, objectId).then(() => {
+      onMutate();
+    });
+  };
+
+  return (
+    <>
+      <h2 className="text-xl text-accent">Public Links</h2>
+      <ul>
+        {publicShares.map((share) => (
+          <PublicLinkDeleter key={share.id} share={share} onDelete={() => onMutate()} />
+        ))}
+      </ul>
+      <PrimaryButton onClick={() => onCreateClick()}>Create public link</PrimaryButton>
+    </>
+  );
 };
 
 type ShareEditorProps = {
@@ -130,6 +226,15 @@ export const ShareEditor = (props: ShareEditorProps) => {
     }
   })();
 
+  const [objectId, publicShares] = (() => {
+    switch (props.type) {
+      case 'thing':
+        return [props.thing.id, props.thing.publicShares] as const;
+      case 'list':
+        return [props.list.id, props.list.publicShares] as const;
+    }
+  })();
+
   return (
     <div>
       <div className="grid grid-cols-2">
@@ -162,6 +267,11 @@ export const ShareEditor = (props: ShareEditorProps) => {
               <ShareDeleter key={x.id} share={x} onDelete={() => props.onMutate()} />
             ))}
           </ul>
+          <PublicLinkSection
+            objectId={objectId}
+            publicShares={publicShares}
+            onMutate={() => props.onMutate()}
+          />
         </div>
       </div>
 

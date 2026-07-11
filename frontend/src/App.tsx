@@ -45,6 +45,8 @@ import { OIDCCallback } from './routes/auth/callback';
 import React from 'react';
 import { PropertySchemaCollectionContext } from './context/property_schema';
 import { getSchemaCollection } from './api/properties';
+import { ShowPublicShare } from './routes/public/show';
+import { PublicShares } from './routes/public_shares';
 
 export const App = () => {
   const navigate = useNavigate();
@@ -172,6 +174,7 @@ export const App = () => {
                       <Route path="/user/logout" element={<Logout />} />
                       <Route path="/user/register" element={<Register />} />
                       <Route path="/auth/callback" element={<OIDCCallback />} />
+                      <Route path="/public/:token" element={<ShowPublicShare />} />
                       <Route
                         path="/user"
                         element={
@@ -186,6 +189,7 @@ export const App = () => {
                         <Route path="profile/edit" element={<EditProfile />} />
                         <Route path="verify-email" element={<VerifyEmail />} />
                         <Route path="import-export" element={<ImportExport />} />
+                        <Route path="public-shares" element={<PublicShares />} />
                       </Route>
 
                       <Route

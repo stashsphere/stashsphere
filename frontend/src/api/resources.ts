@@ -67,6 +67,7 @@ export interface Thing {
   quantity: number;
   quantityUnit: string;
   shares: Share[];
+  publicShares: PublicShareInfo[];
   sharingState: SharingState | null;
 }
 
@@ -129,6 +130,7 @@ export interface List {
   things: Thing[];
   actions: ThingActions;
   shares: Share[];
+  publicShares: PublicShareInfo[];
   sharingState: SharingState;
 }
 
@@ -159,6 +161,51 @@ export interface Share {
   owner: User;
   targetUser: User;
 }
+
+export interface PublicShareInfo {
+  id: string;
+  createdAt: Date;
+}
+
+export interface PublicShareIndexEntry {
+  id: string;
+  createdAt: Date;
+  type: 'thing' | 'list';
+  objectId: string;
+  objectName: string;
+}
+
+export interface PublicThing {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: Date;
+  ownerName: string;
+  images: ReducedImage[];
+  properties: Property[];
+  quantity: number;
+  quantityUnit: string;
+}
+
+export interface PublicList {
+  id: string;
+  name: string;
+  createdAt: Date;
+  ownerName: string;
+  things: PublicThing[];
+}
+
+export type PublicShare =
+  | {
+      token: string;
+      type: 'thing';
+      thing: PublicThing;
+    }
+  | {
+      token: string;
+      type: 'list';
+      list: PublicList;
+    };
 
 export interface FriendRequest {
   id: string;

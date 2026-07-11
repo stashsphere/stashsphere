@@ -12,7 +12,7 @@ const ImageGrid = ({ images: allImages, compact = false }: ImageGridProps) => {
   const containerClass = compact ? 'grid grid-cols-2 gap-2 m-2' : 'grid grid-cols-2 gap-2 m-4';
   const imageClass = compact
     ? 'flex w-24 h-24 items-center justify-center rounded-md'
-    : 'flex w-30 h-30 items-center justify-center rounded-md';
+    : 'flex w-32 h-32 items-center justify-center rounded-md';
 
   return (
     <div className={containerClass}>

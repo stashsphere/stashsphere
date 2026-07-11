@@ -31,6 +31,7 @@ export const UserLayout = () => {
             <UserNavItem to="/user/profile">Profile</UserNavItem>
             <UserNavItem to="/user/account">Account</UserNavItem>
             <UserNavItem to="/user/import-export">Import &amp; Export</UserNavItem>
+            <UserNavItem to="/user/public-shares">Public Links</UserNavItem>
           </div>
         </div>
       </nav>

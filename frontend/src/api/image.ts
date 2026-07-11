@@ -57,9 +57,22 @@ export const modifyImage = async (
   return response.data as ReducedImage;
 };
 
-export const urlForImage = (config: Config, hash: string, width: number | undefined) => {
+export const urlForImage = (
+  config: Config,
+  hash: string,
+  width: number | undefined,
+  shareToken?: string | null
+) => {
+  const params = new URLSearchParams();
   if (width !== undefined) {
-    return `${config.apiHost}/assets/${hash}?width=${width}`;
+    params.set('width', width.toString());
+  }
+  if (shareToken) {
+    params.set('shareToken', shareToken);
+  }
+  const query = params.toString();
+  if (query !== '') {
+    return `${config.apiHost}/assets/${hash}?${query}`;
   } else {
     return `${config.apiHost}/assets/${hash}`;
   }

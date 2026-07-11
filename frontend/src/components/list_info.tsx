@@ -29,7 +29,7 @@ export const ListInfo = ({ list, compact = false }: ListInfoProps) => {
       className={`flex flex-col gap-4 flex-start items-start border border-secondary rounded-md p-1 justify-between ${compact ? 'w-60' : 'w-80'}`}
     >
       <div
-        className={`flex items-center justify-center ${compact ? 'w-60 min-h-44' : 'w-80 min-h-60'}`}
+        className={`flex items-center justify-center ${compact ? 'w-60 min-h-44' : 'w-80 h-80'}`}
       >
         <ImageGrid images={images} compact={compact} />
       </div>
