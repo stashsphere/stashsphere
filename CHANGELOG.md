@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- public links: share things and lists with users not registered on an instance
 - ability to export and import all data, useful when changing instances and backups
 - added schema based properties with dynamic, validating editors
 - added the boolean property type
