@@ -225,6 +225,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	}
 	searchService := services.NewSearchService(db, thingService, listService)
 	shareService := services.NewShareService(db, notificationService)
+	publicShareService := services.NewPublicShareService(db)
 	friendService := services.NewFriendService(db, notificationService)
 	cartService := services.NewCartService(db)
 	exportService := services.NewExportService(db)
@@ -280,6 +281,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	profileHandler := handlers.NewProfileHandler(userService)
 	userHandler := handlers.NewUserHandler(userService)
 	shareHandler := handlers.NewShareHandler(shareService)
+	publicShareHandler := handlers.NewPublicShareHandler(publicShareService)
 	friendHandler := handlers.NewFriendHandler(friendService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	cartHandler := handlers.NewCartHandler(cartService)
@@ -311,6 +313,21 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	listsGroup := a.Group("/lists")
 	imageGroup := a.Group("/images")
 	shareGroup := a.Group("/shares")
+	publicShareGroup := a.Group("/public-shares")
+	// Rate-limited group for the anonymous public share endpoint to slow
+	// down token scanning
+	publicShareRateLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+		Rate:      30.0 / 60.0,
+		Burst:     30,
+		ExpiresIn: 3 * time.Minute,
+	})
+	rateLimitedPublicShareGroup := publicShareGroup.Group("", middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Store: publicShareRateLimiter,
+		IdentifierExtractor: func(c echo.Context) (string, error) {
+			id := c.RealIP()
+			return id, nil
+		},
+	}))
 	friendGroup := a.Group("/friends")
 	friendRequestGroup := a.Group("/friend_requests")
 	notificationsGroup := a.Group("/notifications")
@@ -1325,6 +1342,121 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonSharesOptions,
 	)
 
+	// public shares group
+	commonPublicSharesOptions := option.Group(
+		option.Tags("Public Shares"),
+		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
+		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
+	)
+	fuegoecho.PostEcho(engine, publicShareGroup, "", publicShareHandler.PublicShareHandlerPost,
+		option.Summary("Create Public Share"),
+		option.Description("Create a public link for a thing or list that can be viewed without an account"),
+		option.RequestBody(
+			fuego.RequestBody{
+				Type:         handlers.NewPublicShareParams{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			201,
+			"Public share created successfully",
+			fuego.Response{
+				Type:         resources.PublicShareInfo{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			400,
+			"Invalid parameters",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			401,
+			"Not authenticated",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		commonPublicSharesOptions,
+	)
+	fuegoecho.GetEcho(engine, publicShareGroup, "", publicShareHandler.PublicShareHandlerIndex,
+		option.Summary("List Public Shares"),
+		option.Description("List all public shares of the requesting user"),
+		option.AddResponse(
+			200,
+			"Public shares of the requesting user",
+			fuego.Response{
+				Type:         []resources.PublicShareIndexEntry{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			401,
+			"Not authenticated",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		commonPublicSharesOptions,
+	)
+	fuegoecho.GetEcho(engine, rateLimitedPublicShareGroup, "/:token", publicShareHandler.PublicShareHandlerGet,
+		option.Summary("Get Public Share"),
+		option.Description("Get the publicly shared thing or list for a share token. No authentication required."),
+		option.Tags("Public Shares"),
+		option.Path("token", "Public share token", param.Required(), param.Example("example token", "V1StGXR8_Z5jdHi6B-myT")),
+		option.AddResponse(
+			200,
+			"Publicly shared content",
+			fuego.Response{
+				Type:         resources.PublicShare{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			404,
+			"Public share not found",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+	)
+	fuegoecho.DeleteEcho(engine, publicShareGroup, "/:token", publicShareHandler.PublicShareHandlerDelete,
+		option.Summary("Delete Public Share"),
+		option.Description("Revoke a public share link"),
+		option.Path("token", "Public share token", param.Required(), param.Example("example token", "V1StGXR8_Z5jdHi6B-myT")),
+		option.AddResponse(
+			200,
+			"Public share deleted successfully",
+			fuego.Response{
+				Type:         utils.NoContent{},
+				ContentTypes: []string{""},
+			},
+		),
+		option.AddResponse(
+			401,
+			"Not authenticated",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			404,
+			"Public share not found",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		commonPublicSharesOptions,
+	)
+
 	// friends group
 	commonFriendsOptions := option.Group(
 		option.Tags("Friends"),
@@ -1735,6 +1867,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Description("Retrieve an image file by its hash. Supports optional resizing via width parameter."),
 		option.Path("hash", "Image content hash", param.Required(), param.Example("example hash", "ABCDEF123456")),
 		option.QueryInt("width", "Resize image to specified width (20-8192 pixels, only for JPEG/PNG)", param.Example("resize to 800px", 800)),
+		option.Query("shareToken", "Public share token granting anonymous access to images of the shared object", param.Example("example token", "V1StGXR8_Z5jdHi6B-myT")),
 		option.AddResponse(
 			200,
 			"Image file (binary data)",

@@ -7,22 +7,25 @@ import (
 )
 
 type List struct {
-	ID           string         `json:"id"`
-	Name         string         `json:"name"`
-	CreatedAt    time.Time      `json:"createdAt"`
-	Owner        User           `json:"owner"`
-	Things       []Thing        `json:"things"`
-	Actions      Actions        `json:"actions"`
-	Shares       []ReducedShare `json:"shares"`
-	SharingState *string        `json:"sharingState"`
-	Reason       *AccessReason  `json:"reason,omitempty"`
+	ID           string            `json:"id"`
+	Name         string            `json:"name"`
+	CreatedAt    time.Time         `json:"createdAt"`
+	Owner        User              `json:"owner"`
+	Things       []Thing           `json:"things"`
+	Actions      Actions           `json:"actions"`
+	Shares       []ReducedShare    `json:"shares"`
+	PublicShares []PublicShareInfo `json:"publicShares"`
+	SharingState *string           `json:"sharingState"`
+	Reason       *AccessReason     `json:"reason,omitempty"`
 }
 
 // requires an eager loaded list with things
 func ListFromModel(list *models.List, userId string, sharedListIds []string, listReason *AccessReason, thingReasonMap map[string]*AccessReason) List {
 	shares := []ReducedShare{}
+	publicShares := []PublicShareInfo{}
 	if list.OwnerID == userId {
 		shares = ReducedSharesFromModelSlice(list.R.Shares)
+		publicShares = PublicShareInfosFromModelSlice(list.R.PublicShares)
 	}
 	thingResources := []Thing{}
 	for _, e := range list.R.Things {
@@ -45,6 +48,7 @@ func ListFromModel(list *models.List, userId string, sharedListIds []string, lis
 		Owner:        UserFromModel(list.R.Owner),
 		Things:       thingResources,
 		Shares:       shares,
+		PublicShares: publicShares,
 		SharingState: sharingState,
 		Actions: Actions{
 			CanEdit:   canEdit,

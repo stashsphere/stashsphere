@@ -203,6 +203,50 @@ func (is *ImageService) ImageGet(ctx context.Context, userId string, hash string
 	return file, image, nil
 }
 
+// ImageGetViaPublicShare grants anonymous access to an image if the image
+// belongs to the publicly shared thing or to a thing in the publicly shared list.
+func (is *ImageService) ImageGetViaPublicShare(ctx context.Context, shareToken string, hash string) (*os.File, *models.Image, error) {
+	share, err := models.PublicShares(
+		models.PublicShareWhere.ID.EQ(shareToken),
+		qm.Load(qm.Rels(models.PublicShareRels.Thing, models.ThingRels.ImagesThings, models.ImagesThingRels.Image)),
+		qm.Load(qm.Rels(models.PublicShareRels.List, models.ListRels.Things, models.ThingRels.ImagesThings, models.ImagesThingRels.Image)),
+	).One(ctx, is.db)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil, utils.UserHasNoAccessRightsError{}
+		}
+		return nil, nil, err
+	}
+
+	things := models.ThingSlice{}
+	if share.R.Thing != nil {
+		things = append(things, share.R.Thing)
+	}
+	if share.R.List != nil {
+		things = append(things, share.R.List.R.Things...)
+	}
+
+	var image *models.Image
+	for _, thing := range things {
+		for _, imageThing := range thing.R.ImagesThings {
+			if imageThing.R.Image.Hash == hash {
+				image = imageThing.R.Image
+				break
+			}
+		}
+	}
+	if image == nil {
+		return nil, nil, utils.UserHasNoAccessRightsError{}
+	}
+
+	path := filepath.Join(is.storePath, image.Hash)
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	return file, image, nil
+}
+
 type ImageIndexParams struct {
 	UserId         string
 	PerPage        uint64

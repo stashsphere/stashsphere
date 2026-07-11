@@ -465,6 +465,8 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 		qm.Load(models.ListRels.Owner),
 		qm.Load(qm.Rels(models.ListRels.Shares, models.ShareRels.Owner)),
 		qm.Load(qm.Rels(models.ListRels.Shares, models.ShareRels.TargetUser)),
+		qm.Load(models.ListRels.PublicShares),
+		qm.Load(qm.Rels(models.ListRels.Things, models.ThingRels.PublicShares)),
 		searchCond,
 	)
 

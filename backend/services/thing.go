@@ -546,6 +546,7 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 		qm.Load(qm.Rels(models.ThingRels.Shares, models.ShareRels.Owner)),
 		qm.Load(qm.Rels(models.ThingRels.Shares, models.ShareRels.TargetUser)),
 		qm.Load(qm.Rels(models.ThingRels.ImagesThings, models.ImagesThingRels.Image)),
+		qm.Load(models.ThingRels.PublicShares),
 		searchCond,
 	)
 

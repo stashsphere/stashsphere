@@ -107,6 +107,7 @@ func GetThingUnchecked(ctx context.Context, exec boil.ContextExecutor, thingId s
 		qm.Load(qm.Rels(models.ThingRels.ImagesThings, models.ImagesThingRels.Image)),
 		qm.Load(qm.Rels(models.ThingRels.Shares, models.ShareRels.Owner)),
 		qm.Load(qm.Rels(models.ThingRels.Shares, models.ShareRels.TargetUser)),
+		qm.Load(models.ThingRels.PublicShares),
 		models.ThingWhere.ID.EQ(thingId)).One(ctx, exec)
 	if err != nil {
 		return nil, err

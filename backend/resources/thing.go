@@ -9,21 +9,22 @@ import (
 )
 
 type Thing struct {
-	ID           string         `json:"id"`
-	Name         string         `json:"name"`
-	Description  string         `json:"description"`
-	PrivateNote  *string        `json:"privateNote"`
-	CreatedAt    time.Time      `json:"createdAt"`
-	Owner        User           `json:"owner"`
-	Lists        []ReducedList  `json:"lists"`
-	Images       []ReducedImage `json:"images"`
-	Properties   []interface{}  `json:"properties"`
-	Shares       []ReducedShare `json:"shares"`
-	SharingState *string        `json:"sharingState"`
-	Actions      Actions        `json:"actions"`
-	Quantity     int64          `json:"quantity"`
-	QuantityUnit string         `json:"quantityUnit"`
-	Reason       *AccessReason  `json:"reason,omitempty"`
+	ID           string            `json:"id"`
+	Name         string            `json:"name"`
+	Description  string            `json:"description"`
+	PrivateNote  *string           `json:"privateNote"`
+	CreatedAt    time.Time         `json:"createdAt"`
+	Owner        User              `json:"owner"`
+	Lists        []ReducedList     `json:"lists"`
+	Images       []ReducedImage    `json:"images"`
+	Properties   []interface{}     `json:"properties"`
+	Shares       []ReducedShare    `json:"shares"`
+	PublicShares []PublicShareInfo `json:"publicShares"`
+	SharingState *string           `json:"sharingState"`
+	Actions      Actions           `json:"actions"`
+	Quantity     int64             `json:"quantity"`
+	QuantityUnit string            `json:"quantityUnit"`
+	Reason       *AccessReason     `json:"reason,omitempty"`
 }
 
 func SumQuantityEntries(entries models.QuantityEntrySlice) int64 {
@@ -36,8 +37,10 @@ func SumQuantityEntries(entries models.QuantityEntrySlice) int64 {
 
 func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string, reasonMap map[string]*AccessReason) *Thing {
 	shares := []ReducedShare{}
+	publicShares := []PublicShareInfo{}
 	if thing.OwnerID == userId {
 		shares = ReducedSharesFromModelSlice(thing.R.Shares)
+		publicShares = PublicShareInfosFromModelSlice(thing.R.PublicShares)
 	}
 	filteredLists := []ReducedList{}
 	lists := ReducedListsFromModelSlice(thing.R.Lists, userId)
@@ -90,6 +93,7 @@ func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string, 
 		Images:       ReducedImagesFromModel(images),
 		Properties:   PropertiesFromModelSlice(thing.R.Properties),
 		Shares:       shares,
+		PublicShares: publicShares,
 		SharingState: sharingState,
 		Actions: Actions{
 			CanEdit:   canEdit,

@@ -4,12 +4,14 @@ import (
 	"crypto/sha256"
 	"encoding/base32"
 	"encoding/binary"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stashsphere/backend/middleware"
+	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
@@ -61,15 +63,28 @@ func (is *ImageHandler) ImageHandlerGet(c echo.Context) error {
 	if !ok {
 		return utils.NoAuthContextError{}
 	}
-	if !authCtx.Authenticated {
-		return utils.NotAuthenticatedError{}
-	}
 	var imageParams ImageGetParams
 	if err := c.Bind(&imageParams); err != nil {
 		return &utils.ParameterError{Err: err}
 	}
 	hash := c.Param("hash")
-	file, image, err := is.imageService.ImageGet(c.Request().Context(), authCtx.User.UserId, hash)
+	shareToken := c.QueryParam("shareToken")
+
+	var file *os.File
+	var image *models.Image
+	var err error
+	if authCtx.Authenticated {
+		file, image, err = is.imageService.ImageGet(c.Request().Context(), authCtx.User.UserId, hash)
+		// an authenticated user viewing someone else's public share may
+		// not have access rights on their own, fall back to the token
+		if errors.As(err, &utils.UserHasNoAccessRightsError{}) && shareToken != "" {
+			file, image, err = is.imageService.ImageGetViaPublicShare(c.Request().Context(), shareToken, hash)
+		}
+	} else if shareToken != "" {
+		file, image, err = is.imageService.ImageGetViaPublicShare(c.Request().Context(), shareToken, hash)
+	} else {
+		return utils.NotAuthenticatedError{}
+	}
 	if err != nil {
 		if os.IsNotExist(err) {
 			return utils.NotFoundError{EntityName: "Image"}
