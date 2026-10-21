@@ -2,6 +2,8 @@
   stdenv,
   nodejs,
   pnpm,
+  fetchPnpmDeps,
+  pnpmConfigHook,
   version,
   writeText,
   apiHost ? "https://api.stashsphere.com",
@@ -26,15 +28,16 @@ stdenv.mkDerivation (finalAttrs: {
   src = ./.;
 
   nativeBuildInputs = [
+    pnpm
     nodejs
-    pnpm.configHook
+    pnpmConfigHook
   ];
 
   pnpmDepsHash = "sha256-6XBsZj84M5aqDvLkyZuUyWJ1k2GIU5vVqU/yiazBqio=";
 
-  pnpmDeps = pnpm.fetchDeps {
+  pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs) pname version src;
-    fetcherVersion = 3;
+    fetcherVersion = 4;
     hash = finalAttrs.pnpmDepsHash;
   };
 
