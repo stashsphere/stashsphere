@@ -33,7 +33,7 @@ stdenv.mkDerivation (finalAttrs: {
     pnpmConfigHook
   ];
 
-  pnpmDepsHash = "sha256-6XBsZj84M5aqDvLkyZuUyWJ1k2GIU5vVqU/yiazBqio=";
+  pnpmDepsHash = "sha256-XZthm5SHvhsHI3lkrQbqjaDswFrJOBs7BEM0RzGjp/w=";
 
   pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs) pname version src;
