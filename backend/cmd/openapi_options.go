@@ -21,6 +21,29 @@ func noContentResponse(code int, description string) func(*fuego.BaseRoute) {
 	}
 }
 
+// multipartFileBody documents a multipart/form-data request body with a single
+// required `file` field of the given content type.
+// fuego derives request bodies from Go types and cannot express file parts.
+func multipartFileBody(description string, fileContentType string) func(*fuego.BaseRoute) {
+	return func(r *fuego.BaseRoute) {
+		file := openapi3.NewStringSchema().WithFormat("binary")
+		file.Description = description
+		schema := openapi3.NewObjectSchema().
+			WithProperty("file", file).
+			WithRequired([]string{"file"})
+		mediaType := openapi3.NewMediaType().WithSchema(schema)
+		mediaType.Encoding = map[string]*openapi3.Encoding{
+			"file": {ContentType: fileContentType},
+		}
+		r.Operation.RequestBody = &openapi3.RequestBodyRef{
+			Value: openapi3.NewRequestBody().
+				WithDescription(description).
+				WithRequired(true).
+				WithContent(openapi3.Content{"multipart/form-data": mediaType}),
+		}
+	}
+}
+
 // redirectResponse documents a bodiless redirect response and makes it the
 // route's default, so fuego does not invent a 200 with an untyped body.
 func redirectResponse(code int, description string) func(*fuego.BaseRoute) {

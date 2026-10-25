@@ -1111,6 +1111,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, imageGroup, "", imageHandler.ImageHandlerPost,
 		option.OperationID("uploadImage"),
+		multipartFileBody("Image file, detected by content as image/*", "image/*"),
 		option.DefaultStatusCode(http.StatusCreated),
 		option.Summary("Upload Image"),
 		option.Description("Upload a new image file. Content-Type must be multipart/form-data with 'file' field."),
@@ -1900,6 +1901,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, importGroup, "", importHandler.Post,
 		option.OperationID("startImport"),
+		multipartFileBody("ZIP archive created by an export", "application/zip"),
 		option.DefaultStatusCode(http.StatusAccepted),
 		option.Summary("Upload Import"),
 		option.Description("Upload a ZIP archive to import into the current user's collection"),
