@@ -349,6 +349,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, rateLimitedAuthGroup, "/login", loginHandler.LoginHandlerPost,
 		option.OperationID("login"),
+		option.Security(),
 		option.Summary("Login"),
 		option.Description("Login and obtain cookies / JWT"),
 		option.RequestBody(
@@ -410,6 +411,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, rateLimitedAuthGroup, "/register", registerHandler.RegisterHandlerPost,
 		option.OperationID("register"),
+		option.Security(),
 		option.Summary("Register"),
 		option.Description("Register a new user account"),
 		option.RequestBody(
@@ -438,6 +440,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.GetEcho(engine, a, "/info", infoHandler.InfoHandlerGet,
 		option.OperationID("getInfo"),
+		option.Security(),
 		option.Summary("Get Instance Info"),
 		option.Description("Get public information about this instance"),
 		option.Tags("Info"),
@@ -454,6 +457,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	oidcGroup := a.Group("/auth/oidc")
 	fuegoecho.GetEcho(engine, oidcGroup, "/:provider/authorize", oidcHandler.AuthorizeHandlerGet,
 		option.OperationID("oidcAuthorize"),
+		option.Security(),
 		option.Summary("OIDC Authorize"),
 		option.Description("Redirect to OIDC provider's authorization endpoint"),
 		option.Path("provider", "OIDC provider name", param.Required(), param.Example("keycloak", "keycloak")),
@@ -461,6 +465,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.GetEcho(engine, oidcGroup, "/:provider/callback", oidcHandler.CallbackHandlerGet,
 		option.OperationID("oidcCallback"),
+		option.Security(),
 		option.Summary("OIDC Callback"),
 		option.Description("Handle callback from OIDC provider after user authentication"),
 		option.Path("provider", "OIDC provider name", param.Required(), param.Example("keycloak", "keycloak")),
@@ -470,6 +475,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, oidcGroup, "/:provider/link", oidcHandler.LinkHandlerPost,
 		option.OperationID("oidcLinkAccount"),
+		option.Security(),
 		option.Summary("OIDC Link Account"),
 		option.Description("Link an OIDC identity to an existing password account by verifying the password"),
 		option.Path("provider", "OIDC provider name", param.Required(), param.Example("keycloak", "keycloak")),
@@ -1437,6 +1443,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.GetEcho(engine, rateLimitedPublicShareGroup, "/:token", publicShareHandler.PublicShareHandlerGet,
 		option.OperationID("getPublicShare"),
+		option.Security(),
 		option.Summary("Get Public Share"),
 		option.Description("Get the publicly shared thing or list for a share token. No authentication required."),
 		option.Tags("Public Shares"),
@@ -1899,7 +1906,11 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	// assets group
 	commonAssetsOptions := option.Group(
 		option.Tags("Assets"),
-		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
+		// authenticated, or anonymous with a public share token
+		option.Security(
+			openapi3.SecurityRequirement{"cookieAuth": []string{}},
+			openapi3.SecurityRequirement{},
+		),
 	)
 	fuegoecho.GetEcho(engine, e, "/assets/:hash", imageHandler.ImageHandlerGet,
 		option.OperationID("getAsset"),
