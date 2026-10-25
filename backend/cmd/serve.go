@@ -1831,14 +1831,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Path("hash", "Image content hash", param.Required(), param.Example("example hash", "ABCDEF123456")),
 		option.QueryInt("width", "Resize image to specified width (20-8192 pixels, only for JPEG/PNG)", param.Example("resize to 800px", 800)),
 		option.Query("shareToken", "Public share token granting anonymous access to images of the shared object", param.Example("example token", "V1StGXR8_Z5jdHi6B-myT")),
-		option.AddResponse(
-			200,
-			"Image file (binary data)",
-			fuego.Response{
-				Type:         []byte{},
-				ContentTypes: []string{"image/jpeg", "image/png", "image/gif"},
-			},
-		),
+		binaryResponse(200, "Image file (binary data)", "image/*"),
 		noContentResponse(304, "Not Modified (ETag match)"),
 		option.AddResponse(
 			401,
@@ -1889,7 +1882,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.OperationID("downloadExport"),
 		option.Summary("Download Export"),
 		option.Description("Download the finished export ZIP archive"),
-		option.AddResponse(200, "Export ZIP file", fuego.Response{Type: []byte{}, ContentTypes: []string{"application/zip"}}),
+		binaryResponse(200, "Export ZIP file", "application/zip"),
 		option.AddResponse(404, "No finished export found", fuego.Response{Type: ss_middleware.ErrorResponse{}, ContentTypes: []string{"application/json"}}),
 		commonExportOptions,
 	)

@@ -21,6 +21,23 @@ func noContentResponse(code int, description string) func(*fuego.BaseRoute) {
 	}
 }
 
+// binaryResponse documents a response whose body is a raw file.
+// fuego renders []byte as an array of integers instead.
+func binaryResponse(code int, description string, contentTypes ...string) func(*fuego.BaseRoute) {
+	return func(r *fuego.BaseRoute) {
+		if r.Operation.Responses == nil {
+			r.Operation.Responses = openapi3.NewResponses()
+		}
+		schema := openapi3.NewStringSchema().WithFormat("binary")
+		content := openapi3.Content{}
+		for _, contentType := range contentTypes {
+			content[contentType] = openapi3.NewMediaType().WithSchema(schema)
+		}
+		response := openapi3.NewResponse().WithDescription(description).WithContent(content)
+		r.Operation.Responses.Set(strconv.Itoa(code), &openapi3.ResponseRef{Value: response})
+	}
+}
+
 // multipartFileBody documents a multipart/form-data request body with a single
 // required `file` field of the given content type.
 // fuego derives request bodies from Go types and cannot express file parts.
