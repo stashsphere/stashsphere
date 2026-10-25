@@ -360,14 +360,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				ContentTypes: []string{"application/json"},
 			},
 		),
-		option.AddResponse(
-			200,
-			"Successful login",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Successful login"),
 		option.ResponseHeader("Set-Cookie", "JWT Cookies", fuego.ParamExample("all tokens", "stashsphere-access=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ2R1l6emg1Rzk0RklCSWtrOUZmX1kiLCJlbWFpbCI6InRlc3RAa2xhbmRlc3QuaW4iLCJuYW1lIjoiVGVzdGVyIiwiaXNzIjoiaW52ZW50b3J5Iiwic3ViIjoiYWNjZXNzIiwiZXhwIjoxNzY0MzU1NDU1LCJuYmYiOjE3NjQzMzM4NTUsImlhdCI6MTc2NDMzMzg1NX0.FYxYK-ROe2cN4Iu1oGjbUlz0FM5Y4h2yPGQ2Vli_fY1_iUPgQvw31wgOJfJ-md-Fj1oIdWJ5zmjsbgqdhHfABA; Path=/; Max-Age=21600; HttpOnly; SameSite=Strictstashsphere-info=eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VySWQiOiJ2R1l6emg1Rzk0RklCSWtrOUZmX1kiLCJlbWFpbCI6InRlc3RAa2xhbmRlc3QuaW4iLCJuYW1lIjoiVGVzdGVyIiwiaXNzIjoiaW52ZW50b3J5Iiwic3ViIjoiYWNjZXNzIiwiZXhwIjoxNzY0MzU1NDU1LCJuYmYiOjE3NjQzMzM4NTUsImlhdCI6MTc2NDMzMzg1NX0.; Path=/; Max-Age=21600; SameSite=Strictstashsphere-refresh=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ2R1l6emg1Rzk0RklCSWtrOUZmX1kiLCJpc3MiOiJpbnZlbnRvcnkiLCJzdWIiOiJyZWZyZXNoIiwiZXhwIjoxNzY0OTM4NjU1LCJuYmYiOjE3NjQzMzM4NTUsImlhdCI6MTc2NDMzMzg1NX0.2KAKPkjEPItcEfuwO3gXgyMljLQMTmbhDTEaj8xuupxurKQO145PJjl-L0giv6sQr31SQB_OfNRq_BAWej6iCQ; Path=/api/user/refresh; Max-Age=604800; HttpOnly; SameSite=Strictstashsphere-refresh-info=eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VySWQiOiJ2R1l6emg1Rzk0RklCSWtrOUZmX1kiLCJpc3MiOiJpbnZlbnRvcnkiLCJzdWIiOiJyZWZyZXNoIiwiZXhwIjoxNzY0OTM4NjU1LCJuYmYiOjE3NjQzMzM4NTUsImlhdCI6MTc2NDMzMzg1NX0.; Path=/; Max-Age=604800; SameSite=Strict")),
 		commonUserOptions,
 	)
@@ -376,14 +369,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Refresh Access Token"),
 		option.Description("Refresh access token using refresh token cookie. Requires stashsphere-refresh cookie."),
 		option.Security(openapi3.SecurityRequirement{"refreshCookieAuth": []string{}}),
-		option.AddResponse(
-			200,
-			"Successful token refresh",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Successful token refresh"),
 		option.AddResponse(
 			401,
 			"Unauthorized - refresh token missing or invalid",
@@ -400,14 +386,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Logout"),
 		option.Description("Logout and clear authentication cookies"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.AddResponse(
-			200,
-			"Successful logout",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Successful logout"),
 		option.ResponseHeader("Set-Cookie", "Cleared JWT Cookies", param.Example("expired cookies", "stashsphere-access=; Max-Age=0; stashsphere-refresh=; Max-Age=0")),
 		commonUserOptions,
 	)
@@ -422,14 +401,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				ContentTypes: []string{"application/json"},
 			},
 		),
-		option.AddResponse(
-			200,
-			"Successful registration",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Successful registration"),
 		option.AddResponse(
 			400,
 			"Invalid parameters or invite code",
@@ -487,10 +459,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 			Type:         handlers.LinkPostParams{},
 			ContentTypes: []string{"application/json"},
 		}),
-		option.AddResponse(200, "Account linked and authenticated", fuego.Response{
-			Type:         utils.NoContent{},
-			ContentTypes: []string{""},
-		}),
+		noContentResponse(200, "Account linked and authenticated"),
 		option.AddResponse(401, "Incorrect password", fuego.Response{
 			Type:         ss_middleware.ErrorResponse{},
 			ContentTypes: []string{"application/json"},
@@ -569,14 +538,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				ContentTypes: []string{"application/json"},
 			},
 		),
-		option.AddResponse(
-			200,
-			"Password updated successfully",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Password updated successfully"),
 		option.AddResponse(
 			400,
 			"Invalid parameters or old password incorrect",
@@ -650,14 +612,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.OperationID("requestEmailVerification"),
 		option.Summary("Request Email Verification"),
 		option.Description("Send a verification code to the authenticated user's email address"),
-		option.AddResponse(
-			200,
-			"Verification email sent",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Verification email sent"),
 		option.AddResponse(
 			401,
 			"Not authenticated",
@@ -678,14 +633,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				ContentTypes: []string{"application/json"},
 			},
 		),
-		option.AddResponse(
-			200,
-			"Email verified successfully",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Email verified successfully"),
 		option.AddResponse(
 			400,
 			"Invalid or expired verification code",
@@ -939,14 +887,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Delete Thing"),
 		option.Description("Delete a thing owned by the authenticated user"),
 		option.Path("thingId", "Thing ID", param.Required(), param.Example("example thing ID", "thing123")),
-		option.AddResponse(
-			204,
-			"Thing deleted successfully",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(204, "Thing deleted successfully"),
 		option.AddResponse(
 			401,
 			"Not authenticated",
@@ -1118,14 +1059,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Delete List"),
 		option.Description("Delete a list owned by the authenticated user"),
 		option.Path("listId", "List ID", param.Required(), param.Example("example list ID", "list123")),
-		option.AddResponse(
-			204,
-			"List deleted successfully",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(204, "List deleted successfully"),
 		option.AddResponse(
 			401,
 			"Not authenticated",
@@ -1361,14 +1295,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Delete Share"),
 		option.Description("Delete a share (unshare)"),
 		option.Path("shareId", "Share ID", param.Required(), param.Example("example share ID", "share123")),
-		option.AddResponse(
-			200,
-			"Share deleted successfully",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Share deleted successfully"),
 		option.AddResponse(
 			401,
 			"Not authenticated",
@@ -1481,14 +1408,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Delete Public Share"),
 		option.Description("Revoke a public share link"),
 		option.Path("token", "Public share token", param.Required(), param.Example("example token", "V1StGXR8_Z5jdHi6B-myT")),
-		option.AddResponse(
-			200,
-			"Public share deleted successfully",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Public share deleted successfully"),
 		option.AddResponse(
 			401,
 			"Not authenticated",
@@ -1540,14 +1460,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Unfriend"),
 		option.Description("Remove a friend connection (unfriend)"),
 		option.Path("friendId", "Friend user ID", param.Required(), param.Example("example friend ID", "user123")),
-		option.AddResponse(
-			200,
-			"Friend removed successfully",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Friend removed successfully"),
 		option.AddResponse(
 			401,
 			"Not authenticated",
@@ -1636,14 +1549,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Cancel Friend Request"),
 		option.Description("Cancel a sent friend request"),
 		option.Path("requestId", "Friend request ID", param.Required(), param.Example("example request ID", "request123")),
-		option.AddResponse(
-			200,
-			"Friend request cancelled successfully",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Friend request cancelled successfully"),
 		option.AddResponse(
 			401,
 			"Not authenticated",
@@ -1743,14 +1649,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Acknowledge Notification"),
 		option.Description("Mark a notification as acknowledged (read)"),
 		option.Path("notificationId", "Notification ID", param.Required(), param.Example("example notification ID", "notif123")),
-		option.AddResponse(
-			200,
-			"Notification acknowledged successfully",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(200, "Notification acknowledged successfully"),
 		option.AddResponse(
 			401,
 			"Not authenticated",
@@ -1939,14 +1838,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				ContentTypes: []string{"image/jpeg", "image/png", "image/gif"},
 			},
 		),
-		option.AddResponse(
-			304,
-			"Not Modified (ETag match)",
-			fuego.Response{
-				Type:         utils.NoContent{},
-				ContentTypes: []string{""},
-			},
-		),
+		noContentResponse(304, "Not Modified (ETag match)"),
 		option.AddResponse(
 			401,
 			"Not authenticated",
