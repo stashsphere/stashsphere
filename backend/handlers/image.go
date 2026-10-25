@@ -186,7 +186,7 @@ func (is *ImageHandler) ImageHandlerPatch(c echo.Context) error {
 		return err
 	}
 	resource := resources.ReducedImageFromModel(image)
-	return c.JSON(http.StatusCreated, resource)
+	return c.JSON(http.StatusOK, resource)
 }
 
 type ImagesParams struct {

@@ -1208,7 +1208,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PatchEcho(engine, imageGroup, "/:imageId", imageHandler.ImageHandlerPatch,
 		option.OperationID("modifyImage"),
-		option.DefaultStatusCode(http.StatusCreated),
 		option.Summary("Modify Image"),
 		option.Description("Modify an image by rotating it (90, 180, or 270 degrees)"),
 		option.Path("imageId", "Image ID", param.Required(), param.Example("example image ID", "image123")),
@@ -1219,7 +1218,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 			},
 		),
 		option.AddResponse(
-			201,
+			200,
 			"Image modified successfully",
 			fuego.Response{
 				Type:         resources.ReducedImage{},
