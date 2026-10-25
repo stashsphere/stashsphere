@@ -15,7 +15,7 @@ buildGoModule {
     path = ../.;
   };
 
-  vendorHash = "sha256-OOrMtJEW8lNm89/VEmNNKJzbiQhPIhNvGa0U3p6MMc0=";
+  vendorHash = "sha256-K6QhO5ePDKPuSFGaZNVZa8UDlD9PP1Y50kjDsr44UO0=";
 
   buildInputs = [
     # libmagic
