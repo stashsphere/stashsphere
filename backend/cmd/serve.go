@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -137,6 +138,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	e.HidePort = true
 
 	engine := fuego.NewEngine(
+		fuego.WithResponseContentType("application/json"),
 		fuego.WithOpenAPIConfig(fuego.OpenAPIConfig{
 			Disabled:         !serveOpenAPI,
 			DisableSwaggerUI: !serveOpenAPI,
@@ -457,6 +459,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	oidcGroup := a.Group("/auth/oidc")
 	fuegoecho.GetEcho(engine, oidcGroup, "/:provider/authorize", oidcHandler.AuthorizeHandlerGet,
 		option.OperationID("oidcAuthorize"),
+		redirectResponse(http.StatusFound, "Redirect to the OIDC provider"),
 		option.Security(),
 		option.Summary("OIDC Authorize"),
 		option.Description("Redirect to OIDC provider's authorization endpoint"),
@@ -465,6 +468,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.GetEcho(engine, oidcGroup, "/:provider/callback", oidcHandler.CallbackHandlerGet,
 		option.OperationID("oidcCallback"),
+		redirectResponse(http.StatusFound, "Redirect to the frontend after login"),
 		option.Security(),
 		option.Summary("OIDC Callback"),
 		option.Description("Handle callback from OIDC provider after user authentication"),
@@ -796,6 +800,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, thingsGroup, "", thingHandler.ThingHandlerPost,
 		option.OperationID("createThing"),
+		option.DefaultStatusCode(http.StatusCreated),
 		option.Summary("Create Thing"),
 		option.Description("Create a new thing with properties, images, and sharing settings"),
 		option.RequestBody(
@@ -930,6 +935,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.DeleteEcho(engine, thingsGroup, "/:thingId", thingHandler.ThingHandlerDelete,
 		option.OperationID("deleteThing"),
+		option.DefaultStatusCode(http.StatusNoContent),
 		option.Summary("Delete Thing"),
 		option.Description("Delete a thing owned by the authenticated user"),
 		option.Path("thingId", "Thing ID", param.Required(), param.Example("example thing ID", "thing123")),
@@ -995,6 +1001,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, listsGroup, "", listHandler.ListHandlerPost,
 		option.OperationID("createList"),
+		option.DefaultStatusCode(http.StatusCreated),
 		option.Summary("Create List"),
 		option.Description("Create a new list containing specified things"),
 		option.RequestBody(
@@ -1107,6 +1114,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.DeleteEcho(engine, listsGroup, "/:listId", listHandler.ListHandlerDelete,
 		option.OperationID("deleteList"),
+		option.DefaultStatusCode(http.StatusNoContent),
 		option.Summary("Delete List"),
 		option.Description("Delete a list owned by the authenticated user"),
 		option.Path("listId", "List ID", param.Required(), param.Example("example list ID", "list123")),
@@ -1169,6 +1177,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, imageGroup, "", imageHandler.ImageHandlerPost,
 		option.OperationID("uploadImage"),
+		option.DefaultStatusCode(http.StatusCreated),
 		option.Summary("Upload Image"),
 		option.Description("Upload a new image file. Content-Type must be multipart/form-data with 'file' field."),
 		option.AddResponse(
@@ -1199,6 +1208,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PatchEcho(engine, imageGroup, "/:imageId", imageHandler.ImageHandlerPatch,
 		option.OperationID("modifyImage"),
+		option.DefaultStatusCode(http.StatusCreated),
 		option.Summary("Modify Image"),
 		option.Description("Modify an image by rotating it (90, 180, or 270 degrees)"),
 		option.Path("imageId", "Image ID", param.Required(), param.Example("example image ID", "image123")),
@@ -1281,6 +1291,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, shareGroup, "", shareHandler.ShareHandlerPost,
 		option.OperationID("createShare"),
+		option.DefaultStatusCode(http.StatusCreated),
 		option.Summary("Create Share"),
 		option.Description("Share a thing or list with another user"),
 		option.RequestBody(
@@ -1385,6 +1396,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, publicShareGroup, "", publicShareHandler.PublicShareHandlerPost,
 		option.OperationID("createPublicShare"),
+		option.DefaultStatusCode(http.StatusCreated),
 		option.Summary("Create Public Share"),
 		option.Description("Create a public link for a thing or list that can be viewed without an account"),
 		option.RequestBody(
@@ -1585,6 +1597,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, friendRequestGroup, "", friendHandler.FriendRequestPost,
 		option.OperationID("createFriendRequest"),
+		option.DefaultStatusCode(http.StatusCreated),
 		option.Summary("Send Friend Request"),
 		option.Description("Send a friend request to another user"),
 		option.RequestBody(
@@ -1965,6 +1978,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, exportGroup, "", exportHandler.Post,
 		option.OperationID("startExport"),
+		option.DefaultStatusCode(http.StatusAccepted),
 		option.Summary("Trigger Export"),
 		option.Description("Create a new export for the current user"),
 		option.AddResponse(202, "Export created", fuego.Response{Type: resources.ExportStatus{}, ContentTypes: []string{"application/json"}}),
@@ -1995,6 +2009,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	fuegoecho.PostEcho(engine, importGroup, "", importHandler.Post,
 		option.OperationID("startImport"),
+		option.DefaultStatusCode(http.StatusAccepted),
 		option.Summary("Upload Import"),
 		option.Description("Upload a ZIP archive to import into the current user's collection"),
 		option.AddResponse(202, "Import queued", fuego.Response{Type: resources.ImportStatus{}, ContentTypes: []string{"application/json"}}),
@@ -2010,6 +2025,10 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.AddResponse(404, "No import found", fuego.Response{Type: ss_middleware.ErrorResponse{}, ContentTypes: []string{"application/json"}}),
 		commonImportOptions,
 	)
+
+	// fuego registers this placeholder for every echo handler since their
+	// return type is unknown; all responses are declared explicitly instead
+	delete(engine.OpenAPI.Description().Components.Schemas, "unknown-interface")
 
 	engine.RegisterOpenAPIRoutes(&fuegoecho.OpenAPIHandler{Echo: e})
 
