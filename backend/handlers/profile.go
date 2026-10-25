@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/stashsphere/backend/middleware"
+	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
 	"github.com/stashsphere/backend/utils"
@@ -43,11 +44,11 @@ func (ph *ProfileHandler) ProfileHandlerGet(c echo.Context) error {
 }
 
 type ProfileUpdateParams struct {
-	Name                string  `json:"name"`
-	FullName            string  `json:"fullName"`
-	Information         string  `json:"information"`
-	ImageId             *string `json:"imageId"`
-	DefaultSharingState string  `json:"defaultSharingState" validate:"oneof=private friends friends-of-friends"`
+	Name                string              `json:"name"`
+	FullName            string              `json:"fullName"`
+	Information         string              `json:"information"`
+	ImageId             *string             `json:"imageId"`
+	DefaultSharingState models.SharingState `json:"defaultSharingState" validate:"oneof=private friends friends-of-friends"`
 }
 
 func (p *ProfileUpdateParams) ToUpdateUserParams() services.UpdateUserParams {
@@ -56,7 +57,7 @@ func (p *ProfileUpdateParams) ToUpdateUserParams() services.UpdateUserParams {
 		FullName:            p.FullName,
 		Information:         p.Information,
 		ImageId:             p.ImageId,
-		DefaultSharingState: p.DefaultSharingState,
+		DefaultSharingState: string(p.DefaultSharingState),
 	}
 }
 

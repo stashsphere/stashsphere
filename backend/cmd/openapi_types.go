@@ -10,6 +10,15 @@ import (
 	"github.com/go-fuego/fuego"
 )
 
+// openAPIType documents a Go type with a fixed schema.
+type openAPIType struct {
+	t      reflect.Type
+	schema *openapi3.Schema
+	// component, if set, publishes the schema under that name in
+	// components/schemas and references it wherever the type is used
+	component string
+}
+
 // openAPIUnion describes a Go interface type whose values are one of several
 // structs, tagged in JSON by the `discriminator` field.
 type openAPIUnion struct {
@@ -23,20 +32,13 @@ type openAPIUnion struct {
 }
 
 // registerOpenAPITypes installs fuego's schema customizer, which can only be
-// set once. Types in `overrides` are documented with the given schema.
+// set once. `types` are documented with their given schema.
 // Unions document interface-typed fields as `oneOf` the variant schemas with a
 // discriminator. Without this, fuego renders both as untyped schemas.
 // Must be called before routes are registered. The returned function must be
-// called on the generated document to reference the union components, see
-// useUnionComponents.
-func registerOpenAPITypes(openAPI *fuego.OpenAPI, overrides map[reflect.Type]*openapi3.Schema, unions ...openAPIUnion) func(*openapi3.T) {
-	schemas := map[reflect.Type]*openapi3.Schema{}
-	for t, schema := range overrides {
-		schemas[t] = schema
-	}
-	components := map[reflect.Type]string{}
-	// inline copies of union schemas generated for fields, by component name
-	unionCopies := map[*openapi3.Schema]string{}
+// called on the generated document to reference the components, see
+// useComponents.
+func registerOpenAPITypes(openAPI *fuego.OpenAPI, types []openAPIType, unions ...openAPIUnion) func(*openapi3.T) {
 	for _, union := range unions {
 		schema := &openapi3.Schema{
 			Discriminator: &openapi3.Discriminator{
@@ -57,10 +59,20 @@ func registerOpenAPITypes(openAPI *fuego.OpenAPI, overrides map[reflect.Type]*op
 			names[i] = strings.TrimPrefix(ref.Ref, "#/components/schemas/")
 		}
 		schema.Description = "One of " + strings.Join(names, ", ") + ", discriminated by `" + union.discriminator + "`"
-		openAPI.Description().Components.Schemas[union.component] = schema.NewRef()
-		schemas[union.iface] = schema
-		components[union.iface] = union.component
+		types = append(types, openAPIType{t: union.iface, schema: schema, component: union.component})
 	}
+
+	schemas := map[reflect.Type]*openapi3.Schema{}
+	components := map[reflect.Type]string{}
+	for _, typ := range types {
+		schemas[typ.t] = typ.schema
+		if typ.component != "" {
+			openAPI.Description().Components.Schemas[typ.component] = typ.schema.NewRef()
+			components[typ.t] = typ.component
+		}
+	}
+	// inline copies of component schemas generated for fields, by component name
+	componentCopies := map[*openapi3.Schema]string{}
 
 	openAPI.SetGeneratorSchemaCustomizer(func(_ string, t reflect.Type, _ reflect.StructTag, schema *openapi3.Schema) error {
 		if override, ok := schemas[t]; ok {
@@ -69,7 +81,7 @@ func registerOpenAPITypes(openAPI *fuego.OpenAPI, overrides map[reflect.Type]*op
 			schema.Nullable = nullable
 		}
 		if component, ok := components[t]; ok {
-			unionCopies[schema] = component
+			componentCopies[schema] = component
 		}
 		if t.Kind() == reflect.Struct {
 			nullableRefFields(t, schema)
@@ -78,18 +90,18 @@ func registerOpenAPITypes(openAPI *fuego.OpenAPI, overrides map[reflect.Type]*op
 	})
 
 	return func(doc *openapi3.T) {
-		useUnionComponents(doc, unionCopies)
+		useComponents(doc, componentCopies)
 	}
 }
 
-// useUnionComponents replaces the inline union schemas that the generator
-// creates for every interface-typed field with a reference to the union
+// useComponents replaces the inline schemas that the generator creates for
+// every field of a type registered with a component by a reference to that
 // component. The generator only exports structs as components, so without
-// this every field would get its own copy of the union, which client
+// this every field would get its own copy of the schema, which client
 // generators turn into one distinct type per field.
-func useUnionComponents(doc *openapi3.T, unionCopies map[*openapi3.Schema]string) {
+func useComponents(doc *openapi3.T, componentCopies map[*openapi3.Schema]string) {
 	walkSchemaRefs(doc, func(ref *openapi3.SchemaRef) {
-		component, ok := unionCopies[ref.Value]
+		component, ok := componentCopies[ref.Value]
 		if !ok || ref.Ref != "" {
 			return
 		}

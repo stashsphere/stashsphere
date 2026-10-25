@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stashsphere/backend/handlers/params"
 	"github.com/stashsphere/backend/middleware"
+	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/operations"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
@@ -193,14 +194,14 @@ func (PropertyMapper) Unmarshal(b []byte, t PropertyTypeTag) (jtug.Union[Propert
 }
 
 type NewThingParams struct {
-	Name         string       `json:"name" validate:"gt=3"`
-	PrivateNote  string       `json:"privateNote"`
-	Description  string       `json:"description"`
-	ImagesIds    []string     `json:"imagesIds"`
-	Properties   PropertyList `json:"properties"`
-	Quantity     uint64       `json:"quantity"`
-	QuantityUnit string       `json:"quantityUnit"`
-	SharingState string       `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
+	Name         string              `json:"name" validate:"gt=3"`
+	PrivateNote  string              `json:"privateNote"`
+	Description  string              `json:"description"`
+	ImagesIds    []string            `json:"imagesIds"`
+	Properties   PropertyList        `json:"properties"`
+	Quantity     uint64              `json:"quantity"`
+	QuantityUnit string              `json:"quantityUnit"`
+	SharingState models.SharingState `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
 }
 
 func PropertyListToOperationParams(v PropertyList) []operations.CreatePropertyParams {
@@ -244,7 +245,7 @@ func NewThingParamsToCreateThingParams(param NewThingParams, ownerId string) ser
 		PrivateNote:  param.PrivateNote,
 		Quantity:     param.Quantity,
 		QuantityUnit: param.QuantityUnit,
-		SharingState: param.SharingState,
+		SharingState: string(param.SharingState),
 	}
 }
 
@@ -282,7 +283,7 @@ func UpdateThingParamsToUpdateThingParams(param UpdateThingParams) services.Upda
 		PrivateNote:  param.PrivateNote,
 		Quantity:     param.Quantity,
 		QuantityUnit: param.QuantityUnit,
-		SharingState: param.SharingState,
+		SharingState: string(param.SharingState),
 	}
 }
 

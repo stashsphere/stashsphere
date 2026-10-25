@@ -34,6 +34,7 @@ import (
 	"github.com/stashsphere/backend/crypto"
 	"github.com/stashsphere/backend/handlers"
 	ss_middleware "github.com/stashsphere/backend/middleware"
+	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/notifications"
 	"github.com/stashsphere/backend/operations"
 	propertyschemas "github.com/stashsphere/backend/property_schemas"
@@ -155,9 +156,16 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 
 	jsonSchema := openapi3.NewObjectSchema()
 	jsonSchema.Description = "JSON Schema document"
-	useUnionComponents := registerOpenAPITypes(engine.OpenAPI,
-		map[reflect.Type]*openapi3.Schema{
-			reflect.TypeOf(propertyschemas.JSONSchema{}): jsonSchema,
+	sharingStates := []any{}
+	for _, state := range models.AllSharingState() {
+		sharingStates = append(sharingStates, string(state))
+	}
+	sharingStateSchema := openapi3.NewStringSchema().WithEnum(sharingStates...)
+	sharingStateSchema.Description = "Who besides the owner can see an object"
+	useComponents := registerOpenAPITypes(engine.OpenAPI,
+		[]openAPIType{
+			{t: reflect.TypeOf(propertyschemas.JSONSchema{}), schema: jsonSchema},
+			{t: reflect.TypeOf(models.SharingStatePrivate), schema: sharingStateSchema, component: "SharingState"},
 		},
 		openAPIUnion{
 			iface:         reflect.TypeOf((*resources.Property)(nil)).Elem(),
@@ -1956,7 +1964,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	// fuego registers this placeholder for every echo handler since their
 	// return type is unknown; all responses are declared explicitly instead
 	delete(engine.OpenAPI.Description().Components.Schemas, "unknown-interface")
-	useUnionComponents(engine.OpenAPI.Description())
+	useComponents(engine.OpenAPI.Description())
 	convertNullableTo31(engine.OpenAPI.Description())
 	// refs handed out while a component was still being generated have no value
 	if err := openapi3.NewLoader().ResolveRefsIn(engine.OpenAPI.Description(), nil); err != nil {

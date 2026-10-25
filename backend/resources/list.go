@@ -7,16 +7,16 @@ import (
 )
 
 type List struct {
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
-	CreatedAt    time.Time         `json:"createdAt"`
-	Owner        User              `json:"owner"`
-	Things       []Thing           `json:"things"`
-	Actions      Actions           `json:"actions"`
-	Shares       []ReducedShare    `json:"shares"`
-	PublicShares []PublicShareInfo `json:"publicShares"`
-	SharingState *string           `json:"sharingState"`
-	Reason       *AccessReason     `json:"reason,omitempty"`
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	CreatedAt    time.Time            `json:"createdAt"`
+	Owner        User                 `json:"owner"`
+	Things       []Thing              `json:"things"`
+	Actions      Actions              `json:"actions"`
+	Shares       []ReducedShare       `json:"shares"`
+	PublicShares []PublicShareInfo    `json:"publicShares"`
+	SharingState *models.SharingState `json:"sharingState"`
+	Reason       *AccessReason        `json:"reason,omitempty"`
 }
 
 // requires an eager loaded list with things
@@ -35,10 +35,9 @@ func ListFromModel(list *models.List, userId string, sharedListIds []string, lis
 	canShare := list.OwnerID == userId
 	canDelete := list.OwnerID == userId
 
-	sharingStateString := list.SharingState.String()
-	var sharingState *string
+	var sharingState *models.SharingState
 	if list.OwnerID == userId {
-		sharingState = &sharingStateString
+		sharingState = &list.SharingState
 	}
 
 	return List{

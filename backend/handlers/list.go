@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stashsphere/backend/handlers/params"
 	"github.com/stashsphere/backend/middleware"
+	"github.com/stashsphere/backend/models"
 	"github.com/stashsphere/backend/resources"
 	"github.com/stashsphere/backend/services"
 	"github.com/stashsphere/backend/utils"
@@ -23,9 +24,9 @@ func NewListHandler(listService *services.ListService) *ListHandler {
 }
 
 type NewListParams struct {
-	Name         string   `json:"name" validate:"gt=0"`
-	ThingIds     []string `json:"thingIds" validate:"required"`
-	SharingState string   `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
+	Name         string              `json:"name" validate:"gt=0"`
+	ThingIds     []string            `json:"thingIds" validate:"required"`
+	SharingState models.SharingState `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
 }
 
 func NewListParamsToCreateListParams(param NewListParams, ownerId string) services.CreateListParams {
@@ -33,7 +34,7 @@ func NewListParamsToCreateListParams(param NewListParams, ownerId string) servic
 		Name:         param.Name,
 		ThingIds:     param.ThingIds,
 		OwnerId:      ownerId,
-		SharingState: param.SharingState,
+		SharingState: string(param.SharingState),
 	}
 }
 
@@ -185,16 +186,16 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 }
 
 type UpdateListParams struct {
-	Name         string   `json:"name" validate:"gt=0"`
-	ThingIds     []string `json:"thingIds" validate:"required"`
-	SharingState string   `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
+	Name         string              `json:"name" validate:"gt=0"`
+	ThingIds     []string            `json:"thingIds" validate:"required"`
+	SharingState models.SharingState `json:"sharingState" validate:"oneof=private friends friends-of-friends"`
 }
 
 func UpdateListParamsToUpdateListParams(p UpdateListParams) services.UpdateListParams {
 	return services.UpdateListParams{
 		Name:         p.Name,
 		ThingIds:     p.ThingIds,
-		SharingState: p.SharingState,
+		SharingState: string(p.SharingState),
 	}
 }
 

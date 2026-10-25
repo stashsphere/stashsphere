@@ -9,22 +9,22 @@ import (
 )
 
 type Thing struct {
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
-	Description  string            `json:"description"`
-	PrivateNote  *string           `json:"privateNote"`
-	CreatedAt    time.Time         `json:"createdAt"`
-	Owner        User              `json:"owner"`
-	Lists        []ReducedList     `json:"lists"`
-	Images       []ReducedImage    `json:"images"`
-	Properties   []Property        `json:"properties"`
-	Shares       []ReducedShare    `json:"shares"`
-	PublicShares []PublicShareInfo `json:"publicShares"`
-	SharingState *string           `json:"sharingState"`
-	Actions      Actions           `json:"actions"`
-	Quantity     int64             `json:"quantity"`
-	QuantityUnit string            `json:"quantityUnit"`
-	Reason       *AccessReason     `json:"reason,omitempty"`
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	Description  string               `json:"description"`
+	PrivateNote  *string              `json:"privateNote"`
+	CreatedAt    time.Time            `json:"createdAt"`
+	Owner        User                 `json:"owner"`
+	Lists        []ReducedList        `json:"lists"`
+	Images       []ReducedImage       `json:"images"`
+	Properties   []Property           `json:"properties"`
+	Shares       []ReducedShare       `json:"shares"`
+	PublicShares []PublicShareInfo    `json:"publicShares"`
+	SharingState *models.SharingState `json:"sharingState"`
+	Actions      Actions              `json:"actions"`
+	Quantity     int64                `json:"quantity"`
+	QuantityUnit string               `json:"quantityUnit"`
+	Reason       *AccessReason        `json:"reason,omitempty"`
 }
 
 func SumQuantityEntries(entries models.QuantityEntrySlice) int64 {
@@ -58,11 +58,10 @@ func ThingFromModel(thing *models.Thing, userId string, sharedListIds []string, 
 	canDelete := thing.OwnerID == userId
 
 	var privateNote *string
-	var sharingState *string
-	sharingStateString := thing.SharingState.String()
+	var sharingState *models.SharingState
 	if thing.OwnerID == userId {
 		privateNote = &thing.PrivateNote
-		sharingState = &sharingStateString
+		sharingState = &thing.SharingState
 	}
 
 	imageThings := make([]models.ImagesThing, len(thing.R.ImagesThings))
