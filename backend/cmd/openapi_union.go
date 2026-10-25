@@ -3,6 +3,7 @@ package cmd
 import (
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -16,6 +17,9 @@ type openAPIUnion struct {
 	discriminator string
 	// variants maps the discriminator value to a zero value of the struct
 	variants map[string]any
+	// component, if set, also publishes the union as components/schemas/<component>
+	// so it can be used as a response with componentResponse
+	component string
 }
 
 // registerOpenAPIUnions documents interface-typed fields as `oneOf` the
@@ -37,6 +41,14 @@ func registerOpenAPIUnions(openAPI *fuego.OpenAPI, unions ...openAPIUnion) {
 			schema.Discriminator.Mapping[tag] = ref
 		}
 		sort.Slice(schema.OneOf, func(i, j int) bool { return schema.OneOf[i].Ref < schema.OneOf[j].Ref })
+		if union.component != "" {
+			names := make([]string, len(schema.OneOf))
+			for i, ref := range schema.OneOf {
+				names[i] = strings.TrimPrefix(ref.Ref, "#/components/schemas/")
+			}
+			schema.Description = "One of " + strings.Join(names, ", ") + ", discriminated by `" + union.discriminator + "`"
+			openAPI.Description().Components.Schemas[union.component] = schema.NewRef()
+		}
 		schemas[union.iface] = schema
 	}
 
@@ -66,4 +78,17 @@ func pinDiscriminator(components openapi3.Schemas, ref string, property string, 
 		}
 	}
 	variant.Required = append(variant.Required, property)
+}
+
+// componentResponse documents a JSON response whose body is the named
+// component schema, e.g. a union registered with registerOpenAPIUnions.
+func componentResponse(code int, description string, component string) func(*fuego.BaseRoute) {
+	return func(r *fuego.BaseRoute) {
+		if r.Operation.Responses == nil {
+			r.Operation.Responses = openapi3.NewResponses()
+		}
+		content := openapi3.NewContentWithJSONSchemaRef(openapi3.NewSchemaRef("#/components/schemas/"+component, nil))
+		response := openapi3.NewResponse().WithDescription(description).WithContent(content)
+		r.Operation.Responses.Set(strconv.Itoa(code), &openapi3.ResponseRef{Value: response})
+	}
 }

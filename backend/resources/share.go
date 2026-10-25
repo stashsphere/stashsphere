@@ -1,34 +1,38 @@
 package resources
 
 import (
-	"encoding/json"
-
 	"github.com/stashsphere/backend/models"
 )
 
-type ShareType int
+type ShareType string
 
 const (
-	ThingShare ShareType = iota
-	ListShare
+	ThingShareType ShareType = "thing"
+	ListShareType  ShareType = "list"
 )
 
-func (st ShareType) String() string {
-	switch st {
-	case ThingShare:
-		return "thing"
-	case ListShare:
-		return "list"
-	default:
-		return ""
-	}
+// Share is a ThingShare or a ListShare, discriminated by its `type` field.
+type Share interface {
+	ShareType() ShareType
 }
 
-type Share struct {
+func (ThingShare) ShareType() ShareType { return ThingShareType }
+func (ListShare) ShareType() ShareType  { return ListShareType }
+
+type ThingShare struct {
+	Id         string       `json:"id"`
+	Type       ShareType    `json:"type"`
+	TargetUser User         `json:"targetUser"`
+	Owner      User         `json:"owner"`
+	Object     ReducedThing `json:"object"`
+}
+
+type ListShare struct {
+	Id         string      `json:"id"`
 	Type       ShareType   `json:"type"`
 	TargetUser User        `json:"targetUser"`
 	Owner      User        `json:"owner"`
-	Object     interface{} `json:"share"`
+	Object     ReducedList `json:"object"`
 }
 
 type ReducedShare struct {
@@ -37,52 +41,29 @@ type ReducedShare struct {
 	Id         string `json:"id"`
 }
 
-func (s *Share) MarshalJSON() ([]byte, error) {
-	switch s.Type {
-	case ThingShare:
-		return json.Marshal(&struct {
-			Type   string       `json:"type"`
-			Object ReducedThing `json:"object"`
-		}{
-			Type:   s.Type.String(),
-			Object: s.Object.(ReducedThing),
-		})
-	case ListShare:
-		return json.Marshal(&struct {
-			Type   string      `json:"type"`
-			Object ReducedList `json:"object"`
-		}{
-			Type:   s.Type.String(),
-			Object: s.Object.(ReducedList),
-		})
-	default:
-		return nil, nil
-	}
-}
-
-func ShareFromModel(share *models.Share, userId string) *Share {
+func ShareFromModel(share *models.Share, userId string) Share {
+	targetUser := UserFromModel(share.R.TargetUser)
+	owner := UserFromModel(share.R.Owner)
 	if len(share.R.Lists) > 0 {
-		return &Share{
-			Type:       ListShare,
-			TargetUser: UserFromModel(share.R.TargetUser),
-			Owner:      UserFromModel(share.R.Owner),
+		return ListShare{
+			Id:         share.ID,
+			Type:       ListShareType,
+			TargetUser: targetUser,
+			Owner:      owner,
 			Object:     *ReducedListFromModel(share.R.Lists[0], userId),
 		}
-	} else {
-		return &Share{Type: ThingShare, Object: *ReducedThingFromModel(share.R.Things[0], userId)}
+	}
+	return ThingShare{
+		Id:         share.ID,
+		Type:       ThingShareType,
+		TargetUser: targetUser,
+		Owner:      owner,
+		Object:     *ReducedThingFromModel(share.R.Things[0], userId),
 	}
 }
 
 func ReducedShareFromModel(s *models.Share) ReducedShare {
 	return ReducedShare{TargetUser: UserFromModel(s.R.TargetUser), Owner: UserFromModel(s.R.Owner), Id: s.ID}
-}
-
-func SharesFromModelSlice(mShares models.ShareSlice, userId string) []Share {
-	shares := make([]Share, len(mShares))
-	for i, share := range mShares {
-		shares[i] = *ShareFromModel(share, userId)
-	}
-	return shares
 }
 
 func ReducedSharesFromModelSlice(mShares models.ShareSlice) []ReducedShare {

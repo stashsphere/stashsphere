@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the existing value `STASHSPHERE_DISABLE_SECURE_COOKIES` must be changed to `STASHSPHERE_AUTH__DISABLE_SECURE_COOKIES`
 - backend: `domains.api` config is deprecated, use `domains.cookieDomain` instead
 - backend: `PATCH /api/images/{imageId}` now responds with `200 OK` instead of `201 Created`
+- backend: `POST /api/shares` and `GET /api/shares/{shareId}` now return the share `id`, `owner` and `targetUser`
+  alongside `type` (`thing` or `list`) and the shared `object`
 
 ### Fixed
 

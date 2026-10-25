@@ -173,6 +173,15 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				string(handlers.PropertyTypeBoolean):  handlers.PropertyBooleanParam{},
 			},
 		},
+		openAPIUnion{
+			iface:         reflect.TypeOf((*resources.Share)(nil)).Elem(),
+			discriminator: "type",
+			variants: map[string]any{
+				string(resources.ThingShareType): resources.ThingShare{},
+				string(resources.ListShareType):  resources.ListShare{},
+			},
+			component: "Share",
+		},
 	)
 
 	engine.OpenAPI.Description().Components.SecuritySchemes = openapi3.SecuritySchemes{
@@ -1260,14 +1269,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				ContentTypes: []string{"application/json"},
 			},
 		),
-		option.AddResponse(
-			201,
-			"Share created successfully",
-			fuego.Response{
-				Type:         resources.Share{},
-				ContentTypes: []string{"application/json"},
-			},
-		),
+		componentResponse(201, "Share created successfully", "Share"),
 		option.AddResponse(
 			400,
 			"Invalid parameters",
@@ -1291,14 +1293,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Get Share"),
 		option.Description("Get details of a specific share"),
 		option.Path("shareId", "Share ID", param.Required(), param.Example("example share ID", "share123")),
-		option.AddResponse(
-			200,
-			"Share details",
-			fuego.Response{
-				Type:         resources.Share{},
-				ContentTypes: []string{"application/json"},
-			},
-		),
+		componentResponse(200, "Share details", "Share"),
 		option.AddResponse(
 			401,
 			"Not authenticated",
