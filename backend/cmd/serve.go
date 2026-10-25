@@ -34,6 +34,7 @@ import (
 	"github.com/stashsphere/backend/crypto"
 	"github.com/stashsphere/backend/handlers"
 	ss_middleware "github.com/stashsphere/backend/middleware"
+	"github.com/stashsphere/backend/notifications"
 	"github.com/stashsphere/backend/operations"
 	propertyschemas "github.com/stashsphere/backend/property_schemas"
 	"github.com/stashsphere/backend/resources"
@@ -181,6 +182,17 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				string(resources.ListShareType):  resources.ListShare{},
 			},
 			component: "Share",
+		},
+		openAPIUnion{
+			iface:         reflect.TypeOf((*resources.Notification)(nil)).Elem(),
+			discriminator: "contentType",
+			variants: map[string]any{
+				notifications.NotifyFriendRequestSent:     resources.FriendRequestNotification{},
+				notifications.NotifyFriendRequestReaction: resources.FriendRequestReactionNotification{},
+				notifications.NotifyThingShared:           resources.ThingSharedNotification{},
+				notifications.NotifyListShared:            resources.ListSharedNotification{},
+				notifications.NotifyThingsAddedToList:     resources.ThingsAddedToListNotification{},
+			},
 		},
 	)
 
