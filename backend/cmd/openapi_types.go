@@ -129,7 +129,8 @@ func nullableRefFields(t reflect.Type, schema *openapi3.Schema) {
 			name = field.Name
 		}
 		property, ok := schema.Properties[name]
-		if !ok || property.Ref == "" {
+		// the generator also sets Ref to the type name for non-component types
+		if !ok || !strings.HasPrefix(property.Ref, "#/components/schemas/") {
 			continue
 		}
 		schema.Properties[name] = openapi3.NewSchemaRef("", &openapi3.Schema{
