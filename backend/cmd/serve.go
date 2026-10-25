@@ -1954,6 +1954,10 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	// return type is unknown; all responses are declared explicitly instead
 	delete(engine.OpenAPI.Description().Components.Schemas, "unknown-interface")
 	convertNullableTo31(engine.OpenAPI.Description())
+	// refs handed out while a component was still being generated have no value
+	if err := openapi3.NewLoader().ResolveRefsIn(engine.OpenAPI.Description(), nil); err != nil {
+		return nil, nil, fmt.Errorf("resolving OpenAPI refs: %w", err)
+	}
 
 	engine.RegisterOpenAPIRoutes(&fuegoecho.OpenAPIHandler{Echo: e})
 

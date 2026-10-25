@@ -36,14 +36,15 @@ func registerOpenAPITypes(openAPI *fuego.OpenAPI, overrides map[reflect.Type]*op
 		schema := &openapi3.Schema{
 			Discriminator: &openapi3.Discriminator{
 				PropertyName: union.discriminator,
-				Mapping:      openapi3.StringMap{},
+				Mapping:      map[string]openapi3.MappingRef{},
 			},
 		}
 		for tag, variant := range union.variants {
-			ref := fuego.SchemaTagFromType(openAPI, variant).Ref
+			variantTag := fuego.SchemaTagFromType(openAPI, variant)
+			ref := variantTag.Ref
 			pinDiscriminator(openAPI.Description().Components.Schemas, ref, union.discriminator, tag)
-			schema.OneOf = append(schema.OneOf, openapi3.NewSchemaRef(ref, nil))
-			schema.Discriminator.Mapping[tag] = ref
+			schema.OneOf = append(schema.OneOf, openapi3.NewSchemaRef(ref, variantTag.Value))
+			schema.Discriminator.Mapping[tag] = openapi3.MappingRef{Ref: ref}
 		}
 		sort.Slice(schema.OneOf, func(i, j int) bool { return schema.OneOf[i].Ref < schema.OneOf[j].Ref })
 		if union.component != "" {
@@ -61,8 +62,45 @@ func registerOpenAPITypes(openAPI *fuego.OpenAPI, overrides map[reflect.Type]*op
 		if override, ok := schemas[t]; ok {
 			*schema = *override
 		}
+		if t.Kind() == reflect.Struct {
+			nullableRefFields(t, schema)
+		}
 		return nil
 	})
+}
+
+// nullableRefFields marks properties that reference a component schema and
+// can be JSON null (a pointer field without omitempty) as `anyOf` the reference
+// and null. The generator drops nullability at $ref sites so the shared
+// component itself does not become nullable for all of its users.
+func nullableRefFields(t reflect.Type, schema *openapi3.Schema) {
+	for i := range t.NumField() {
+		field := t.Field(i)
+		if field.Anonymous && field.Type.Kind() == reflect.Struct {
+			nullableRefFields(field.Type, schema)
+			continue
+		}
+		if !field.IsExported() || field.Type.Kind() != reflect.Pointer {
+			continue
+		}
+		name, options, _ := strings.Cut(field.Tag.Get("json"), ",")
+		if name == "-" || strings.Contains(options, "omitempty") {
+			continue
+		}
+		if name == "" {
+			name = field.Name
+		}
+		property, ok := schema.Properties[name]
+		if !ok || property.Ref == "" {
+			continue
+		}
+		schema.Properties[name] = openapi3.NewSchemaRef("", &openapi3.Schema{
+			AnyOf: openapi3.SchemaRefs{
+				property,
+				openapi3.NewSchemaRef("", &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeNull}}),
+			},
+		})
+	}
 }
 
 // pinDiscriminator makes the discriminator a required property of the variant
@@ -92,7 +130,12 @@ func componentResponse(code int, description string, component string) func(*fue
 		if r.Operation.Responses == nil {
 			r.Operation.Responses = openapi3.NewResponses()
 		}
-		content := openapi3.NewContentWithJSONSchemaRef(openapi3.NewSchemaRef("#/components/schemas/"+component, nil))
+		// attach the schema so the spec validator can resolve the ref
+		var componentSchema *openapi3.Schema
+		if schemaRef, ok := r.OpenAPI.Description().Components.Schemas[component]; ok {
+			componentSchema = schemaRef.Value
+		}
+		content := openapi3.NewContentWithJSONSchemaRef(openapi3.NewSchemaRef("#/components/schemas/"+component, componentSchema))
 		response := openapi3.NewResponse().WithDescription(description).WithContent(content)
 		r.Operation.Responses.Set(strconv.Itoa(code), &openapi3.ResponseRef{Value: response})
 	}
