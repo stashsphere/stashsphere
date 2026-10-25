@@ -4,6 +4,7 @@ final: prev: {
   stashsphereGitRevision = "unknown";
   stashsphere = with final; final.callPackage ../backend/nix/package.nix { version=stashsphereVersion; };
   stashsphere-openapi = final.stashsphere.doc;
+  stashsphere-openapi-lint = final.callPackage ../backend/nix/openapi-lint.nix { };
   stashsphere-frontend = with final; final.callPackage ../frontend/default.nix {
     version = stashsphereVersion;
     gitRevision = stashsphereGitRevision;

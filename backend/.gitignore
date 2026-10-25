@@ -4,3 +4,4 @@ backend
 image_store
 image_cache/*
 result
+doc/

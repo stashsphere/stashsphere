@@ -1,0 +1,123 @@
+# vacuum ruleset for the StashSphere OpenAPI spec (`backend openapi-dump`).
+#
+# The spec is the source for generated API clients (e.g. the Rust CLI), so
+# the custom `stashsphere-*` rules focus on what breaks or degrades codegen.
+# Run locally: nix build .#checks.x86_64-linux.openapi-lint -L
+extends: [[vacuum:oas, recommended]]
+
+rules:
+  # Noise for an internal API whose only consumers are our own clients.
+  oas3-missing-example: off
+  description-duplication: off
+  # Servers depend on the deployment; clients take the base URL as config.
+  oas3-api-servers: off
+
+  # Untyped schemas (e.g. Go `interface{}`) become `serde_json::Value`.
+  oas-missing-type: error
+
+  stashsphere-operation-id-camel-case:
+    description: operationIds become client method and CLI command names
+    message: "operationId `{{value}}` must be camelCase; set it with option.OperationID()"
+    given: $.paths[*][*].operationId
+    severity: error
+    then:
+      function: casing
+      functionOptions:
+        type: camel
+
+  stashsphere-operation-security-defined:
+    description: Every operation declares `security` (use an empty list for public endpoints)
+    message: "operation has no `security`; generated clients will not send credentials"
+    given: $.paths[*][get,put,post,patch,delete]
+    severity: error
+    then:
+      field: security
+      function: defined
+
+  stashsphere-no-cookie-parameters:
+    description: Auth cookies belong in securitySchemes, not in per-operation parameters
+    message: "cookie parameter `{{value}}`; reference a security scheme instead"
+    given: $.paths[*][*].parameters[?(@.in == 'cookie')].name
+    severity: error
+    then:
+      function: falsy
+
+  # fuego documents responses without a body as content `""` with a `NoContent`
+  # schema; they should have no content at all.
+  stashsphere-no-empty-media-type:
+    description: Responses must not use an empty media type
+    message: "response has content with an empty media type; omit `content` for bodiless responses"
+    given: $.paths[*][*].responses[?(@.content[''] != null)]
+    severity: error
+    then:
+      function: falsy
+
+  stashsphere-no-xml-responses:
+    description: The API only speaks JSON
+    message: "response advertises application/xml"
+    given: $.paths[*][*].responses[*].content
+    severity: error
+    then:
+      field: application/xml
+      function: undefined
+
+  stashsphere-no-phantom-200:
+    description: Operations returning 201/202/204 must not also document a 200
+    message: "operation documents 200 next to its real success status"
+    given:
+      - $.paths[*][?(@.responses['201'] != null)].responses
+      - $.paths[*][?(@.responses['202'] != null)].responses
+      - $.paths[*][?(@.responses['204'] != null)].responses
+    severity: error
+    then:
+      field: "200"
+      function: undefined
+
+  stashsphere-no-unknown-interface:
+    description: fuego emits `unknown-interface` for handlers returning `any`
+    message: "schema `unknown-interface` exists; give the handler a concrete return type"
+    given: $.components.schemas
+    severity: error
+    then:
+      field: unknown-interface
+      function: undefined
+
+  stashsphere-binary-as-string:
+    description: "Binary bodies must be `type: string, format: binary`, not an array of uint8"
+    message: "schema `uint8` exists; a []byte body is documented as an integer array"
+    given: $.components.schemas
+    severity: error
+    then:
+      field: uint8
+      function: undefined
+
+  stashsphere-upload-request-body:
+    description: Upload endpoints must document their multipart request body
+    message: "upload endpoint has no requestBody"
+    given:
+      - $.paths['/api/images'].post
+      - $.paths['/api/import'].post
+    severity: error
+    then:
+      field: requestBody.content.multipart/form-data
+      function: defined
+
+  stashsphere-schema-required-fields:
+    description: Object schemas list their required properties, otherwise every field becomes optional
+    message: "object schema has no `required` list"
+    given: $.components.schemas[?(@.properties)]
+    severity: warn
+    then:
+      field: required
+      function: defined
+
+  stashsphere-no-inline-objects:
+    description: Nested objects should be named component schemas so generated types get stable names
+    message: "inline object schema; extract it into components.schemas"
+    given:
+      - $.components.schemas[*].properties[*]
+      - $.components.schemas[*].properties[*].items
+    severity: warn
+    then:
+      field: properties
+      function: undefined
