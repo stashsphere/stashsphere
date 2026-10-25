@@ -1,0 +1,18 @@
+# Regenerate the API client after a backend change (in `nix develop .#cli`):
+#   cp "$STASHSPHERE_OPENAPI_SPEC" cli/openapi.json
+#   openapi-to-rust generate --config cli/openapi-to-rust.toml
+# The codegen flake check fails when either is out of date.
+
+[generator]
+spec_path = "openapi.json"
+output_dir = "src/api"
+module_name = "api"
+
+[features]
+enable_async_client = true
+
+[http_client]
+timeout_seconds = 30
+
+[http_client.tracing]
+enabled = false
