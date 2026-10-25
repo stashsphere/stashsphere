@@ -1920,6 +1920,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	// fuego registers this placeholder for every echo handler since their
 	// return type is unknown; all responses are declared explicitly instead
 	delete(engine.OpenAPI.Description().Components.Schemas, "unknown-interface")
+	convertNullableTo31(engine.OpenAPI.Description())
 
 	engine.RegisterOpenAPIRoutes(&fuegoecho.OpenAPIHandler{Echo: e})
 
