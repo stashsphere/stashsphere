@@ -169,7 +169,10 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		},
 	}
 	engine.OpenAPI.Description().Info = &openapi3.Info{
-		Title:   "OpenAPI Documentation for Stashsphere",
+		Title: "OpenAPI Documentation for Stashsphere",
+		Description: "StashSphere allows you to create an inventory of your tools, supplies and materials, " +
+			"organize them in lists and share them with other users. " +
+			"Authenticate with POST /api/user/login, which sets the access and refresh cookies.",
 		Version: "0.9.0",
 	}
 
