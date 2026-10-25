@@ -136,6 +136,7 @@
         nixos-test-oidc = nixpkgsFor.${system}.callPackage ./backend/nix/nixos-test-oidc.nix { };
         openapi-lint = nixpkgsFor.${system}.callPackage ./backend/nix/openapi-lint-check.nix { };
         cli-codegen = nixpkgsFor.${system}.callPackage ./cli/nix/codegen-check.nix { };
+        cli-nixos-test = nixpkgsFor.${system}.callPackage ./cli/nix/nixos-test.nix { };
       });
 
       githubActions =
