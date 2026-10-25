@@ -158,6 +158,13 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				WithName("stashsphere-access").
 				WithDescription("JWT access token stored in HTTP-only cookie"),
 		},
+		"refreshCookieAuth": &openapi3.SecuritySchemeRef{
+			Value: openapi3.NewSecurityScheme().
+				WithType("apiKey").
+				WithIn("cookie").
+				WithName("stashsphere-refresh").
+				WithDescription("JWT refresh token stored in HTTP-only cookie"),
+		},
 	}
 	engine.OpenAPI.Description().Info = &openapi3.Info{
 		Title:   "OpenAPI Documentation for Stashsphere",
@@ -365,7 +372,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.OperationID("refreshToken"),
 		option.Summary("Refresh Access Token"),
 		option.Description("Refresh access token using refresh token cookie. Requires stashsphere-refresh cookie."),
-		option.Cookie("stashsphere-refresh", "JWT refresh token", param.Required()),
+		option.Security(openapi3.SecurityRequirement{"refreshCookieAuth": []string{}}),
 		option.AddResponse(
 			200,
 			"Successful token refresh",
@@ -390,7 +397,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Logout"),
 		option.Description("Logout and clear authentication cookies"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 		option.AddResponse(
 			200,
 			"Successful logout",
@@ -487,7 +493,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Get Profile"),
 		option.Description("Get current authenticated user's profile information"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 		option.AddResponse(
 			200,
 			"User profile",
@@ -511,7 +516,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Update Profile"),
 		option.Description("Update current authenticated user's profile information"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 		option.RequestBody(
 			fuego.RequestBody{
 				Type:         handlers.ProfileUpdateParams{},
@@ -549,7 +553,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Update Password"),
 		option.Description("Update current authenticated user's password"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 		option.RequestBody(
 			fuego.RequestBody{
 				Type:         handlers.PatchPasswordParams{},
@@ -587,7 +590,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Schedule Account Deletion"),
 		option.Description("Schedule the current user's account for deletion after a grace period"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 		option.AddResponse(
 			200,
 			"Deletion scheduled",
@@ -611,7 +613,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Cancel Account Deletion"),
 		option.Description("Cancel a previously scheduled account deletion"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 		option.AddResponse(
 			200,
 			"Deletion cancelled",
@@ -634,7 +635,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonEmailVerificationOptions := option.Group(
 		option.Tags("Email Verification"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.PostEcho(engine, userGroup, "/email-verification/request", emailVerificationHandler.RequestVerification,
 		option.OperationID("requestEmailVerification"),
@@ -699,7 +699,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonUsersOptions := option.Group(
 		option.Tags("Users"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, usersGroup, "", userHandler.Index,
 		option.OperationID("listUsers"),
@@ -759,7 +758,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonThingsOptions := option.Group(
 		option.Tags("Things"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, thingsGroup, "", thingHandler.ThingHandlerIndex,
 		option.OperationID("listThings"),
@@ -960,7 +958,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonListsOptions := option.Group(
 		option.Tags("Lists"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, listsGroup, "", listHandler.ListHandlerIndex,
 		option.OperationID("listLists"),
@@ -1138,7 +1135,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonImagesOptions := option.Group(
 		option.Tags("Images"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, imageGroup, "", imageHandler.ImageHandlerIndex,
 		option.OperationID("listImages"),
@@ -1276,7 +1272,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonSharesOptions := option.Group(
 		option.Tags("Shares"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.PostEcho(engine, shareGroup, "", shareHandler.ShareHandlerPost,
 		option.OperationID("createShare"),
@@ -1381,7 +1376,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonPublicSharesOptions := option.Group(
 		option.Tags("Public Shares"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.PostEcho(engine, publicShareGroup, "", publicShareHandler.PublicShareHandlerPost,
 		option.OperationID("createPublicShare"),
@@ -1500,7 +1494,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonFriendsOptions := option.Group(
 		option.Tags("Friends"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, friendGroup, "", friendHandler.FriendsIndex,
 		option.OperationID("listFriends"),
@@ -1560,7 +1553,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonFriendRequestsOptions := option.Group(
 		option.Tags("Friend Requests"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, friendRequestGroup, "", friendHandler.FriendRequestIndex,
 		option.OperationID("listFriendRequests"),
@@ -1701,7 +1693,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonNotificationsOptions := option.Group(
 		option.Tags("Notifications"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, notificationsGroup, "", notificationHandler.Index,
 		option.OperationID("listNotifications"),
@@ -1764,7 +1755,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonCartOptions := option.Group(
 		option.Tags("Cart"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, cartGroup, "", cartHandler.Index,
 		option.OperationID("getCart"),
@@ -1829,7 +1819,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonSearchOptions := option.Group(
 		option.Tags("Search"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, a, "/search", searchHandler.SearchHandlerGet,
 		option.OperationID("search"),
@@ -1883,7 +1872,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonPropertyOptions := option.Group(
 		option.Tags("Properties"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, propertyGroup, "/schemas", propertyHandler.GetSchemaCollection,
 		option.OperationID("listPropertySchemas"),
@@ -1912,7 +1900,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonAssetsOptions := option.Group(
 		option.Tags("Assets"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, e, "/assets/:hash", imageHandler.ImageHandlerGet,
 		option.OperationID("getAsset"),
@@ -1964,7 +1951,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonExportOptions := option.Group(
 		option.Tags("Export"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.PostEcho(engine, exportGroup, "", exportHandler.Post,
 		option.OperationID("startExport"),
@@ -1995,7 +1981,6 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	commonImportOptions := option.Group(
 		option.Tags("Import"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
-		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.PostEcho(engine, importGroup, "", importHandler.Post,
 		option.OperationID("startImport"),
