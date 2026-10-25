@@ -47,6 +47,7 @@ testers.nixosTest {
 
   testScript = ''
     import json
+    import time
 
     server_url = "http://127.0.0.1:8081"
     cookies = "/tmp/stashctl/cookies.json"
@@ -55,16 +56,43 @@ testers.nixosTest {
     server.wait_for_unit("stashsphere.service")
     server.wait_until_succeeds(f"${pkgs.curl}/bin/curl -f {server_url}/api/info")
 
-    alice = json.dumps({
-        "name": "alice",
-        "email": "alice@example.com",
-        "password": "secret",
-        "inviteCode": "1234",
-    })
-    server.succeed(
-        "${pkgs.curl}/bin/curl -f -H 'content-type: application/json' "
-        + f"-d '{alice}' {server_url}/api/user/register"
-    )
+    # login, refresh and register share a rate limit of a burst of 5
+    # requests per IP, refilled by one every 12 seconds, so the test logs
+    # in with curl as little as possible
+
+    def api(method, path, body=None):
+        """Calls the API with curl as alice, with the access token stashctl stored."""
+        stored = json.loads(server.succeed(f"cat {cookies}"))
+        access = next(
+            cookie["raw_cookie"].split(";")[0] for cookie in stored
+            if cookie["raw_cookie"].startswith("stashsphere-access=")
+        )
+        command = (
+            f"${pkgs.curl}/bin/curl -sf -X {method} -H 'cookie: {access}' "
+            + f"-H 'content-type: application/json' {server_url}{path}"
+        )
+        if body is not None:
+            command += f" -d '{json.dumps(body)}'"
+        out = server.succeed(command)
+        return json.loads(out) if out.strip() else None
+
+    def register(user):
+        body = json.dumps({
+            "name": user,
+            "email": f"{user}@example.com",
+            "password": "secret",
+            "inviteCode": "1234",
+        })
+        server.succeed(
+            "${pkgs.curl}/bin/curl -sf -H 'content-type: application/json' "
+            + f"-d '{body}' {server_url}/api/user/register"
+        )
+
+    def stashctl_json(command, home="/tmp/stashctl"):
+        return json.loads(server.succeed(f"STASHCTL_HOME={home} stashctl --json {command}"))
+
+    register("alice")
+    register("bob")
 
     with subtest("commands fail with exit code 3 before login"):
         status, out = server.execute("stashctl --json whoami 2>&1")
@@ -102,6 +130,93 @@ testers.nixosTest {
         assert profile["email"] == "alice@example.com", profile
         refreshed = server.succeed(f"cat {cookies}")
         assert "stashsphere-access=" in refreshed, refreshed
+
+    alice_id = stashctl_json("whoami")["id"]
+    bob_id = next(user["id"] for user in api("GET", "/api/users") if user["name"] == "bob")
+
+    drill = api("POST", "/api/things", {
+        "name": "Cordless drill",
+        "description": "18V with two batteries",
+        "privateNote": "bought 2024",
+        "imagesIds": [],
+        "properties": [{"type": "float", "name": "weight", "value": 1.5, "unit": "kg"}],
+        "quantity": 2,
+        "quantityUnit": "pcs",
+        "sharingState": "private",
+    })
+    workshop = api("POST", "/api/lists", {
+        "name": "Workshop",
+        "thingIds": [drill["id"]],
+        "sharingState": "private",
+    })
+    share = api("POST", "/api/shares", {"targetUserId": bob_id, "objectId": drill["id"]})
+
+    with subtest("things list and show"):
+        things = stashctl_json("things list")
+        assert things["totalCount"] == 1, things
+        assert things["things"][0]["id"] == drill["id"], things
+        assert stashctl_json("things list --search cord")["totalCount"] == 1
+        assert stashctl_json("things list --search drill")["totalCount"] == 0
+        assert stashctl_json("things list --all")["totalCount"] == 1
+
+        table = server.succeed("stashctl things list")
+        assert "Cordless drill" in table and "2 pcs" in table, table
+        assert table.endswith("\n1 thing\n"), table
+
+        thing = stashctl_json(f"things show {drill['id']}")
+        assert thing["properties"] == [{"type": "float", "name": "weight", "value": 1.5, "unit": "kg"}], thing
+        shown = server.succeed(f"stashctl things show {drill['id']}")
+        for expected in ["Cordless drill", "Workshop", "bob", "weight:  1.5 kg", "bought 2024"]:
+            assert expected in shown, f"{expected!r} missing in:\n{shown}"
+
+    with subtest("missing objects exit with code 5"):
+        status, out = server.execute("stashctl --json things show nope 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+        assert json.loads(out)["error"]["status"] == 404, out
+
+    with subtest("search finds things and lists"):
+        result = stashctl_json("search batteries")
+        assert [t["id"] for t in result["things"]] == [drill["id"]], result
+        result = stashctl_json("search workshop")
+        assert [l["id"] for l in result["lists"]] == [workshop["id"]], result
+        assert "No things found." in server.succeed("stashctl search workshop")
+
+    with subtest("lists list and show"):
+        lists = stashctl_json("lists list")
+        assert lists["totalCount"] == 1, lists
+        shown = server.succeed(f"stashctl lists show {workshop['id']}")
+        assert "Workshop" in shown and "Cordless drill" in shown, shown
+
+    with subtest("users list and show"):
+        users = stashctl_json("users list")
+        assert {alice_id, bob_id} <= {u["id"] for u in users}, users
+        assert stashctl_json(f"users show {bob_id}")["name"] == "bob"
+
+    with subtest("shares show"):
+        shown = stashctl_json(f"shares show {share['id']}")
+        assert shown["type"] == "thing", shown
+        assert shown["targetUser"]["id"] == bob_id, shown
+        assert "shared with:  bob" in server.succeed(f"stashctl shares show {share['id']}")
+
+    with subtest("notifications list for the receiving user"):
+        # wait for the login rate limit to allow one more request
+        time.sleep(12)
+        server.succeed(
+            f"echo secret | STASHCTL_HOME=/tmp/bob stashctl --server {server_url} "
+            + "login --email bob@example.com --password-stdin"
+        )
+        notifications = stashctl_json("notifications list --unacknowledged", home="/tmp/bob")
+        assert notifications["totalCount"] == 1, notifications
+        notification = notifications["notifications"][0]
+        assert notification["contentType"] == "THING_SHARED", notification
+        assert notification["content"]["thingId"] == drill["id"], notification
+        table = server.succeed("STASHCTL_HOME=/tmp/bob stashctl notifications list")
+        assert f"thing {drill['id']} shared by user {alice_id}" in table, table
+
+    with subtest("STASHCTL_OUTPUT selects JSON, compact when not on a terminal"):
+        out = server.succeed("STASHCTL_OUTPUT=json stashctl whoami")
+        assert out.count("\n") == 1, out
+        assert json.loads(out)["email"] == "alice@example.com", out
 
     with subtest("logout removes the session"):
         server.succeed("stashctl logout")

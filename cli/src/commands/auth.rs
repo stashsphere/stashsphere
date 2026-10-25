@@ -5,7 +5,7 @@ use clap::Args;
 use url::Url;
 
 use crate::api::LoginPostParams;
-use crate::error::{NotLoggedIn, api_error};
+use crate::error::api_error;
 use crate::output::Output;
 use crate::session::Session;
 
@@ -70,14 +70,7 @@ pub async fn logout(server: Option<Url>, output: &Output) -> anyhow::Result<()> 
 
 pub async fn whoami(server: Option<Url>, output: &Output) -> anyhow::Result<()> {
     let session = Session::open(server)?;
-    let profile = session
-        .call(async |api| api.get_profile().await)
-        .await
-        .map_err(|err| match err.api() {
-            Some(err) if err.status == 401 => NotLoggedIn.into(),
-            _ => api_error(err),
-        })?;
-    session.save()?;
+    let profile = session.fetch(async |api| api.get_profile().await).await?;
     output.print(&profile, |profile| {
         format!("{} <{}> on {}", profile.name, profile.email, session.server)
     })

@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::api::{ApiOpError, HttpClient};
-use crate::error::NotLoggedIn;
+use crate::error::{NotLoggedIn, api_error};
 
 #[derive(Default, Deserialize, Serialize)]
 struct Config {
@@ -94,6 +94,20 @@ impl Session {
         }
     }
 
+    /// Calls the API like [`Session::call`] and keeps refreshed tokens. A
+    /// rejected session becomes [`NotLoggedIn`].
+    pub async fn fetch<T, E: std::fmt::Debug + Send + Sync + 'static>(
+        &self,
+        request: impl AsyncFn(&HttpClient) -> Result<T, ApiOpError<E>>,
+    ) -> anyhow::Result<T> {
+        let result = self.call(request).await;
+        self.save_cookies()?;
+        result.map_err(|err| match err.api() {
+            Some(err) if err.status == 401 => NotLoggedIn.into(),
+            _ => api_error(err),
+        })
+    }
+
     /// Stores the server and the current cookies for later invocations.
     pub fn save(&self) -> anyhow::Result<()> {
         write_config(
@@ -102,6 +116,10 @@ impl Session {
                 server: Some(self.server.clone()),
             },
         )?;
+        self.save_cookies()
+    }
+
+    fn save_cookies(&self) -> anyhow::Result<()> {
         let cookies = self
             .cookies
             .lock()

@@ -6,18 +6,22 @@ mod commands;
 mod error;
 mod output;
 mod session;
+mod text;
 
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use url::Url;
 
-use crate::output::Output;
+use crate::commands::{lists, notifications, search, shares, things, users};
+use crate::output::{Format, Output};
+use crate::session::Session;
 
 /// Command line client for StashSphere.
 ///
-/// Every command prints a human readable summary, or the API response as
-/// JSON with --json.
+/// Every command prints tables and key/value blocks, or the API response as
+/// JSON with --json or STASHCTL_OUTPUT=json. Exit codes: 0 success, 1 error,
+/// 2 usage error, 3 not logged in, 4 forbidden, 5 not found.
 #[derive(Parser)]
 #[command(name = "stashctl", version)]
 struct Cli {
@@ -26,7 +30,17 @@ struct Cli {
     #[arg(long, global = true, env = "STASHCTL_SERVER")]
     server: Option<Url>,
 
-    /// Print results and errors as JSON
+    /// Output format of results and errors
+    #[arg(
+        long,
+        global = true,
+        value_enum,
+        env = "STASHCTL_OUTPUT",
+        default_value_t
+    )]
+    output: Format,
+
+    /// Shorthand for --output json
     #[arg(long, global = true)]
     json: bool,
 
@@ -42,11 +56,28 @@ enum Command {
     Logout,
     /// Show the profile of the logged in user
     Whoami,
+    /// Search things and lists
+    Search(search::SearchArgs),
+    /// Things in your inventory and shared with you
+    #[command(subcommand)]
+    Things(things::ThingsCommand),
+    /// Lists of things
+    #[command(subcommand)]
+    Lists(lists::ListsCommand),
+    /// Users of the instance
+    #[command(subcommand)]
+    Users(users::UsersCommand),
+    /// Shares of things and lists with other users
+    #[command(subcommand)]
+    Shares(shares::SharesCommand),
+    /// Your notifications
+    #[command(subcommand)]
+    Notifications(notifications::NotificationsCommand),
 }
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
-    let output = Output::new(cli.json);
+    let output = Output::new(if cli.json { Format::Json } else { cli.output });
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -61,9 +92,16 @@ fn main() -> ExitCode {
 }
 
 async fn run(cli: Cli, output: &Output) -> anyhow::Result<()> {
+    let session = || Session::open(cli.server.clone());
     match cli.command {
         Command::Login(args) => commands::auth::login(cli.server, args, output).await,
         Command::Logout => commands::auth::logout(cli.server, output).await,
         Command::Whoami => commands::auth::whoami(cli.server, output).await,
+        Command::Search(args) => search::run(args, &session()?, output).await,
+        Command::Things(command) => things::run(command, &session()?, output).await,
+        Command::Lists(command) => lists::run(command, &session()?, output).await,
+        Command::Users(command) => users::run(command, &session()?, output).await,
+        Command::Shares(command) => shares::run(command, &session()?, output).await,
+        Command::Notifications(command) => notifications::run(command, &session()?, output).await,
     }
 }
