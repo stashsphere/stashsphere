@@ -22,11 +22,16 @@ type openAPIUnion struct {
 	component string
 }
 
-// registerOpenAPIUnions documents interface-typed fields as `oneOf` the
-// variant schemas with a discriminator. Without this, fuego renders them as
-// untyped schemas. Must be called before routes are registered.
-func registerOpenAPIUnions(openAPI *fuego.OpenAPI, unions ...openAPIUnion) {
+// registerOpenAPITypes installs fuego's schema customizer, which can only be
+// set once. Types in `overrides` are documented with the given schema.
+// Unions document interface-typed fields as `oneOf` the variant schemas with a
+// discriminator. Without this, fuego renders both as untyped schemas.
+// Must be called before routes are registered.
+func registerOpenAPITypes(openAPI *fuego.OpenAPI, overrides map[reflect.Type]*openapi3.Schema, unions ...openAPIUnion) {
 	schemas := map[reflect.Type]*openapi3.Schema{}
+	for t, schema := range overrides {
+		schemas[t] = schema
+	}
 	for _, union := range unions {
 		schema := &openapi3.Schema{
 			Discriminator: &openapi3.Discriminator{
@@ -53,8 +58,8 @@ func registerOpenAPIUnions(openAPI *fuego.OpenAPI, unions ...openAPIUnion) {
 	}
 
 	openAPI.SetGeneratorSchemaCustomizer(func(_ string, t reflect.Type, _ reflect.StructTag, schema *openapi3.Schema) error {
-		if union, ok := schemas[t]; ok {
-			*schema = *union
+		if override, ok := schemas[t]; ok {
+			*schema = *override
 		}
 		return nil
 	})
@@ -81,7 +86,7 @@ func pinDiscriminator(components openapi3.Schemas, ref string, property string, 
 }
 
 // componentResponse documents a JSON response whose body is the named
-// component schema, e.g. a union registered with registerOpenAPIUnions.
+// component schema, e.g. a union registered with registerOpenAPITypes.
 func componentResponse(code int, description string, component string) func(*fuego.BaseRoute) {
 	return func(r *fuego.BaseRoute) {
 		if r.Operation.Responses == nil {

@@ -153,7 +153,12 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		}),
 	)
 
-	registerOpenAPIUnions(engine.OpenAPI,
+	jsonSchema := openapi3.NewObjectSchema()
+	jsonSchema.Description = "JSON Schema document"
+	registerOpenAPITypes(engine.OpenAPI,
+		map[reflect.Type]*openapi3.Schema{
+			reflect.TypeOf(propertyschemas.JSONSchema{}): jsonSchema,
+		},
 		openAPIUnion{
 			iface:         reflect.TypeOf((*resources.Property)(nil)).Elem(),
 			discriminator: "type",

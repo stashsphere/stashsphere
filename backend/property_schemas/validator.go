@@ -14,9 +14,12 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
+// JSONSchema is a raw JSON Schema document.
+type JSONSchema map[string]any
+
 type SchemaIcons struct {
-	Schema map[string]any `json:"schema"`
-	Icons  []string       `json:"icons"`
+	Schema JSONSchema `json:"schema"`
+	Icons  []string   `json:"icons"`
 }
 
 type SchemaCollection struct {
