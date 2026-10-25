@@ -17,7 +17,7 @@ type Thing struct {
 	Owner        User              `json:"owner"`
 	Lists        []ReducedList     `json:"lists"`
 	Images       []ReducedImage    `json:"images"`
-	Properties   []interface{}     `json:"properties"`
+	Properties   []Property        `json:"properties"`
 	Shares       []ReducedShare    `json:"shares"`
 	PublicShares []PublicShareInfo `json:"publicShares"`
 	SharingState *string           `json:"sharingState"`

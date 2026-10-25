@@ -16,6 +16,17 @@ const (
 	Boolean  PropertyType = "boolean"
 )
 
+// Property is one of PropertyDatetime, PropertyString, PropertyFloat or
+// PropertyBoolean, discriminated by its `type` field.
+type Property interface {
+	PropertyType() PropertyType
+}
+
+func (PropertyDatetime) PropertyType() PropertyType { return DateTime }
+func (PropertyString) PropertyType() PropertyType   { return String }
+func (PropertyFloat) PropertyType() PropertyType    { return Float }
+func (PropertyBoolean) PropertyType() PropertyType  { return Boolean }
+
 type PropertyDatetime struct {
 	Type  string    `json:"type"`
 	Name  string    `json:"name"`
@@ -41,7 +52,7 @@ type PropertyBoolean struct {
 	Value bool   `json:"value"`
 }
 
-func PropertyFromModel(property *models.Property) interface{} {
+func PropertyFromModel(property *models.Property) Property {
 	switch property.Type {
 	case models.PropertyTypeDatetime:
 		var valueDatetime time.Time
@@ -103,8 +114,8 @@ func PropertyFromModel(property *models.Property) interface{} {
 	}
 }
 
-func PropertiesFromModelSlice(mProperties models.PropertySlice) []interface{} {
-	properties := make([]interface{}, len(mProperties))
+func PropertiesFromModelSlice(mProperties models.PropertySlice) []Property {
+	properties := make([]Property, len(mProperties))
 	for i, mProperty := range mProperties {
 		properties[i] = PropertyFromModel(mProperty)
 	}

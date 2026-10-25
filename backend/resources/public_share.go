@@ -17,7 +17,7 @@ type PublicThing struct {
 	CreatedAt    time.Time      `json:"createdAt"`
 	OwnerName    string         `json:"ownerName"`
 	Images       []ReducedImage `json:"images"`
-	Properties   []interface{}  `json:"properties"`
+	Properties   []Property     `json:"properties"`
 	Quantity     int64          `json:"quantity"`
 	QuantityUnit string         `json:"quantityUnit"`
 }

@@ -152,6 +152,29 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		}),
 	)
 
+	registerOpenAPIUnions(engine.OpenAPI,
+		openAPIUnion{
+			iface:         reflect.TypeOf((*resources.Property)(nil)).Elem(),
+			discriminator: "type",
+			variants: map[string]any{
+				string(resources.DateTime): resources.PropertyDatetime{},
+				string(resources.String):   resources.PropertyString{},
+				string(resources.Float):    resources.PropertyFloat{},
+				string(resources.Boolean):  resources.PropertyBoolean{},
+			},
+		},
+		openAPIUnion{
+			iface:         reflect.TypeOf((*handlers.PropertyUnion)(nil)).Elem(),
+			discriminator: "type",
+			variants: map[string]any{
+				string(handlers.PropertyTypeDatetime): handlers.PropertyDatetimeParam{},
+				string(handlers.PropertyTypeString):   handlers.PropertyStringParam{},
+				string(handlers.PropertyTypeFloat):    handlers.PropertyFloatParam{},
+				string(handlers.PropertyTypeBoolean):  handlers.PropertyBooleanParam{},
+			},
+		},
+	)
+
 	engine.OpenAPI.Description().Components.SecuritySchemes = openapi3.SecuritySchemes{
 		"cookieAuth": &openapi3.SecuritySchemeRef{
 			Value: openapi3.NewSecurityScheme().

@@ -1,0 +1,69 @@
+package cmd
+
+import (
+	"reflect"
+	"sort"
+	"strings"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/go-fuego/fuego"
+)
+
+// openAPIUnion describes a Go interface type whose values are one of several
+// structs, tagged in JSON by the `discriminator` field.
+type openAPIUnion struct {
+	iface         reflect.Type
+	discriminator string
+	// variants maps the discriminator value to a zero value of the struct
+	variants map[string]any
+}
+
+// registerOpenAPIUnions documents interface-typed fields as `oneOf` the
+// variant schemas with a discriminator. Without this, fuego renders them as
+// untyped schemas. Must be called before routes are registered.
+func registerOpenAPIUnions(openAPI *fuego.OpenAPI, unions ...openAPIUnion) {
+	schemas := map[reflect.Type]*openapi3.Schema{}
+	for _, union := range unions {
+		schema := &openapi3.Schema{
+			Discriminator: &openapi3.Discriminator{
+				PropertyName: union.discriminator,
+				Mapping:      openapi3.StringMap{},
+			},
+		}
+		for tag, variant := range union.variants {
+			ref := fuego.SchemaTagFromType(openAPI, variant).Ref
+			pinDiscriminator(openAPI.Description().Components.Schemas, ref, union.discriminator, tag)
+			schema.OneOf = append(schema.OneOf, openapi3.NewSchemaRef(ref, nil))
+			schema.Discriminator.Mapping[tag] = ref
+		}
+		sort.Slice(schema.OneOf, func(i, j int) bool { return schema.OneOf[i].Ref < schema.OneOf[j].Ref })
+		schemas[union.iface] = schema
+	}
+
+	openAPI.SetGeneratorSchemaCustomizer(func(_ string, t reflect.Type, _ reflect.StructTag, schema *openapi3.Schema) error {
+		if union, ok := schemas[t]; ok {
+			*schema = *union
+		}
+		return nil
+	})
+}
+
+// pinDiscriminator makes the discriminator a required property of the variant
+// schema that only allows the variant's tag.
+func pinDiscriminator(components openapi3.Schemas, ref string, property string, tag string) {
+	schemaRef, ok := components[strings.TrimPrefix(ref, "#/components/schemas/")]
+	if !ok || schemaRef.Value == nil {
+		return
+	}
+	variant := schemaRef.Value
+	if variant.Properties == nil {
+		variant.Properties = openapi3.Schemas{}
+	}
+	variant.Properties[property] = openapi3.NewStringSchema().WithEnum(tag).NewRef()
+	for _, required := range variant.Required {
+		if required == property {
+			return
+		}
+	}
+	variant.Required = append(variant.Required, property)
+}
