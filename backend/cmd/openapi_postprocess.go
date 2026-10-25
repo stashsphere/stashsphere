@@ -25,14 +25,30 @@ func convertNullableTo31(doc *openapi3.T) {
 // walkSchemas calls fn once for every schema reachable from the document.
 func walkSchemas(doc *openapi3.T, fn func(*openapi3.Schema)) {
 	seen := map[*openapi3.Schema]bool{}
+	walkSchemaRefs(doc, func(ref *openapi3.SchemaRef) {
+		if !seen[ref.Value] {
+			seen[ref.Value] = true
+			fn(ref.Value)
+		}
+	})
+}
+
+// walkSchemaRefs calls fn for every schema reference reachable from the
+// document before descending into the schema it points to, so fn may replace
+// the reference. Each schema is descended into once.
+func walkSchemaRefs(doc *openapi3.T, fn func(*openapi3.SchemaRef)) {
+	seen := map[*openapi3.Schema]bool{}
 	var walk func(ref *openapi3.SchemaRef)
 	walk = func(ref *openapi3.SchemaRef) {
-		if ref == nil || ref.Value == nil || seen[ref.Value] {
+		if ref == nil || ref.Value == nil {
 			return
 		}
+		fn(ref)
 		schema := ref.Value
+		if seen[schema] {
+			return
+		}
 		seen[schema] = true
-		fn(schema)
 
 		for _, property := range schema.Properties {
 			walk(property)

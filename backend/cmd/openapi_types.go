@@ -17,8 +17,8 @@ type openAPIUnion struct {
 	discriminator string
 	// variants maps the discriminator value to a zero value of the struct
 	variants map[string]any
-	// component, if set, also publishes the union as components/schemas/<component>
-	// so it can be used as a response with componentResponse
+	// component is the name the union is published under in
+	// components/schemas; componentResponse can use it as a response body
 	component string
 }
 
@@ -26,12 +26,17 @@ type openAPIUnion struct {
 // set once. Types in `overrides` are documented with the given schema.
 // Unions document interface-typed fields as `oneOf` the variant schemas with a
 // discriminator. Without this, fuego renders both as untyped schemas.
-// Must be called before routes are registered.
-func registerOpenAPITypes(openAPI *fuego.OpenAPI, overrides map[reflect.Type]*openapi3.Schema, unions ...openAPIUnion) {
+// Must be called before routes are registered. The returned function must be
+// called on the generated document to reference the union components, see
+// useUnionComponents.
+func registerOpenAPITypes(openAPI *fuego.OpenAPI, overrides map[reflect.Type]*openapi3.Schema, unions ...openAPIUnion) func(*openapi3.T) {
 	schemas := map[reflect.Type]*openapi3.Schema{}
 	for t, schema := range overrides {
 		schemas[t] = schema
 	}
+	components := map[reflect.Type]string{}
+	// inline copies of union schemas generated for fields, by component name
+	unionCopies := map[*openapi3.Schema]string{}
 	for _, union := range unions {
 		schema := &openapi3.Schema{
 			Discriminator: &openapi3.Discriminator{
@@ -47,25 +52,58 @@ func registerOpenAPITypes(openAPI *fuego.OpenAPI, overrides map[reflect.Type]*op
 			schema.Discriminator.Mapping[tag] = openapi3.MappingRef{Ref: ref}
 		}
 		sort.Slice(schema.OneOf, func(i, j int) bool { return schema.OneOf[i].Ref < schema.OneOf[j].Ref })
-		if union.component != "" {
-			names := make([]string, len(schema.OneOf))
-			for i, ref := range schema.OneOf {
-				names[i] = strings.TrimPrefix(ref.Ref, "#/components/schemas/")
-			}
-			schema.Description = "One of " + strings.Join(names, ", ") + ", discriminated by `" + union.discriminator + "`"
-			openAPI.Description().Components.Schemas[union.component] = schema.NewRef()
+		names := make([]string, len(schema.OneOf))
+		for i, ref := range schema.OneOf {
+			names[i] = strings.TrimPrefix(ref.Ref, "#/components/schemas/")
 		}
+		schema.Description = "One of " + strings.Join(names, ", ") + ", discriminated by `" + union.discriminator + "`"
+		openAPI.Description().Components.Schemas[union.component] = schema.NewRef()
 		schemas[union.iface] = schema
+		components[union.iface] = union.component
 	}
 
 	openAPI.SetGeneratorSchemaCustomizer(func(_ string, t reflect.Type, _ reflect.StructTag, schema *openapi3.Schema) error {
 		if override, ok := schemas[t]; ok {
+			nullable := schema.Nullable
 			*schema = *override
+			schema.Nullable = nullable
+		}
+		if component, ok := components[t]; ok {
+			unionCopies[schema] = component
 		}
 		if t.Kind() == reflect.Struct {
 			nullableRefFields(t, schema)
 		}
 		return nil
+	})
+
+	return func(doc *openapi3.T) {
+		useUnionComponents(doc, unionCopies)
+	}
+}
+
+// useUnionComponents replaces the inline union schemas that the generator
+// creates for every interface-typed field with a reference to the union
+// component. The generator only exports structs as components, so without
+// this every field would get its own copy of the union, which client
+// generators turn into one distinct type per field.
+func useUnionComponents(doc *openapi3.T, unionCopies map[*openapi3.Schema]string) {
+	walkSchemaRefs(doc, func(ref *openapi3.SchemaRef) {
+		component, ok := unionCopies[ref.Value]
+		if !ok || ref.Ref != "" {
+			return
+		}
+		componentRef := openapi3.NewSchemaRef("#/components/schemas/"+component, doc.Components.Schemas[component].Value)
+		if !ref.Value.Nullable {
+			*ref = *componentRef
+			return
+		}
+		*ref = *openapi3.NewSchemaRef("", &openapi3.Schema{
+			AnyOf: openapi3.SchemaRefs{
+				componentRef,
+				openapi3.NewSchemaRef("", &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeNull}}),
+			},
+		})
 	})
 }
 

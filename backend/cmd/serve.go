@@ -155,7 +155,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 
 	jsonSchema := openapi3.NewObjectSchema()
 	jsonSchema.Description = "JSON Schema document"
-	registerOpenAPITypes(engine.OpenAPI,
+	useUnionComponents := registerOpenAPITypes(engine.OpenAPI,
 		map[reflect.Type]*openapi3.Schema{
 			reflect.TypeOf(propertyschemas.JSONSchema{}): jsonSchema,
 		},
@@ -168,6 +168,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				string(resources.Float):    resources.PropertyFloat{},
 				string(resources.Boolean):  resources.PropertyBoolean{},
 			},
+			component: "Property",
 		},
 		openAPIUnion{
 			iface:         reflect.TypeOf((*handlers.PropertyUnion)(nil)).Elem(),
@@ -178,6 +179,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				string(handlers.PropertyTypeFloat):    handlers.PropertyFloatParam{},
 				string(handlers.PropertyTypeBoolean):  handlers.PropertyBooleanParam{},
 			},
+			component: "PropertyParam",
 		},
 		openAPIUnion{
 			iface:         reflect.TypeOf((*resources.Share)(nil)).Elem(),
@@ -198,6 +200,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 				notifications.NotifyListShared:            resources.ListSharedNotification{},
 				notifications.NotifyThingsAddedToList:     resources.ThingsAddedToListNotification{},
 			},
+			component: "Notification",
 		},
 	)
 
@@ -1953,6 +1956,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	// fuego registers this placeholder for every echo handler since their
 	// return type is unknown; all responses are declared explicitly instead
 	delete(engine.OpenAPI.Description().Components.Schemas, "unknown-interface")
+	useUnionComponents(engine.OpenAPI.Description())
 	convertNullableTo31(engine.OpenAPI.Description())
 	// refs handed out while a component was still being generated have no value
 	if err := openapi3.NewLoader().ResolveRefsIn(engine.OpenAPI.Description(), nil); err != nil {
