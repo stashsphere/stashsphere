@@ -341,6 +341,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Tags("Auth"),
 	)
 	fuegoecho.PostEcho(engine, rateLimitedAuthGroup, "/login", loginHandler.LoginHandlerPost,
+		option.OperationID("login"),
 		option.Summary("Login"),
 		option.Description("Login and obtain cookies / JWT"),
 		option.RequestBody(
@@ -361,6 +362,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonUserOptions,
 	)
 	fuegoecho.PostEcho(engine, rateLimitedAuthGroup, "/refresh", loginHandler.LoginHandlerRefreshPost,
+		option.OperationID("refreshToken"),
 		option.Summary("Refresh Access Token"),
 		option.Description("Refresh access token using refresh token cookie. Requires stashsphere-refresh cookie."),
 		option.Cookie("stashsphere-refresh", "JWT refresh token", param.Required()),
@@ -384,6 +386,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonUserOptions,
 	)
 	fuegoecho.DeleteEcho(engine, userGroup, "/logout", loginHandler.LogoutHandlerDelete,
+		option.OperationID("logout"),
 		option.Summary("Logout"),
 		option.Description("Logout and clear authentication cookies"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
@@ -400,6 +403,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonUserOptions,
 	)
 	fuegoecho.PostEcho(engine, rateLimitedAuthGroup, "/register", registerHandler.RegisterHandlerPost,
+		option.OperationID("register"),
 		option.Summary("Register"),
 		option.Description("Register a new user account"),
 		option.RequestBody(
@@ -427,6 +431,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonUserOptions,
 	)
 	fuegoecho.GetEcho(engine, a, "/info", infoHandler.InfoHandlerGet,
+		option.OperationID("getInfo"),
 		option.Summary("Get Instance Info"),
 		option.Description("Get public information about this instance"),
 		option.Tags("Info"),
@@ -442,12 +447,14 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 	oidcGroup := a.Group("/auth/oidc")
 	fuegoecho.GetEcho(engine, oidcGroup, "/:provider/authorize", oidcHandler.AuthorizeHandlerGet,
+		option.OperationID("oidcAuthorize"),
 		option.Summary("OIDC Authorize"),
 		option.Description("Redirect to OIDC provider's authorization endpoint"),
 		option.Path("provider", "OIDC provider name", param.Required(), param.Example("keycloak", "keycloak")),
 		commonOIDCOptions,
 	)
 	fuegoecho.GetEcho(engine, oidcGroup, "/:provider/callback", oidcHandler.CallbackHandlerGet,
+		option.OperationID("oidcCallback"),
 		option.Summary("OIDC Callback"),
 		option.Description("Handle callback from OIDC provider after user authentication"),
 		option.Path("provider", "OIDC provider name", param.Required(), param.Example("keycloak", "keycloak")),
@@ -456,6 +463,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonOIDCOptions,
 	)
 	fuegoecho.PostEcho(engine, oidcGroup, "/:provider/link", oidcHandler.LinkHandlerPost,
+		option.OperationID("oidcLinkAccount"),
 		option.Summary("OIDC Link Account"),
 		option.Description("Link an OIDC identity to an existing password account by verifying the password"),
 		option.Path("provider", "OIDC provider name", param.Required(), param.Example("keycloak", "keycloak")),
@@ -475,6 +483,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 	)
 
 	fuegoecho.GetEcho(engine, userGroup, "/profile", profileHandler.ProfileHandlerGet,
+		option.OperationID("getProfile"),
 		option.Summary("Get Profile"),
 		option.Description("Get current authenticated user's profile information"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
@@ -498,6 +507,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonUserOptions,
 	)
 	fuegoecho.PatchEcho(engine, userGroup, "/profile", profileHandler.ProfileHandlerPatch,
+		option.OperationID("updateProfile"),
 		option.Summary("Update Profile"),
 		option.Description("Update current authenticated user's profile information"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
@@ -535,6 +545,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonUserOptions,
 	)
 	fuegoecho.PatchEcho(engine, userGroup, "/password", userHandler.PatchPassword,
+		option.OperationID("updatePassword"),
 		option.Summary("Update Password"),
 		option.Description("Update current authenticated user's password"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
@@ -572,6 +583,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonUserOptions,
 	)
 	fuegoecho.PostEcho(engine, userGroup, "/deletion", userHandler.ScheduleDeletion,
+		option.OperationID("scheduleAccountDeletion"),
 		option.Summary("Schedule Account Deletion"),
 		option.Description("Schedule the current user's account for deletion after a grace period"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
@@ -595,6 +607,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonUserOptions,
 	)
 	fuegoecho.DeleteEcho(engine, userGroup, "/deletion", userHandler.CancelDeletion,
+		option.OperationID("cancelAccountDeletion"),
 		option.Summary("Cancel Account Deletion"),
 		option.Description("Cancel a previously scheduled account deletion"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
@@ -624,6 +637,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.PostEcho(engine, userGroup, "/email-verification/request", emailVerificationHandler.RequestVerification,
+		option.OperationID("requestEmailVerification"),
 		option.Summary("Request Email Verification"),
 		option.Description("Send a verification code to the authenticated user's email address"),
 		option.AddResponse(
@@ -645,6 +659,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonEmailVerificationOptions,
 	)
 	fuegoecho.PostEcho(engine, rateLimitedAuthGroup, "/email-verification/verify", emailVerificationHandler.VerifyEmail,
+		option.OperationID("verifyEmail"),
 		option.Summary("Verify Email"),
 		option.Description("Verify email address using the 8-digit code sent via email"),
 		option.RequestBody(
@@ -687,6 +702,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, usersGroup, "", userHandler.Index,
+		option.OperationID("listUsers"),
 		option.Summary("List Users"),
 		option.Description("Get list of all users in the system"),
 		option.AddResponse(
@@ -708,6 +724,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonUsersOptions,
 	)
 	fuegoecho.GetEcho(engine, usersGroup, "/:userId", userHandler.Get,
+		option.OperationID("getUser"),
 		option.Summary("Get User"),
 		option.Description("Get a specific user's profile by ID"),
 		option.Path("userId", "User ID", param.Required(), param.Example("example user ID", "vGYzzh5G94FIBIkk9Ff_Y")),
@@ -745,6 +762,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, thingsGroup, "", thingHandler.ThingHandlerIndex,
+		option.OperationID("listThings"),
 		option.Summary("List Things"),
 		option.Description("Get paginated list of things owned by or shared with the authenticated user"),
 		option.QueryInt("page", "Page number for pagination (0-indexed)", param.Example("page 0", 0)),
@@ -773,6 +791,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonThingsOptions,
 	)
 	fuegoecho.PostEcho(engine, thingsGroup, "", thingHandler.ThingHandlerPost,
+		option.OperationID("createThing"),
 		option.Summary("Create Thing"),
 		option.Description("Create a new thing with properties, images, and sharing settings"),
 		option.RequestBody(
@@ -808,6 +827,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonThingsOptions,
 	)
 	fuegoecho.GetEcho(engine, thingsGroup, "/summary", thingHandler.ThingHandlerSummary,
+		option.OperationID("getThingsSummary"),
 		option.Summary("Get Things Summary"),
 		option.Description("Get summary statistics of things owned by the authenticated user"),
 		option.AddResponse(
@@ -829,6 +849,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonThingsOptions,
 	)
 	fuegoecho.PatchEcho(engine, thingsGroup, "/:thingId", thingHandler.ThingHandlerPatch,
+		option.OperationID("updateThing"),
 		option.Summary("Update Thing"),
 		option.Description("Update an existing thing's properties, images, and metadata"),
 		option.Path("thingId", "Thing ID", param.Required(), param.Example("example thing ID", "thing123")),
@@ -873,6 +894,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonThingsOptions,
 	)
 	fuegoecho.GetEcho(engine, thingsGroup, "/:thingId", thingHandler.ThingHandlerShow,
+		option.OperationID("getThing"),
 		option.Summary("Get Thing"),
 		option.Description("Get detailed information about a specific thing"),
 		option.Path("thingId", "Thing ID", param.Required(), param.Example("example thing ID", "thing123")),
@@ -903,6 +925,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonThingsOptions,
 	)
 	fuegoecho.DeleteEcho(engine, thingsGroup, "/:thingId", thingHandler.ThingHandlerDelete,
+		option.OperationID("deleteThing"),
 		option.Summary("Delete Thing"),
 		option.Description("Delete a thing owned by the authenticated user"),
 		option.Path("thingId", "Thing ID", param.Required(), param.Example("example thing ID", "thing123")),
@@ -940,6 +963,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, listsGroup, "", listHandler.ListHandlerIndex,
+		option.OperationID("listLists"),
 		option.Summary("List Lists"),
 		option.Description("Get paginated list of lists owned by or shared with the authenticated user"),
 		option.QueryInt("page", "Page number for pagination (0-indexed)", param.Example("page 0", 0)),
@@ -967,6 +991,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonListsOptions,
 	)
 	fuegoecho.PostEcho(engine, listsGroup, "", listHandler.ListHandlerPost,
+		option.OperationID("createList"),
 		option.Summary("Create List"),
 		option.Description("Create a new list containing specified things"),
 		option.RequestBody(
@@ -1002,6 +1027,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonListsOptions,
 	)
 	fuegoecho.GetEcho(engine, listsGroup, "/:listId", listHandler.ListHandlerShow,
+		option.OperationID("getList"),
 		option.Summary("Get List"),
 		option.Description("Get detailed information about a specific list including all contained things"),
 		option.Path("listId", "List ID", param.Required(), param.Example("example list ID", "list123")),
@@ -1032,6 +1058,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonListsOptions,
 	)
 	fuegoecho.PatchEcho(engine, listsGroup, "/:listId", listHandler.ListHandlerPatch,
+		option.OperationID("updateList"),
 		option.Summary("Update List"),
 		option.Description("Update an existing list's name, things, and sharing settings"),
 		option.Path("listId", "List ID", param.Required(), param.Example("example list ID", "list123")),
@@ -1076,6 +1103,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonListsOptions,
 	)
 	fuegoecho.DeleteEcho(engine, listsGroup, "/:listId", listHandler.ListHandlerDelete,
+		option.OperationID("deleteList"),
 		option.Summary("Delete List"),
 		option.Description("Delete a list owned by the authenticated user"),
 		option.Path("listId", "List ID", param.Required(), param.Example("example list ID", "list123")),
@@ -1113,6 +1141,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, imageGroup, "", imageHandler.ImageHandlerIndex,
+		option.OperationID("listImages"),
 		option.Summary("List Images"),
 		option.Description("Get paginated list of images owned by the authenticated user"),
 		option.QueryInt("page", "Page number for pagination (0-indexed)", param.Example("page 0", 0)),
@@ -1137,6 +1166,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonImagesOptions,
 	)
 	fuegoecho.PostEcho(engine, imageGroup, "", imageHandler.ImageHandlerPost,
+		option.OperationID("uploadImage"),
 		option.Summary("Upload Image"),
 		option.Description("Upload a new image file. Content-Type must be multipart/form-data with 'file' field."),
 		option.AddResponse(
@@ -1166,6 +1196,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonImagesOptions,
 	)
 	fuegoecho.PatchEcho(engine, imageGroup, "/:imageId", imageHandler.ImageHandlerPatch,
+		option.OperationID("modifyImage"),
 		option.Summary("Modify Image"),
 		option.Description("Modify an image by rotating it (90, 180, or 270 degrees)"),
 		option.Path("imageId", "Image ID", param.Required(), param.Example("example image ID", "image123")),
@@ -1210,6 +1241,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonImagesOptions,
 	)
 	fuegoecho.DeleteEcho(engine, imageGroup, "/:imageId", imageHandler.ImageHandlerDelete,
+		option.OperationID("deleteImage"),
 		option.Summary("Delete Image"),
 		option.Description("Delete an image owned by the authenticated user"),
 		option.Path("imageId", "Image ID", param.Required(), param.Example("example image ID", "image123")),
@@ -1247,6 +1279,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.PostEcho(engine, shareGroup, "", shareHandler.ShareHandlerPost,
+		option.OperationID("createShare"),
 		option.Summary("Create Share"),
 		option.Description("Share a thing or list with another user"),
 		option.RequestBody(
@@ -1282,6 +1315,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonSharesOptions,
 	)
 	fuegoecho.GetEcho(engine, shareGroup, "/:shareId", shareHandler.ShareHandlerGet,
+		option.OperationID("getShare"),
 		option.Summary("Get Share"),
 		option.Description("Get details of a specific share"),
 		option.Path("shareId", "Share ID", param.Required(), param.Example("example share ID", "share123")),
@@ -1312,6 +1346,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonSharesOptions,
 	)
 	fuegoecho.DeleteEcho(engine, shareGroup, "/:shareId", shareHandler.ShareHandlerDelete,
+		option.OperationID("deleteShare"),
 		option.Summary("Delete Share"),
 		option.Description("Delete a share (unshare)"),
 		option.Path("shareId", "Share ID", param.Required(), param.Example("example share ID", "share123")),
@@ -1349,6 +1384,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.PostEcho(engine, publicShareGroup, "", publicShareHandler.PublicShareHandlerPost,
+		option.OperationID("createPublicShare"),
 		option.Summary("Create Public Share"),
 		option.Description("Create a public link for a thing or list that can be viewed without an account"),
 		option.RequestBody(
@@ -1384,6 +1420,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonPublicSharesOptions,
 	)
 	fuegoecho.GetEcho(engine, publicShareGroup, "", publicShareHandler.PublicShareHandlerIndex,
+		option.OperationID("listPublicShares"),
 		option.Summary("List Public Shares"),
 		option.Description("List all public shares of the requesting user"),
 		option.AddResponse(
@@ -1405,6 +1442,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonPublicSharesOptions,
 	)
 	fuegoecho.GetEcho(engine, rateLimitedPublicShareGroup, "/:token", publicShareHandler.PublicShareHandlerGet,
+		option.OperationID("getPublicShare"),
 		option.Summary("Get Public Share"),
 		option.Description("Get the publicly shared thing or list for a share token. No authentication required."),
 		option.Tags("Public Shares"),
@@ -1427,6 +1465,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		),
 	)
 	fuegoecho.DeleteEcho(engine, publicShareGroup, "/:token", publicShareHandler.PublicShareHandlerDelete,
+		option.OperationID("deletePublicShare"),
 		option.Summary("Delete Public Share"),
 		option.Description("Revoke a public share link"),
 		option.Path("token", "Public share token", param.Required(), param.Example("example token", "V1StGXR8_Z5jdHi6B-myT")),
@@ -1464,6 +1503,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, friendGroup, "", friendHandler.FriendsIndex,
+		option.OperationID("listFriends"),
 		option.Summary("List Friends"),
 		option.Description("Get list of all friends for the authenticated user"),
 		option.AddResponse(
@@ -1485,6 +1525,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonFriendsOptions,
 	)
 	fuegoecho.DeleteEcho(engine, friendGroup, "/:friendId", friendHandler.FriendDelete,
+		option.OperationID("removeFriend"),
 		option.Summary("Unfriend"),
 		option.Description("Remove a friend connection (unfriend)"),
 		option.Path("friendId", "Friend user ID", param.Required(), param.Example("example friend ID", "user123")),
@@ -1522,6 +1563,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, friendRequestGroup, "", friendHandler.FriendRequestIndex,
+		option.OperationID("listFriendRequests"),
 		option.Summary("List Friend Requests"),
 		option.Description("Get list of sent and received friend requests"),
 		option.AddResponse(
@@ -1543,6 +1585,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonFriendRequestsOptions,
 	)
 	fuegoecho.PostEcho(engine, friendRequestGroup, "", friendHandler.FriendRequestPost,
+		option.OperationID("createFriendRequest"),
 		option.Summary("Send Friend Request"),
 		option.Description("Send a friend request to another user"),
 		option.RequestBody(
@@ -1578,6 +1621,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonFriendRequestsOptions,
 	)
 	fuegoecho.DeleteEcho(engine, friendRequestGroup, "/:requestId", friendHandler.FriendRequestDelete,
+		option.OperationID("cancelFriendRequest"),
 		option.Summary("Cancel Friend Request"),
 		option.Description("Cancel a sent friend request"),
 		option.Path("requestId", "Friend request ID", param.Required(), param.Example("example request ID", "request123")),
@@ -1608,6 +1652,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonFriendRequestsOptions,
 	)
 	fuegoecho.PatchEcho(engine, friendRequestGroup, "/:requestId", friendHandler.FriendRequestUpdate,
+		option.OperationID("respondToFriendRequest"),
 		option.Summary("Respond to Friend Request"),
 		option.Description("Accept or reject a received friend request"),
 		option.Path("requestId", "Friend request ID", param.Required(), param.Example("example request ID", "request123")),
@@ -1659,6 +1704,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, notificationsGroup, "", notificationHandler.Index,
+		option.OperationID("listNotifications"),
 		option.Summary("List Notifications"),
 		option.Description("Get paginated list of notifications for the authenticated user"),
 		option.QueryInt("page", "Page number for pagination (0-indexed)", param.Example("page 0", 0)),
@@ -1683,6 +1729,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonNotificationsOptions,
 	)
 	fuegoecho.PatchEcho(engine, notificationsGroup, "/:notificationId", notificationHandler.Acknowledge,
+		option.OperationID("acknowledgeNotification"),
 		option.Summary("Acknowledge Notification"),
 		option.Description("Mark a notification as acknowledged (read)"),
 		option.Path("notificationId", "Notification ID", param.Required(), param.Example("example notification ID", "notif123")),
@@ -1720,6 +1767,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, cartGroup, "", cartHandler.Index,
+		option.OperationID("getCart"),
 		option.Summary("Get Cart"),
 		option.Description("Get the current user's shopping cart contents"),
 		option.AddResponse(
@@ -1741,6 +1789,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonCartOptions,
 	)
 	fuegoecho.PutEcho(engine, cartGroup, "", cartHandler.Put,
+		option.OperationID("updateCart"),
 		option.Summary("Update Cart"),
 		option.Description("Replace the cart contents with a new list of thing IDs"),
 		option.RequestBody(
@@ -1783,6 +1832,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, a, "/search", searchHandler.SearchHandlerGet,
+		option.OperationID("search"),
 		option.Summary("Search"),
 		option.Description("Search across things and lists"),
 		option.Query("query", "Search query string", param.Required(), param.Example("search term", "laptop")),
@@ -1805,6 +1855,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonSearchOptions,
 	)
 	fuegoecho.GetEcho(engine, a, "/search/property_auto_complete", searchHandler.AutocompleteGet,
+		option.OperationID("autocompleteProperty"),
 		option.Summary("Autocomplete thing properties"),
 		option.Description("Autocomplete names and values of properties"),
 		option.Query("name", "the name to auto-complete, won't auto-complete when value is provided", param.Required(), param.Example("name", "length")),
@@ -1835,6 +1886,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, propertyGroup, "/schemas", propertyHandler.GetSchemaCollection,
+		option.OperationID("listPropertySchemas"),
 		option.Summary("Get Properties"),
 		option.Description("Get the collection of all Schemas configured on this instance"),
 		option.AddResponse(
@@ -1863,6 +1915,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.GetEcho(engine, e, "/assets/:hash", imageHandler.ImageHandlerGet,
+		option.OperationID("getAsset"),
 		option.Summary("Get Image Asset"),
 		option.Description("Retrieve an image file by its hash. Supports optional resizing via width parameter."),
 		option.Path("hash", "Image content hash", param.Required(), param.Example("example hash", "ABCDEF123456")),
@@ -1914,6 +1967,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.PostEcho(engine, exportGroup, "", exportHandler.Post,
+		option.OperationID("startExport"),
 		option.Summary("Trigger Export"),
 		option.Description("Create a new export for the current user"),
 		option.AddResponse(202, "Export created", fuego.Response{Type: resources.ExportStatus{}, ContentTypes: []string{"application/json"}}),
@@ -1921,6 +1975,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonExportOptions,
 	)
 	fuegoecho.GetEcho(engine, exportGroup, "", exportHandler.Get,
+		option.OperationID("getExportStatus"),
 		option.Summary("Get Export Status"),
 		option.Description("Get the most recent export for the current user"),
 		option.AddResponse(200, "Export status", fuego.Response{Type: resources.ExportStatus{}, ContentTypes: []string{"application/json"}}),
@@ -1928,6 +1983,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonExportOptions,
 	)
 	fuegoecho.GetEcho(engine, exportGroup, "/download", exportHandler.DownloadGet,
+		option.OperationID("downloadExport"),
 		option.Summary("Download Export"),
 		option.Description("Download the finished export ZIP archive"),
 		option.AddResponse(200, "Export ZIP file", fuego.Response{Type: []byte{}, ContentTypes: []string{"application/zip"}}),
@@ -1942,6 +1998,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Cookie("stashsphere-access", "JWT access token", param.Required()),
 	)
 	fuegoecho.PostEcho(engine, importGroup, "", importHandler.Post,
+		option.OperationID("startImport"),
 		option.Summary("Upload Import"),
 		option.Description("Upload a ZIP archive to import into the current user's collection"),
 		option.AddResponse(202, "Import queued", fuego.Response{Type: resources.ImportStatus{}, ContentTypes: []string{"application/json"}}),
@@ -1950,6 +2007,7 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		commonImportOptions,
 	)
 	fuegoecho.GetEcho(engine, importGroup, "", importHandler.Get,
+		option.OperationID("getImportStatus"),
 		option.Summary("Get Import Status"),
 		option.Description("Get the most recent import for the current user"),
 		option.AddResponse(200, "Import status", fuego.Response{Type: resources.ImportStatus{}, ContentTypes: []string{"application/json"}}),
