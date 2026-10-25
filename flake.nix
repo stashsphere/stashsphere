@@ -50,6 +50,7 @@
         dev = nixpkgsFor.${system}.callPackage ./nix/dev.nix { };
         openapi-lint = nixpkgsFor.${system}.stashsphere-openapi-lint;
         openapi-to-rust = nixpkgsFor.${system}.openapi-to-rust;
+        cli = nixpkgsFor.${system}.stashctl;
       });
       devShells = forAllSystems (
         system:
@@ -134,6 +135,7 @@
         nixos-test = nixpkgsFor.${system}.callPackage ./backend/nix/nixos-test.nix { };
         nixos-test-oidc = nixpkgsFor.${system}.callPackage ./backend/nix/nixos-test-oidc.nix { };
         openapi-lint = nixpkgsFor.${system}.callPackage ./backend/nix/openapi-lint-check.nix { };
+        cli-codegen = nixpkgsFor.${system}.callPackage ./cli/nix/codegen-check.nix { };
       });
 
       githubActions =
@@ -142,6 +144,7 @@
             forAllSystems (system: {
               packages_backend = self.packages.${system}.backend;
               packages_frontend = self.packages.${system}.frontend;
+              packages_cli = self.packages.${system}.cli;
             })
           );
         in

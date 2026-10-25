@@ -6,6 +6,7 @@ final: prev: {
   stashsphere-openapi = final.stashsphere.doc;
   stashsphere-openapi-lint = final.callPackage ../backend/nix/openapi-lint.nix { };
   openapi-to-rust = final.callPackage ../cli/nix/openapi-to-rust.nix { };
+  stashctl = final.callPackage ../cli/nix/package.nix { version = final.stashsphereVersion; };
   stashsphere-frontend = with final; final.callPackage ../frontend/default.nix {
     version = stashsphereVersion;
     gitRevision = stashsphereGitRevision;
