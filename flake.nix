@@ -49,6 +49,7 @@
         frontend = (nixpkgsFor.${system}).stashsphere-frontend;
         dev = nixpkgsFor.${system}.callPackage ./nix/dev.nix { };
         openapi-lint = nixpkgsFor.${system}.stashsphere-openapi-lint;
+        openapi-to-rust = nixpkgsFor.${system}.openapi-to-rust;
       });
       devShells = forAllSystems (
         system:
@@ -105,6 +106,20 @@
               nodejs_22
               pnpm
             ];
+          };
+          cli = pkgs.mkShell {
+            name = "cli";
+            buildInputs = with pkgs; [
+              cargo
+              rustc
+              rustfmt
+              clippy
+              rust-analyzer
+              openapi-to-rust
+            ];
+            env = {
+              "STASHSPHERE_OPENAPI_SPEC" = "${pkgs.stashsphere-openapi}/openapi.json";
+            };
           };
           default = pkgs.mkShell {
             name = "default";
