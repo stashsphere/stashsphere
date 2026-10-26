@@ -14,7 +14,7 @@ pub enum NotificationsCommand {
     #[command(alias = "ack")]
     Acknowledge {
         /// IDs of the notifications
-        #[arg(required = true)]
+        #[arg(required = true, allow_hyphen_values = true)]
         ids: Vec<String>,
     },
 }

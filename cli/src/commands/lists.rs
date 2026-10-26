@@ -13,6 +13,7 @@ pub enum ListsCommand {
     /// Show a list with its things
     Show {
         /// ID of the list
+        #[arg(allow_hyphen_values = true)]
         id: String,
     },
     /// Create a list
@@ -22,6 +23,7 @@ pub enum ListsCommand {
     /// Delete a list you own, keeping its things
     Delete {
         /// ID of the list
+        #[arg(allow_hyphen_values = true)]
         id: String,
     },
 }
@@ -37,13 +39,14 @@ pub struct CreateArgs {
     sharing: Option<Sharing>,
 
     /// ID of a thing you own to put in the list, can be repeated
-    #[arg(long = "thing", value_name = "ID")]
+    #[arg(long = "thing", value_name = "ID", allow_hyphen_values = true)]
     things: Vec<String>,
 }
 
 #[derive(Args)]
 pub struct UpdateArgs {
     /// ID of the list
+    #[arg(allow_hyphen_values = true)]
     id: String,
 
     /// New name
@@ -55,11 +58,11 @@ pub struct UpdateArgs {
     sharing: Option<Sharing>,
 
     /// ID of a thing you own to add to the list, can be repeated
-    #[arg(long, value_name = "ID")]
+    #[arg(long, value_name = "ID", allow_hyphen_values = true)]
     add_thing: Vec<String>,
 
     /// ID of a thing to remove from the list, can be repeated
-    #[arg(long, value_name = "ID")]
+    #[arg(long, value_name = "ID", allow_hyphen_values = true)]
     remove_thing: Vec<String>,
 }
 
@@ -69,7 +72,7 @@ pub struct ListArgs {
     page: PageArgs,
 
     /// Only lists owned by this user ID
-    #[arg(long)]
+    #[arg(long, allow_hyphen_values = true)]
     owner: Option<String>,
 
     /// Sort order as field:direction, e.g. created_at:desc or

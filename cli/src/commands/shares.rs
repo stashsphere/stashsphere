@@ -10,20 +10,23 @@ pub enum SharesCommand {
     /// Show a share of a thing or list with another user
     Show {
         /// ID of the share
+        #[arg(allow_hyphen_values = true)]
         id: String,
     },
     /// Share a thing or list you own with another user
     Create {
         /// ID of the thing or list
+        #[arg(allow_hyphen_values = true)]
         object_id: String,
 
         /// ID of the user to share with
-        #[arg(long, value_name = "ID")]
+        #[arg(long, value_name = "ID", allow_hyphen_values = true)]
         user: String,
     },
     /// Stop sharing a thing or list with a user
     Delete {
         /// ID of the share
+        #[arg(allow_hyphen_values = true)]
         id: String,
     },
 }

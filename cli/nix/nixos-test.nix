@@ -173,6 +173,9 @@ testers.nixosTest {
         status, out = server.execute("stashctl --json things show nope 2>&1")
         assert status == 5, f"exit code {status}: {out}"
         assert json.loads(out)["error"]["status"] == 404, out
+        # IDs may start with a hyphen and are not taken for flags
+        status, out = server.execute("stashctl --json things show -nope 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
 
     with subtest("search finds things and lists"):
         result = stashctl_json("search batteries")

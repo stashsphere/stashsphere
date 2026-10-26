@@ -18,6 +18,7 @@ pub enum ThingsCommand {
     /// Show a thing with its properties, lists and shares
     Show {
         /// ID of the thing
+        #[arg(allow_hyphen_values = true)]
         id: String,
     },
     /// Create a thing
@@ -27,6 +28,7 @@ pub enum ThingsCommand {
     /// Delete a thing you own
     Delete {
         /// ID of the thing
+        #[arg(allow_hyphen_values = true)]
         id: String,
     },
 }
@@ -37,7 +39,7 @@ pub struct ListArgs {
     page: PageArgs,
 
     /// Only things owned by this user ID
-    #[arg(long)]
+    #[arg(long, allow_hyphen_values = true)]
     owner: Option<String>,
 
     /// Only things whose name starts with this term, ignoring case
@@ -63,6 +65,7 @@ pub struct CreateArgs {
 #[derive(Args)]
 pub struct UpdateArgs {
     /// ID of the thing
+    #[arg(allow_hyphen_values = true)]
     id: String,
 
     /// New name, at least 4 characters

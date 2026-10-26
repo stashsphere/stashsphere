@@ -12,6 +12,7 @@ pub enum UsersCommand {
     /// Show the profile of a user
     Show {
         /// ID of the user
+        #[arg(allow_hyphen_values = true)]
         id: String,
     },
 }
