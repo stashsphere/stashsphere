@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod friends;
 pub mod images;
 pub mod lists;
 pub mod notifications;

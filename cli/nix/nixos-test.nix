@@ -413,6 +413,72 @@ testers.nixosTest {
         status, out = server.execute(f"stashctl --json things show {saw['id']} 2>&1")
         assert status == 5, f"exit code {status}: {out}"
 
+    with subtest("friends send, accept and reject requests"):
+        # wait for the rate limit to allow registering and logging in carol
+        time.sleep(24)
+        register("carol")
+        server.succeed(
+            f"echo secret | STASHCTL_HOME=/tmp/carol stashctl --server {server_url} "
+            + "login --email carol@example.com --password-stdin"
+        )
+        carol_id = stashctl_json("whoami", home="/tmp/carol")["id"]
+
+        to_bob = stashctl_json(f"friends send {bob_id}")
+        assert to_bob["state"] == "pending", to_bob
+        assert to_bob["receiver"]["id"] == bob_id, to_bob
+        status, out = server.execute(f"stashctl friends send {bob_id} 2>&1")
+        assert status == 1 and "pending request" in out, f"exit code {status}: {out}"
+
+        requests = stashctl_json("friends requests", home="/tmp/bob")
+        assert [r["id"] for r in requests["received"]] == [to_bob["id"]], requests
+        table = server.succeed("STASHCTL_HOME=/tmp/bob stashctl friends requests")
+        assert to_bob["id"] in table and f"alice ({alice_id})" in table and "pending" in table, table
+        table = server.succeed("STASHCTL_HOME=/tmp/bob stashctl notifications list")
+        assert f"friend request {to_bob['id']} from user {alice_id}" in table, table
+
+        # only the receiver answers a request
+        status, out = server.execute(f"stashctl --json friends accept {to_bob['id']} 2>&1")
+        assert status == 4, f"exit code {status}: {out}"
+        out = server.succeed(f"STASHCTL_HOME=/tmp/bob stashctl friends accept {to_bob['id']}")
+        assert out.strip() == f"Accepted friend request from alice ({alice_id})", out
+        status, out = server.execute(f"STASHCTL_HOME=/tmp/bob stashctl friends reject {to_bob['id']} 2>&1")
+        assert status == 1 and "not pending" in out, f"exit code {status}: {out}"
+
+        to_carol = stashctl_json(f"friends send {carol_id}")
+        rejected = stashctl_json(f"friends reject {to_carol['id']}", home="/tmp/carol")
+        assert rejected["state"] == "rejected", rejected
+        to_carol = stashctl_json(f"friends send {carol_id}")
+        stashctl_json(f"friends accept {to_carol['id']}", home="/tmp/carol")
+
+        friends = stashctl_json("friends list")
+        assert sorted(f["friend"]["id"] for f in friends["friendShips"]) == sorted([bob_id, carol_id]), friends
+        table = server.succeed("stashctl friends list")
+        assert "bob" in table and "carol" in table, table
+
+    with subtest("friends see what is shared with friends"):
+        spare = stashctl_json("things list --search spare")["things"][0]
+        assert spare["sharingState"] == "friends", spare
+        assert stashctl_json("things list --search spare", home="/tmp/carol")["totalCount"] == 1
+
+    with subtest("friends remove and cancel"):
+        out = server.succeed(f"stashctl friends remove {carol_id}")
+        assert out.strip() == f"Removed friend {carol_id}", out
+        friends = stashctl_json("friends list")
+        assert [f["friend"]["id"] for f in friends["friendShips"]] == [bob_id], friends
+        assert stashctl_json("friends list", home="/tmp/carol")["friendShips"] == []
+        assert stashctl_json("things list --search spare", home="/tmp/carol")["totalCount"] == 0
+        status, out = server.execute(f"stashctl --json friends remove {carol_id} 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+
+        request = stashctl_json(f"friends send {carol_id}")
+        status, out = server.execute(f"STASHCTL_HOME=/tmp/carol stashctl --json friends cancel {request['id']} 2>&1")
+        assert status == 4, f"exit code {status}: {out}"
+        out = server.succeed(f"stashctl friends cancel {request['id']}")
+        assert out.strip() == f"Cancelled friend request {request['id']}", out
+        received = stashctl_json("friends requests", home="/tmp/carol")["received"]
+        assert request["id"] not in [r["id"] for r in received], received
+        assert "No friends yet." in server.succeed("STASHCTL_HOME=/tmp/carol stashctl friends list")
+
     with subtest("STASHCTL_OUTPUT selects JSON, compact when not on a terminal"):
         out = server.succeed("STASHCTL_OUTPUT=json stashctl whoami")
         assert out.count("\n") == 1, out

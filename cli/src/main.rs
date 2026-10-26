@@ -13,7 +13,7 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand};
 use url::Url;
 
-use crate::commands::{images, lists, notifications, search, shares, things, users};
+use crate::commands::{friends, images, lists, notifications, search, shares, things, users};
 use crate::output::{Format, Output};
 use crate::session::Session;
 
@@ -70,6 +70,9 @@ enum Command {
     /// Users of the instance
     #[command(subcommand)]
     Users(users::UsersCommand),
+    /// Friends, who see what you share with friends
+    #[command(subcommand)]
+    Friends(friends::FriendsCommand),
     /// Shares of things and lists with other users
     #[command(subcommand)]
     Shares(shares::SharesCommand),
@@ -105,6 +108,7 @@ async fn run(cli: Cli, output: &Output) -> anyhow::Result<()> {
         Command::Lists(command) => lists::run(command, &session()?, output).await,
         Command::Images(command) => images::run(command, &session()?, output).await,
         Command::Users(command) => users::run(command, &session()?, output).await,
+        Command::Friends(command) => friends::run(command, &session()?, output).await,
         Command::Shares(command) => shares::run(command, &session()?, output).await,
         Command::Notifications(command) => notifications::run(command, &session()?, output).await,
     }
