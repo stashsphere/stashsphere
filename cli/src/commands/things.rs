@@ -6,7 +6,7 @@ use crate::api::{
     NewThingParams, Property, PropertyBooleanParam, PropertyDatetimeParam, PropertyFloatParam,
     PropertyParam, PropertyStringParam, Thing,
 };
-use crate::commands::{PageArgs, Sharing, new_sharing_state};
+use crate::commands::{PageArgs, Sharing, images, new_sharing_state};
 use crate::output::Output;
 use crate::session::Session;
 use crate::text::{self, Table};
@@ -60,6 +60,11 @@ pub struct CreateArgs {
 
     #[command(flatten)]
     fields: FieldArgs,
+
+    /// ID of an image you uploaded, can be repeated. The first image is
+    /// shown first.
+    #[arg(long = "image", value_name = "ID", allow_hyphen_values = true)]
+    images: Vec<String>,
 }
 
 #[derive(Args)]
@@ -78,6 +83,15 @@ pub struct UpdateArgs {
     /// Remove the property with this name, can be repeated
     #[arg(long, value_name = "NAME")]
     remove_property: Vec<String>,
+
+    /// ID of an image you uploaded to add after the others, can be repeated
+    #[arg(long, value_name = "ID", allow_hyphen_values = true)]
+    add_image: Vec<String>,
+
+    /// ID of an image to remove from the thing, can be repeated. The image
+    /// itself is kept.
+    #[arg(long, value_name = "ID", allow_hyphen_values = true)]
+    remove_image: Vec<String>,
 }
 
 /// Fields of a thing besides the name.
@@ -156,7 +170,7 @@ pub async fn run(command: ThingsCommand, session: &Session, output: &Output) -> 
                 quantity: fields.quantity.unwrap_or_default(),
                 quantity_unit: fields.unit.unwrap_or_default(),
                 sharing_state: new_sharing_state(fields.sharing, session).await?,
-                images_ids: Some(Vec::new()),
+                images_ids: Some(args.images),
                 properties: Some(Vec::new()),
             };
             set_properties(&mut params, fields.properties);
@@ -202,6 +216,14 @@ pub async fn run(command: ThingsCommand, session: &Session, output: &Output) -> 
                 });
             }
             set_properties(&mut params, fields.properties);
+            if let Some(images_ids) = &mut params.images_ids {
+                images_ids.retain(|id| !args.remove_image.contains(id));
+                for id in args.add_image {
+                    if !images_ids.contains(&id) {
+                        images_ids.push(id);
+                    }
+                }
+            }
             let thing = session
                 .fetch(async |api| api.update_thing(&args.id, params.clone()).await)
                 .await?;
@@ -406,14 +428,13 @@ fn show(thing: &Thing) -> String {
         ),
         (
             "images",
-            names(
-                thing
-                    .images
-                    .iter()
-                    .flatten()
-                    .map(|image| image.id.as_str())
-                    .collect(),
-            ),
+            thing
+                .images
+                .iter()
+                .flatten()
+                .map(images::describe)
+                .collect::<Vec<_>>()
+                .join("\n"),
         ),
         ("description", thing.description.clone()),
         (

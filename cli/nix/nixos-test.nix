@@ -46,8 +46,11 @@ testers.nixosTest {
     };
 
   testScript = ''
+    import base64
     import json
+    import struct
     import time
+    import zlib
 
     server_url = "http://127.0.0.1:8081"
     cookies = "/tmp/stashctl/cookies.json"
@@ -90,6 +93,26 @@ testers.nixosTest {
 
     def stashctl_json(command, home="/tmp/stashctl"):
         return json.loads(server.succeed(f"STASHCTL_HOME={home} stashctl --json {command}"))
+
+    def write_png(path, width, height):
+        """Writes a red PNG image to path on the server."""
+        def chunk(kind, data):
+            return (
+                struct.pack(">I", len(data)) + kind + data
+                + struct.pack(">I", zlib.crc32(kind + data))
+            )
+        rows = b"".join(b"\x00" + b"\xff\x00\x00" * width for _ in range(height))
+        png = (
+            b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(rows))
+            + chunk(b"IEND", b"")
+        )
+        server.succeed(f"echo {base64.b64encode(png).decode()} | base64 -d > {path}")
+
+    def png_width(path):
+        """The width in the IHDR chunk of the PNG image at path on the server."""
+        return int(server.succeed(f"od -An -tu4 --endian=big -j16 -N4 {path}").strip())
 
     register("alice")
     register("bob")
@@ -311,6 +334,78 @@ testers.nixosTest {
         assert status == 4, f"exit code {status}: {out}"
         status, out = server.execute(f"stashctl --json shares show {list_share['id']} 2>&1")
         assert status == 5, f"exit code {status}: {out}"
+
+    with subtest("images upload and list"):
+        write_png("/tmp/wide.png", 40, 20)
+        write_png("/tmp/tall.png", 20, 40)
+        uploaded = stashctl_json("images upload /tmp/wide.png /tmp/tall.png")
+        assert [i["name"] for i in uploaded] == ["wide.png", "tall.png"], uploaded
+        wide, tall = uploaded
+        assert (wide["width"], wide["height"]) == (40, 20), wide
+
+        images = stashctl_json("images list --unassigned")
+        assert images["totalCount"] == 2, images
+        table = server.succeed("stashctl images list")
+        assert "40x20" in table and wide["hash"] in table, table
+        assert table.endswith("\n2 images\n"), table
+
+        status, out = server.execute("echo nope > /tmp/nope.png && stashctl images upload /tmp/nope.png 2>&1")
+        assert status == 1, f"exit code {status}: {out}"
+
+    with subtest("things take images"):
+        thing = stashctl_json(
+            f"things update {drill['id']} --add-image {wide['id']} --add-image {tall['id']}"
+        )
+        assert [i["id"] for i in thing["images"]] == [wide["id"], tall["id"]], thing
+        thing = stashctl_json(f"things update {drill['id']} --remove-image {tall['id']}")
+        assert [i["id"] for i in thing["images"]] == [wide["id"]], thing
+        assert thing["quantity"] == 3, thing
+        shown = server.succeed(f"stashctl things show {drill['id']}")
+        assert f"{wide['id']} wide.png 40x20 (hash {wide['hash']})" in shown, shown
+        assert [i["id"] for i in stashctl_json("images list --unassigned")["images"]] == [tall["id"]]
+
+        tape = stashctl_json(f"things create --name 'Tape measure' --image {tall['id']}")
+        thing = stashctl_json(f"things show {tape['id']}")
+        assert [i["id"] for i in thing["images"]] == [tall["id"]], thing
+
+    with subtest("images download"):
+        out = server.succeed(f"stashctl images download {wide['hash']} -o /tmp/out.png")
+        assert out.strip() == "Saved image to /tmp/out.png", out
+        server.succeed("cmp /tmp/wide.png /tmp/out.png")
+        server.succeed(f"stashctl images download {wide['hash']} > /tmp/stdout.png")
+        server.succeed("cmp /tmp/wide.png /tmp/stdout.png")
+        server.succeed(f"stashctl images download {wide['hash']} --width 20 -o /tmp/small.png")
+        assert png_width("/tmp/small.png") == 20
+
+        # bob sees the image through the share of the drill
+        server.succeed(
+            f"STASHCTL_HOME=/tmp/bob stashctl images download {wide['hash']} -o /tmp/bob.png"
+        )
+        server.succeed("cmp /tmp/wide.png /tmp/bob.png")
+
+        status, out = server.execute("stashctl --json images download nope -o /tmp/missing.png 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+        server.fail("test -e /tmp/missing.png")
+
+    with subtest("images rotate"):
+        rotated = stashctl_json(f"images rotate {wide['id']} right")
+        assert (rotated["width"], rotated["height"]) == (20, 40), rotated
+        assert rotated["hash"] != wide["hash"], rotated
+        server.succeed(f"stashctl images download {rotated['hash']} -o /tmp/rotated.png")
+        assert png_width("/tmp/rotated.png") == 20
+        out = server.succeed(f"stashctl images rotate {wide['id']} left")
+        assert out.strip() == f"Rotated image wide.png ({wide['id']})", out
+        assert [i["width"] for i in stashctl_json(f"things show {drill['id']}")["images"]] == [40]
+
+    with subtest("images delete"):
+        status, out = server.execute(f"stashctl images delete {wide['id']} 2>&1")
+        assert status == 1, f"exit code {status}: {out}"
+        assert "in use" in out, out
+
+        server.succeed(f"stashctl things delete {tape['id']}")
+        out = server.succeed(f"stashctl images delete {tall['id']}")
+        assert out.strip() == f"Deleted image tall.png ({tall['id']})", out
+        assert stashctl_json("images list --unassigned")["totalCount"] == 0
 
     with subtest("things delete"):
         out = server.succeed(f"stashctl things delete {saw['id']}")
