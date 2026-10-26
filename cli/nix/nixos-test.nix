@@ -213,6 +213,108 @@ testers.nixosTest {
         table = server.succeed("STASHCTL_HOME=/tmp/bob stashctl notifications list")
         assert f"thing {drill['id']} shared by user {alice_id}" in table, table
 
+    with subtest("notifications acknowledge"):
+        out = server.succeed(
+            f"STASHCTL_HOME=/tmp/bob stashctl notifications ack {notification['id']}"
+        )
+        assert out.strip() == "Acknowledged 1 notification", out
+        notifications = stashctl_json("notifications list --unacknowledged", home="/tmp/bob")
+        assert notifications["totalCount"] == 0, notifications
+        status, out = server.execute("STASHCTL_HOME=/tmp/bob stashctl --json notifications ack nope 2>&1")
+        assert status != 0, f"exit code {status}: {out}"
+
+    with subtest("things create"):
+        saw = stashctl_json(
+            "things create --name 'Hand saw' --quantity 1 --unit pcs "
+            + "--property brand=Bahco --property 'length:float=50 cm' "
+            + "--property sharp:boolean=true --property bought:datetime=2025-03-01"
+        )
+        thing = stashctl_json(f"things show {saw['id']}")
+        assert thing["name"] == "Hand saw", thing
+        assert thing["sharingState"] == "private", thing
+        assert thing["properties"] == [
+            {"type": "string", "name": "brand", "value": "Bahco"},
+            {"type": "float", "name": "length", "value": 50, "unit": "cm"},
+            {"type": "boolean", "name": "sharp", "value": True},
+            {"type": "datetime", "name": "bought", "value": "2025-03-01T00:00:00Z"},
+        ], thing
+        out = server.succeed("stashctl things create --name 'Spare blade' --sharing friends")
+        assert out.startswith("Created thing Spare blade ("), out
+        status, out = server.execute("stashctl things create --name x --property w:float=abc 2>&1")
+        assert status == 2, f"exit code {status}: {out}"
+
+    with subtest("things update keeps the fields it does not change"):
+        thing = stashctl_json(
+            f"things update {drill['id']} --quantity 3 --property 'weight:float=1.7 kg' "
+            + "--property color=green"
+        )
+        assert thing["quantity"] == 3, thing
+        assert thing["name"] == "Cordless drill", thing
+        assert thing["privateNote"] == "bought 2024", thing
+        assert thing["quantityUnit"] == "pcs", thing
+        assert thing["properties"] == [
+            {"type": "float", "name": "weight", "value": 1.7, "unit": "kg"},
+            {"type": "string", "name": "color", "value": "green"},
+        ], thing
+        thing = stashctl_json(f"things show {drill['id']}")
+        assert [l["id"] for l in thing["lists"]] == [workshop["id"]], thing
+        assert [s["id"] for s in thing["shares"]] == [share["id"]], thing
+
+        shown = server.succeed(
+            f"stashctl things update {saw['id']} --description 'pull saw' --remove-property brand"
+        )
+        assert "pull saw" in shown and "brand" not in shown, shown
+        assert "length:  50 cm" in shown, shown
+
+    with subtest("only the owner can change a thing"):
+        status, out = server.execute(
+            f"STASHCTL_HOME=/tmp/bob stashctl --json things update {drill['id']} --quantity 9 2>&1"
+        )
+        assert status == 4, f"exit code {status}: {out}"
+        assert stashctl_json(f"things show {drill['id']}")["quantity"] == 3
+
+    with subtest("lists create, update and delete"):
+        garden = stashctl_json(f"lists create --name Garden --thing {saw['id']}")
+        assert stashctl_json(f"lists show {garden['id']}")["sharingState"] == "private"
+        out = server.succeed("stashctl lists create --name Empty")
+        assert out.startswith("Created list Empty ("), out
+
+        shed = stashctl_json(
+            f"lists update {garden['id']} --name 'Garden shed' --sharing friends "
+            + f"--add-thing {drill['id']} --remove-thing {saw['id']}"
+        )
+        assert shed["name"] == "Garden shed", shed
+        assert shed["sharingState"] == "friends", shed
+        assert [t["id"] for t in shed["things"]] == [drill["id"]], shed
+        shed = stashctl_json(f"lists update {garden['id']} --add-thing {saw['id']}")
+        assert shed["name"] == "Garden shed", shed
+        assert sorted(t["id"] for t in shed["things"]) == sorted([drill["id"], saw["id"]]), shed
+
+        out = server.succeed(f"stashctl lists delete {garden['id']}")
+        assert out.strip() == f"Deleted list {garden['id']}", out
+        status, out = server.execute(f"stashctl --json lists show {garden['id']} 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+        stashctl_json(f"things show {saw['id']}")
+
+    with subtest("shares create and delete"):
+        list_share = stashctl_json(f"shares create {workshop['id']} --user {bob_id}")
+        assert list_share["type"] == "list", list_share
+        assert list_share["targetUser"]["id"] == bob_id, list_share
+        shown = stashctl_json(f"lists show {workshop['id']}", home="/tmp/bob")
+        assert shown["name"] == "Workshop", shown
+
+        server.succeed(f"stashctl shares delete {list_share['id']}")
+        status, out = server.execute(f"STASHCTL_HOME=/tmp/bob stashctl --json lists show {workshop['id']} 2>&1")
+        assert status == 4, f"exit code {status}: {out}"
+        status, out = server.execute(f"stashctl --json shares show {list_share['id']} 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+
+    with subtest("things delete"):
+        out = server.succeed(f"stashctl things delete {saw['id']}")
+        assert out.strip() == f"Deleted thing {saw['id']}", out
+        status, out = server.execute(f"stashctl --json things show {saw['id']} 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+
     with subtest("STASHCTL_OUTPUT selects JSON, compact when not on a terminal"):
         out = server.succeed("STASHCTL_OUTPUT=json stashctl whoami")
         assert out.count("\n") == 1, out

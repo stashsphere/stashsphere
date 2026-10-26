@@ -1,7 +1,7 @@
 use clap::{Args, Subcommand};
 
-use crate::api::List;
-use crate::commands::{PageArgs, things};
+use crate::api::{List, NewListParams, UpdateListParams};
+use crate::commands::{PageArgs, Sharing, new_sharing_state, things};
 use crate::output::Output;
 use crate::session::Session;
 use crate::text::{self, Table};
@@ -15,6 +15,52 @@ pub enum ListsCommand {
         /// ID of the list
         id: String,
     },
+    /// Create a list
+    Create(CreateArgs),
+    /// Rename a list you own, change its sharing or its things
+    Update(UpdateArgs),
+    /// Delete a list you own, keeping its things
+    Delete {
+        /// ID of the list
+        id: String,
+    },
+}
+
+#[derive(Args)]
+pub struct CreateArgs {
+    /// Name of the list
+    #[arg(long)]
+    name: String,
+
+    /// Who can see the list. Defaults to the sharing state of your profile.
+    #[arg(long, value_enum)]
+    sharing: Option<Sharing>,
+
+    /// ID of a thing you own to put in the list, can be repeated
+    #[arg(long = "thing", value_name = "ID")]
+    things: Vec<String>,
+}
+
+#[derive(Args)]
+pub struct UpdateArgs {
+    /// ID of the list
+    id: String,
+
+    /// New name
+    #[arg(long)]
+    name: Option<String>,
+
+    /// Who can see the list
+    #[arg(long, value_enum)]
+    sharing: Option<Sharing>,
+
+    /// ID of a thing you own to add to the list, can be repeated
+    #[arg(long, value_name = "ID")]
+    add_thing: Vec<String>,
+
+    /// ID of a thing to remove from the list, can be repeated
+    #[arg(long, value_name = "ID")]
+    remove_thing: Vec<String>,
 }
 
 #[derive(Args)]
@@ -61,6 +107,56 @@ pub async fn run(command: ListsCommand, session: &Session, output: &Output) -> a
         ListsCommand::Show { id } => {
             let list = session.fetch(async |api| api.get_list(&id).await).await?;
             output.print(&list, show)
+        }
+        ListsCommand::Create(args) => {
+            let params = NewListParams {
+                name: args.name,
+                sharing_state: new_sharing_state(args.sharing, session).await?,
+                thing_ids: args.things,
+            };
+            let list = session
+                .fetch(async |api| api.create_list(params.clone()).await)
+                .await?;
+            output.print(&list, |list| {
+                format!("Created list {} ({})", list.name, list.id)
+            })
+        }
+        ListsCommand::Update(args) => {
+            // the API replaces the whole list, so the unchanged fields are
+            // sent as they are
+            let list = session
+                .fetch(async |api| api.get_list(&args.id).await)
+                .await?;
+            let mut thing_ids: Vec<String> = list
+                .things
+                .into_iter()
+                .flatten()
+                .map(|thing| thing.id)
+                .filter(|id| !args.remove_thing.contains(id))
+                .collect();
+            for id in args.add_thing {
+                if !thing_ids.contains(&id) {
+                    thing_ids.push(id);
+                }
+            }
+            let params = UpdateListParams {
+                name: args.name.unwrap_or(list.name),
+                sharing_state: match args.sharing {
+                    Some(sharing) => sharing.into(),
+                    None => list.sharing_state.unwrap_or_default(),
+                },
+                thing_ids,
+            };
+            let list = session
+                .fetch(async |api| api.update_list(&args.id, params.clone()).await)
+                .await?;
+            output.print(&list, show)
+        }
+        ListsCommand::Delete { id } => {
+            session
+                .fetch(async |api| api.delete_list(&id).await)
+                .await?;
+            output.done(&format!("Deleted list {id}"))
         }
     }
 }

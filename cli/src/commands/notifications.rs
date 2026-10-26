@@ -10,6 +10,13 @@ use crate::text::{self, Table};
 pub enum NotificationsCommand {
     /// List your notifications
     List(ListArgs),
+    /// Mark notifications as acknowledged
+    #[command(alias = "ack")]
+    Acknowledge {
+        /// IDs of the notifications
+        #[arg(required = true)]
+        ids: Vec<String>,
+    },
 }
 
 #[derive(Args)]
@@ -63,6 +70,19 @@ pub async fn run(
                 );
                 format!("{}\n{footer}", table.render("No notifications."))
             })
+        }
+        NotificationsCommand::Acknowledge { ids } => {
+            for id in &ids {
+                session
+                    .fetch(async |api| api.acknowledge_notification(id).await)
+                    .await?;
+            }
+            let noun = if ids.len() == 1 {
+                "notification"
+            } else {
+                "notifications"
+            };
+            output.done(&format!("Acknowledged {} {noun}", ids.len()))
         }
     }
 }
