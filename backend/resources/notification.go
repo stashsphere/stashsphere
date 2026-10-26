@@ -25,7 +25,7 @@ func (n NotificationBase) NotificationContentType() string { return n.ContentTyp
 
 type FriendRequestNotification struct {
 	NotificationBase
-	Content notifications.FriendRequest `json:"content"`
+	Content notifications.FriendRequestSent `json:"content"`
 }
 
 type FriendRequestReactionNotification struct {

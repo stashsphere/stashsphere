@@ -198,7 +198,7 @@
 						"type": "boolean"
 					},
 					"content": {
-						"$ref": "#/components/schemas/FriendRequest"
+						"$ref": "#/components/schemas/FriendRequestSent"
 					},
 					"contentType": {
 						"enum": [
@@ -295,6 +295,21 @@
 				"required": [
 					"received",
 					"sent"
+				],
+				"type": "object"
+			},
+			"FriendRequestSent": {
+				"properties": {
+					"requestId": {
+						"type": "string"
+					},
+					"senderId": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"requestId",
+					"senderId"
 				],
 				"type": "object"
 			},

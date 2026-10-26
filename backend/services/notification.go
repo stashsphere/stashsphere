@@ -158,7 +158,7 @@ func (ns *NotificationService) CreateFriendRequest(ctx context.Context, params C
 func (ns *NotificationService) createFriendRequest(ctx context.Context, params createFriendRequestNotificationParamsFull) error {
 	_, err := ns.CreateNotification(ctx, CreateNotification{
 		RecipientId: params.ReceiverId,
-		Content: notifications.FriendRequest{
+		Content: notifications.FriendRequestSent{
 			RequestId: params.RequestId,
 			SenderId:  params.SenderId,
 		},

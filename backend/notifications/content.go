@@ -12,12 +12,15 @@ type StashsphereNotification interface {
 	ContentType() string
 }
 
-type FriendRequest struct {
+// FriendRequestSent is the content of a friend request notification. It is not
+// named FriendRequest, which the OpenAPI spec already uses for the request
+// itself.
+type FriendRequestSent struct {
 	RequestId string `json:"requestId"`
 	SenderId  string `json:"senderId"`
 }
 
-func (n FriendRequest) ContentType() string {
+func (n FriendRequestSent) ContentType() string {
 	return NotifyFriendRequestSent
 
 }

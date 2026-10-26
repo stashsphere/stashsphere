@@ -94,8 +94,8 @@ fn describe(notification: &Notification) -> (&str, &DateTime<Utc>, bool, String)
             &n.created_at,
             n.acknowledged,
             format!(
-                "friend request from {} ({})",
-                n.content.sender.name, n.content.state
+                "friend request {} from user {}",
+                n.content.request_id, n.content.sender_id
             ),
         ),
         Notification::FriendRequestReactionNotification(n) => (

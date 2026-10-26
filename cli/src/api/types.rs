@@ -3045,12 +3045,19 @@ pub struct FriendRequestReaction {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FriendRequestNotification {
     pub acknowledged: bool,
-    pub content: FriendRequest,
+    pub content: FriendRequestSent,
     #[serde(rename = "contentType")]
     pub content_type: FriendRequestNotificationContentType,
     #[serde(rename = "createdAt")]
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub id: String,
+}
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct FriendRequestSent {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "senderId")]
+    pub sender_id: String,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Default)]
 pub enum FriendRequestNotificationContentType {
