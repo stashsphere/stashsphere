@@ -58,6 +58,9 @@ func CreateStashSphereHTTPErrorHandler(echoInstance *echo.Echo) func(err error, 
 			case utils.ErrPendingFriendRequestExists:
 				statusCode = http.StatusConflict
 				message = "A pending request already exists"
+			case utils.ErrFriendShipExists:
+				statusCode = http.StatusConflict
+				message = "Friendship already exists"
 			case utils.ErrInvalidVerificationCode:
 				statusCode = http.StatusBadRequest
 				message = "Invalid verification code"
