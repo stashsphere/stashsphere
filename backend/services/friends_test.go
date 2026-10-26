@@ -134,3 +134,67 @@ func TestFriendRequestCreationAccept(t *testing.T) {
 	assert.ErrorIs(t, err, utils.FriendShipExistsError{})
 	assert.Nil(t, secondRequest)
 }
+
+func TestUnfriend(t *testing.T) {
+	db, tearDownFunc, err := testcommon.CreateTestSchema()
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		db.Close()
+	})
+	t.Cleanup(tearDownFunc)
+
+	userService := services.NewUserService(db, false, "", 60, nil)
+	emailService := services.TestEmailService{}
+	notificationService := services.NewNotificationService(db, services.NotificationData{
+		FrontendUrl:  "https://example.com",
+		InstanceName: "StashsphereTest",
+	}, &emailService)
+	friendService := services.NewFriendService(db, notificationService)
+	createUser := func() *models.User {
+		params := factories.UserFactory.MustCreate().(*services.CreateUserParams)
+		user, err := userService.CreateUser(context.Background(), *params)
+		assert.NoError(t, err)
+		return user
+	}
+	testUser := createUser()
+	firstFriend := createUser()
+	secondFriend := createUser()
+	stranger := createUser()
+
+	for _, friend := range []*models.User{firstFriend, secondFriend} {
+		request, err := friendService.CreateFriendRequest(context.Background(), services.CreateFriendRequestParams{
+			UserId:     testUser.ID,
+			ReceiverId: friend.ID,
+		})
+		assert.NoError(t, err)
+		_, err = friendService.ReactFriendRequest(context.Background(), services.ReactFriendRequestParams{
+			FriendRequestId: request.ID,
+			UserId:          friend.ID,
+			Accept:          true,
+		})
+		assert.NoError(t, err)
+	}
+
+	// only the friendship with the given friend is removed, whichever of
+	// the two sent the request
+	err = friendService.Unfriend(context.Background(), secondFriend.ID, testUser.ID)
+	assert.NoError(t, err)
+	friends, err := friendService.GetFriends(context.Background(), testUser.ID)
+	assert.NoError(t, err)
+	assert.Len(t, friends, 1)
+	assert.ElementsMatch(t, []string{friends[0].Friend1ID, friends[0].Friend2ID}, []string{testUser.ID, firstFriend.ID})
+
+	err = friendService.Unfriend(context.Background(), testUser.ID, stranger.ID)
+	assert.ErrorIs(t, err, utils.NotFoundError{EntityName: "Friend"})
+	err = friendService.Unfriend(context.Background(), testUser.ID, secondFriend.ID)
+	assert.ErrorIs(t, err, utils.NotFoundError{EntityName: "Friend"})
+	friends, err = friendService.GetFriends(context.Background(), testUser.ID)
+	assert.NoError(t, err)
+	assert.Len(t, friends, 1)
+
+	err = friendService.Unfriend(context.Background(), testUser.ID, firstFriend.ID)
+	assert.NoError(t, err)
+	friends, err = friendService.GetFriends(context.Background(), testUser.ID)
+	assert.NoError(t, err)
+	assert.Len(t, friends, 0)
+}

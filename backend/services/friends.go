@@ -226,20 +226,18 @@ func (fs *FriendService) GetFriends(ctx context.Context, userId string) (models.
 func (fs *FriendService) Unfriend(ctx context.Context, userId string, friendId string) error {
 	err := utils.Tx(ctx, fs.db, func(tx *sql.Tx) error {
 		friendShip, err := models.Friendships(
-			qm.Expr(models.FriendshipWhere.Friend1ID.EQ(userId),
-				qm.Or2(models.FriendshipWhere.Friend2ID.EQ(userId))),
-			qm.Load(models.FriendshipRels.FriendRequest),
-		).One(ctx, fs.db)
+			qm.Expr(
+				qm.Expr(models.FriendshipWhere.Friend1ID.EQ(userId), models.FriendshipWhere.Friend2ID.EQ(friendId)),
+				qm.Or2(qm.Expr(models.FriendshipWhere.Friend1ID.EQ(friendId), models.FriendshipWhere.Friend2ID.EQ(userId)))),
+		).One(ctx, tx)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return utils.NotFoundError{EntityName: "Friend"}
 			}
-		}
-		_, err = friendShip.Delete(ctx, fs.db)
-		if err != nil {
 			return err
 		}
-		return nil
+		_, err = friendShip.Delete(ctx, tx)
+		return err
 	})
 	return err
 }
