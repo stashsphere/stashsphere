@@ -4,6 +4,7 @@ pub mod images;
 pub mod links;
 pub mod lists;
 pub mod notifications;
+pub mod profile;
 pub mod search;
 pub mod shares;
 pub mod things;

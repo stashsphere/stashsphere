@@ -14,7 +14,7 @@ use clap::{Parser, Subcommand};
 use url::Url;
 
 use crate::commands::{
-    friends, images, links, lists, notifications, search, shares, things, users,
+    friends, images, links, lists, notifications, profile, search, shares, things, users,
 };
 use crate::output::{Format, Output};
 use crate::session::Session;
@@ -58,6 +58,9 @@ enum Command {
     Logout,
     /// Show the profile of the logged in user
     Whoami,
+    /// Your profile, password, email verification and account deletion
+    #[command(subcommand)]
+    Profile(profile::ProfileCommand),
     /// Search things and lists
     Search(search::SearchArgs),
     /// Things in your inventory and shared with you
@@ -108,6 +111,7 @@ async fn run(cli: Cli, output: &Output) -> anyhow::Result<()> {
         Command::Login(args) => commands::auth::login(cli.server, args, output).await,
         Command::Logout => commands::auth::logout(cli.server, output).await,
         Command::Whoami => commands::auth::whoami(cli.server, output).await,
+        Command::Profile(command) => profile::run(command, &session()?, output).await,
         Command::Search(args) => search::run(args, &session()?, output).await,
         Command::Things(command) => things::run(command, &session()?, output).await,
         Command::Lists(command) => lists::run(command, &session()?, output).await,

@@ -17,6 +17,8 @@ testers.nixosTest {
               };
               # the test talks plain HTTP to the server
               auth.disableSecureCookies = true;
+              # emails go to the journal, where the test reads verification codes
+              email.backend = "stdout";
             }
           );
         in
@@ -513,6 +515,67 @@ testers.nixosTest {
         status, out = server.execute(f"{anonymous} --json links show {link['id']} 2>&1")
         assert status == 5, f"exit code {status}: {out}"
         assert [l["id"] for l in stashctl_json("links list")] == [list_link]
+
+    with subtest("profile show and update"):
+        out = server.succeed("stashctl profile show")
+        assert alice_id in out and "alice@example.com" in out, out
+        profile = stashctl_json(
+            "profile update --full-name 'Alice Example' --information 'Has tools' --sharing friends"
+        )
+        assert profile["name"] == "alice", profile
+        assert profile["fullName"] == "Alice Example", profile
+        assert profile["information"] == "Has tools", profile
+        assert profile["defaultSharingState"] == "friends", profile
+
+        write_png("/tmp/me.png", 8, 8)
+        me = stashctl_json("images upload /tmp/me.png")[0]
+        profile = stashctl_json(f"profile update --image {me['id']}")
+        assert profile["image"]["id"] == me["id"], profile
+        assert profile["fullName"] == "Alice Example", profile
+        status, out = server.execute(f"STASHCTL_HOME=/tmp/bob stashctl --json profile update --image {me['id']} 2>&1")
+        assert status == 4, f"exit code {status}: {out}"
+        out = server.succeed("stashctl profile update --remove-image --name alice")
+        assert "image:" not in out and "default sharing:  friends" in out, out
+        assert stashctl_json("profile show")["image"] is None
+
+    with subtest("profile verifies the email address"):
+        out = server.succeed("stashctl profile send-verification")
+        assert out.strip() == "Sent a verification code to alice@example.com", out
+        code = server.succeed(
+            "journalctl -u stashsphere.service --no-pager "
+            + "| grep -o 'Your verification code is: [0-9]*' | tail -n 1 | grep -o '[0-9]*$'"
+        ).strip()
+        assert len(code) == 8, code
+        # verifying shares the rate limit of login, wait for two requests
+        time.sleep(24)
+        status, out = server.execute("stashctl --json profile verify-email 00000000 2>&1")
+        assert status == 1, f"exit code {status}: {out}"
+        out = server.succeed(f"stashctl profile verify-email {code}")
+        assert out.strip() == "Verified your email address", out
+        assert "alice@example.com (verified)" in server.succeed("stashctl profile show")
+
+    with subtest("profile password"):
+        carol = "STASHCTL_HOME=/tmp/carol stashctl"
+        status, out = server.execute(f"printf 'wrong\\nnewsecret\\n' | {carol} --json profile password --password-stdin 2>&1")
+        assert status == 1 and "Incorrect old password" in out, f"exit code {status}: {out}"
+        status, out = server.execute(f"echo secret | {carol} --json profile password --password-stdin 2>&1")
+        assert status == 1 and "two lines" in out, f"exit code {status}: {out}"
+        out = server.succeed(f"printf 'secret\\nnewsecret\\n' | {carol} profile password --password-stdin")
+        assert out.strip() == "Changed your password", out
+
+    with subtest("profile delete-account and cancel-deletion"):
+        # scheduling a deletion checks the password, the old one is gone
+        status, out = server.execute(f"echo secret | {carol} --json profile delete-account --password-stdin 2>&1")
+        assert status == 1 and "Incorrect password" in out, f"exit code {status}: {out}"
+        out = server.succeed(f"echo newsecret | {carol} profile delete-account --password-stdin")
+        assert out.startswith("Your account will be deleted at "), out
+        assert stashctl_json("profile show", home="/tmp/carol")["purgeAt"] is not None
+        assert "deletion:" in server.succeed(f"{carol} profile show")
+        out = server.succeed(f"{carol} profile cancel-deletion")
+        assert out.strip() == "Cancelled the deletion of your account", out
+        assert stashctl_json("profile show", home="/tmp/carol")["purgeAt"] is None
+        status, out = server.execute(f"{carol} --json profile cancel-deletion 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
 
     with subtest("STASHCTL_OUTPUT selects JSON, compact when not on a terminal"):
         out = server.succeed("STASHCTL_OUTPUT=json stashctl whoami")

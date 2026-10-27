@@ -37,7 +37,7 @@ pub async fn login(server: Option<Url>, args: LoginArgs, output: &Output) -> any
 
 /// The password comes from STASHCTL_PASSWORD, stdin or a prompt, never from
 /// a flag, which would leak it into the process list and shell history.
-fn read_password(from_stdin: bool) -> anyhow::Result<String> {
+pub fn read_password(from_stdin: bool) -> anyhow::Result<String> {
     if from_stdin {
         let mut password = String::new();
         std::io::stdin()
