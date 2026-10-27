@@ -200,6 +200,15 @@ fn show(list: &List) -> String {
                 .collect::<Vec<_>>()
                 .join(", "),
         ),
+        (
+            "public links",
+            list.public_shares
+                .iter()
+                .flatten()
+                .map(|share| share.id.as_str())
+                .collect::<Vec<_>>()
+                .join(", "),
+        ),
     ]);
     let things = things::table(list.things.as_deref().unwrap_or_default());
     format!("{fields}\n{}", things.render("No things in this list."))

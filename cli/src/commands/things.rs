@@ -436,16 +436,31 @@ fn show(thing: &Thing) -> String {
                 .collect::<Vec<_>>()
                 .join("\n"),
         ),
+        (
+            "public links",
+            names(
+                thing
+                    .public_shares
+                    .iter()
+                    .flatten()
+                    .map(|share| share.id.as_str())
+                    .collect(),
+            ),
+        ),
         ("description", thing.description.clone()),
         (
             "private note",
             thing.private_note.clone().unwrap_or_default(),
         ),
     ]);
-    let properties: Vec<(&str, String)> = thing
-        .properties
+    out.push_str(&properties(thing.properties.as_deref().unwrap_or_default()));
+    out
+}
+
+/// An indented `properties:` block, or nothing without properties.
+pub fn properties(properties: &[Property]) -> String {
+    let properties: Vec<(&str, String)> = properties
         .iter()
-        .flatten()
         .map(|property| match property {
             Property::PropertyString(p) => (p.name.as_str(), p.value.clone()),
             Property::PropertyFloat(p) => (
@@ -456,6 +471,7 @@ fn show(thing: &Thing) -> String {
             Property::PropertyBoolean(p) => (p.name.as_str(), p.value.to_string()),
         })
         .collect();
+    let mut out = String::new();
     if !properties.is_empty() {
         out.push_str("\nproperties:\n");
         for line in text::fields(&properties).lines() {

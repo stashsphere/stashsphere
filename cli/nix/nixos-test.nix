@@ -479,6 +479,41 @@ testers.nixosTest {
         assert request["id"] not in [r["id"] for r in received], received
         assert "No friends yet." in server.succeed("STASHCTL_HOME=/tmp/carol stashctl friends list")
 
+    with subtest("links create, list and show"):
+        link = stashctl_json(f"links create {drill['id']}")
+        assert link["url"] == f"{server_url}/public/{link['id']}", link
+        out = server.succeed(f"stashctl links create {workshop['id']}")
+        list_link = out.strip().rsplit("/", 1)[1]
+        assert out.strip() == f"{server_url}/public/{list_link}", out
+        status, out = server.execute(f"STASHCTL_HOME=/tmp/bob stashctl --json links create {drill['id']} 2>&1")
+        assert status == 4, f"exit code {status}: {out}"
+
+        links = stashctl_json("links list")
+        assert {l["id"] for l in links} == {link["id"], list_link}, links
+        table = server.succeed("stashctl links list")
+        assert f"Cordless drill ({drill['id']})" in table and link["url"] in table, table
+        assert f"public links:  {link['id']}" in server.succeed(f"stashctl things show {drill['id']}")
+        assert f"public links:  {list_link}" in server.succeed(f"stashctl lists show {workshop['id']}")
+
+        # anyone with the token sees the thing, but not its private note
+        anonymous = f"STASHCTL_HOME=/tmp/anonymous stashctl --server {server_url}"
+        out = server.succeed(f"{anonymous} links show {link['id']}")
+        for expected in ["Cordless drill", "owner:        alice", "weight:  1.7 kg"]:
+            assert expected in out, out
+        assert "bought 2024" not in out, out
+        shown = json.loads(server.succeed(f"{anonymous} --json links show {list_link}"))
+        assert [t["id"] for t in shown["list"]["things"]] == [drill["id"]], shown
+        assert "Cordless drill" in server.succeed(f"{anonymous} links show {list_link}")
+
+    with subtest("links delete"):
+        status, out = server.execute(f"STASHCTL_HOME=/tmp/bob stashctl --json links delete {link['id']} 2>&1")
+        assert status == 4, f"exit code {status}: {out}"
+        out = server.succeed(f"stashctl links delete {link['id']}")
+        assert out.strip() == f"Revoked public link {link['id']}", out
+        status, out = server.execute(f"{anonymous} --json links show {link['id']} 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+        assert [l["id"] for l in stashctl_json("links list")] == [list_link]
+
     with subtest("STASHCTL_OUTPUT selects JSON, compact when not on a terminal"):
         out = server.succeed("STASHCTL_OUTPUT=json stashctl whoami")
         assert out.count("\n") == 1, out
