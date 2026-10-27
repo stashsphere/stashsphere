@@ -536,6 +536,7 @@ pub enum RespondToFriendRequestApiError {
 ///Typed error responses for `scheduleAccountDeletion`. One variant per declared non-2xx response.
 #[derive(Debug, Clone)]
 pub enum ScheduleAccountDeletionApiError {
+    Status400(ErrorResponse),
     Status401(ErrorResponse),
 }
 ///Typed error responses for `search`. One variant per declared non-2xx response.
@@ -6481,10 +6482,13 @@ impl HttpClient {
     /// `POST /api/user/deletion`
     pub async fn schedule_account_deletion(
         &self,
+        request: ScheduleDeletionParams,
     ) -> Result<Profile, ApiOpError<ScheduleAccountDeletionApiError>> {
         let request_url = format!("{}{}", self.base_url, "/api/user/deletion");
         let mut req = self.http_client.post(request_url);
-        req = req.header(reqwest::header::CONTENT_LENGTH, "0");
+        req = req
+            .body(serde_json::to_vec(&request).map_err(HttpError::serialization_error)?)
+            .header("content-type", "application/json");
         if let Some(api_key) = &self.api_key {
             req = req.bearer_auth(api_key);
         }
@@ -6543,6 +6547,18 @@ impl HttpClient {
             let typed: Option<ScheduleAccountDeletionApiError>;
             let parse_error: Option<String>;
             match status_code {
+                400u16 => {
+                    match serde_json::from_str::<ErrorResponse>(&body_text) {
+                        Ok(v) => {
+                            typed = Some(ScheduleAccountDeletionApiError::Status400(v));
+                            parse_error = None;
+                        }
+                        Err(e) => {
+                            typed = None;
+                            parse_error = Some(e.to_string());
+                        }
+                    }
+                }
                 401u16 => {
                     match serde_json::from_str::<ErrorResponse>(&body_text) {
                         Ok(v) => {

@@ -3210,6 +3210,11 @@ pub struct RegisterPostParams {
     pub name: String,
     pub password: String,
 }
+///ScheduleDeletionParams schema
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ScheduleDeletionParams {
+    pub password: String,
+}
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct StartImportRequest {
     ///ZIP archive created by an export

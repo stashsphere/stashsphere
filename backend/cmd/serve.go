@@ -625,11 +625,25 @@ func SetupWithDB(db *sql.DB, config config.StashSphereServeConfig, debug bool, s
 		option.Summary("Schedule Account Deletion"),
 		option.Description("Schedule the current user's account for deletion after a grace period"),
 		option.Security(openapi3.SecurityRequirement{"cookieAuth": []string{}}),
+		option.RequestBody(
+			fuego.RequestBody{
+				Type:         handlers.ScheduleDeletionParams{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
 		option.AddResponse(
 			200,
 			"Deletion scheduled",
 			fuego.Response{
 				Type:         resources.Profile{},
+				ContentTypes: []string{"application/json"},
+			},
+		),
+		option.AddResponse(
+			400,
+			"Invalid parameters or password incorrect",
+			fuego.Response{
+				Type:         ss_middleware.ErrorResponse{},
 				ContentTypes: []string{"application/json"},
 			},
 		),

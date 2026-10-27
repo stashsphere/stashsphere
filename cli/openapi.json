@@ -1771,6 +1771,18 @@
 				],
 				"type": "object"
 			},
+			"ScheduleDeletionParams": {
+				"description": "ScheduleDeletionParams schema",
+				"properties": {
+					"password": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"password"
+				],
+				"type": "object"
+			},
 			"SchemaCollection": {
 				"description": "SchemaCollection schema",
 				"properties": {
@@ -4836,6 +4848,17 @@
 			"post": {
 				"description": "#### Controller: \n\n`github.com/stashsphere/backend/handlers.(*UserHandler).ScheduleDeletion`\n\n---\n\nSchedule the current user's account for deletion after a grace period",
 				"operationId": "scheduleAccountDeletion",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ScheduleDeletionParams"
+							}
+						}
+					},
+					"description": "Request body for handlers.ScheduleDeletionParams",
+					"required": true
+				},
 				"responses": {
 					"200": {
 						"content": {
@@ -4846,6 +4869,16 @@
 							}
 						},
 						"description": "Deletion scheduled"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						},
+						"description": "Invalid parameters or password incorrect"
 					},
 					"401": {
 						"content": {
