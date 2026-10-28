@@ -27,6 +27,12 @@ impl Output {
         Self { format }
     }
 
+    /// Whether results are printed as text, for commands that fetch more
+    /// to describe a result to humans.
+    pub fn is_text(&self) -> bool {
+        matches!(self.format, Format::Text)
+    }
+
     /// Prints `value` as JSON, or the text produced by `text`.
     pub fn print<T: Serialize>(
         &self,

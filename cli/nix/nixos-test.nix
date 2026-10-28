@@ -612,6 +612,31 @@ testers.nixosTest {
         drills = stashctl_json("things list --search cordless", home="/tmp/carol")["things"]
         assert [t["owner"]["id"] for t in drills] == [carol_id], drills
 
+    with subtest("cart add, show, remove and clear"):
+        bob = "STASHCTL_HOME=/tmp/bob stashctl"
+        assert stashctl_json("cart show", home="/tmp/bob")["entries"] == []
+        assert server.succeed(f"{bob} cart show").strip() == "Your cart is empty."
+
+        # bob sees the drill through its share, and adding twice keeps one entry
+        cart = stashctl_json(f"cart add {drill['id']} {drill['id']}", home="/tmp/bob")
+        assert [(e["thingId"], e["ownerId"]) for e in cart["entries"]] == [(drill["id"], alice_id)], cart
+        cart = stashctl_json(f"cart add {drill['id']}", home="/tmp/bob")
+        assert len(cart["entries"]) == 1, cart
+        out = server.succeed(f"{bob} cart show")
+        assert f"Owned by alice ({alice_id}):" in out and "Cordless drill" in out, out
+
+        # bob does not see the drill carol imported
+        status, out = server.execute(f"{bob} --json cart add {drills[0]['id']} 2>&1")
+        assert status == 4, f"exit code {status}: {out}"
+        status, out = server.execute(f"{bob} --json cart add nope 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+        assert len(stashctl_json("cart show", home="/tmp/bob")["entries"]) == 1
+
+        assert stashctl_json(f"cart remove {drill['id']}", home="/tmp/bob")["entries"] == []
+        stashctl_json(f"cart add {drill['id']}", home="/tmp/bob")
+        assert server.succeed(f"{bob} cart clear").strip() == "Your cart is empty."
+        assert stashctl_json("cart show", home="/tmp/bob")["entries"] == []
+
     with subtest("STASHCTL_OUTPUT selects JSON, compact when not on a terminal"):
         out = server.succeed("STASHCTL_OUTPUT=json stashctl whoami")
         assert out.count("\n") == 1, out

@@ -1,5 +1,6 @@
 pub mod archives;
 pub mod auth;
+pub mod cart;
 pub mod friends;
 pub mod images;
 pub mod links;
