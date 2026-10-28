@@ -57,6 +57,8 @@ enum Command {
     Login(commands::auth::LoginArgs),
     /// Log out and remove the stored session
     Logout,
+    /// Show how to sign up for and log in to the instance
+    Info,
     /// Show the profile of the logged in user
     Whoami,
     /// Your profile, password, email verification and account deletion
@@ -120,6 +122,7 @@ async fn run(cli: Cli, output: &Output) -> anyhow::Result<()> {
     match cli.command {
         Command::Login(args) => commands::auth::login(cli.server, args, output).await,
         Command::Logout => commands::auth::logout(cli.server, output).await,
+        Command::Info => commands::info::run(cli.server, output).await,
         Command::Whoami => commands::auth::whoami(cli.server, output).await,
         Command::Profile(command) => profile::run(command, &session()?, output).await,
         Command::Search(args) => search::run(args, &session()?, output).await,

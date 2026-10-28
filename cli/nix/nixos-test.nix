@@ -123,6 +123,15 @@ testers.nixosTest {
         status, out = server.execute("stashctl --json whoami 2>&1")
         assert status == 3, f"exit code {status}: {out}"
         assert "not logged in" in json.loads(out)["error"]["message"], out
+        status, out = server.execute("stashctl --json info 2>&1")
+        assert status == 3, f"exit code {status}: {out}"
+
+    with subtest("info needs no login"):
+        info = json.loads(server.succeed(f"stashctl --server {server_url} --json info"))
+        assert info["inviteRequired"] is True and not info["oidcProviders"], info
+        out = server.succeed(f"stashctl --server {server_url} info")
+        assert "with an invite code" in out and "login providers" not in out, out
+        server.fail(f"test -e {cookies}")
 
     with subtest("a wrong password is rejected"):
         status, out = server.execute(
@@ -142,6 +151,7 @@ testers.nixosTest {
         assert profile["email"] == "alice@example.com", profile
         assert profile["name"] == "alice", profile
         assert "alice@example.com" in server.succeed("stashctl whoami")
+        assert server_url in server.succeed("stashctl info")
 
     with subtest("an expired access token is refreshed"):
         stored = json.loads(server.succeed(f"cat {cookies}"))
