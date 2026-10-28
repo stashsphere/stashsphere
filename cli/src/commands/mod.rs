@@ -1,3 +1,4 @@
+pub mod archives;
 pub mod auth;
 pub mod friends;
 pub mod images;

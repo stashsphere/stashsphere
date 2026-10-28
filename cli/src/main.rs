@@ -14,7 +14,7 @@ use clap::{Parser, Subcommand};
 use url::Url;
 
 use crate::commands::{
-    friends, images, links, lists, notifications, profile, search, shares, things, users,
+    archives, friends, images, links, lists, notifications, profile, search, shares, things, users,
 };
 use crate::output::{Format, Output};
 use crate::session::Session;
@@ -84,6 +84,12 @@ enum Command {
     /// Public links to things and lists, viewable without an account
     #[command(subcommand)]
     Links(links::LinksCommand),
+    /// Exports of your collection as a ZIP archive
+    #[command(subcommand)]
+    Export(archives::ExportCommand),
+    /// Imports of archives created by an export
+    #[command(subcommand)]
+    Import(archives::ImportCommand),
     /// Your notifications
     #[command(subcommand)]
     Notifications(notifications::NotificationsCommand),
@@ -120,6 +126,8 @@ async fn run(cli: Cli, output: &Output) -> anyhow::Result<()> {
         Command::Friends(command) => friends::run(command, &session()?, output).await,
         Command::Shares(command) => shares::run(command, &session()?, output).await,
         Command::Links(command) => links::run(command, &session()?, output).await,
+        Command::Export(command) => archives::export(command, &session()?, output).await,
+        Command::Import(command) => archives::import(command, &session()?, output).await,
         Command::Notifications(command) => notifications::run(command, &session()?, output).await,
     }
 }

@@ -154,7 +154,7 @@ pub async fn run(command: ImagesCommand, session: &Session, output: &Output) -> 
     }
 }
 
-fn read_file(path: &Path) -> anyhow::Result<MultipartFile> {
+pub fn read_file(path: &Path) -> anyhow::Result<MultipartFile> {
     let content = std::fs::read(path).with_context(|| format!("reading {}", path.display()))?;
     let file = MultipartFile::new(content);
     Ok(match path.file_name() {

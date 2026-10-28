@@ -577,6 +577,41 @@ testers.nixosTest {
         status, out = server.execute(f"{carol} --json profile cancel-deletion 2>&1")
         assert status == 5, f"exit code {status}: {out}"
 
+    with subtest("export start, status and download"):
+        status, out = server.execute("stashctl --json export status 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+        status, out = server.execute("stashctl --json export download 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+        export = stashctl_json("export start")
+        assert export["status"] in ("pending", "processing"), export
+        status, out = server.execute("stashctl --json export start 2>&1")
+        assert status == 1 and "already in progress" in out, f"exit code {status}: {out}"
+        # the export worker picks up new exports once a minute
+        done = stashctl_json("export status --wait")
+        assert done["id"] == export["id"] and done["status"] == "done", done
+        assert done["expiresAt"] is not None, done
+
+        out = server.succeed("mkdir -p /tmp/exports && cd /tmp/exports && stashctl export download")
+        archive = "/tmp/exports/" + out.strip().removeprefix("Saved export to ")
+        assert archive.startswith("/tmp/exports/stashsphere-export-") and archive.endswith(".zip"), out
+        assert "collection.json" in server.succeed(f"${pkgs.unzip}/bin/unzip -l {archive}")
+        server.succeed(f"stashctl export download -o - > /tmp/stdout.zip && cmp /tmp/stdout.zip {archive}")
+
+    with subtest("import start and status"):
+        status, out = server.execute(f"{carol} --json import status 2>&1")
+        assert status == 5, f"exit code {status}: {out}"
+        # the upload is accepted and fails in the import worker
+        status, out = server.execute(f"{carol} --json import start /tmp/me.png --wait 2>&1")
+        assert status == 1 and "invalid zip" in out, f"exit code {status}: {out}"
+        assert stashctl_json("import status", home="/tmp/carol")["status"] == "error"
+
+        imported = stashctl_json(f"import start {archive} --wait", home="/tmp/carol")
+        assert imported["status"] == "done" and imported["thingsImported"] > 0, imported
+        out = server.succeed(f"{carol} import status")
+        assert "done" in out and f"things:     {imported['thingsImported']}" in out, out
+        drills = stashctl_json("things list --search cordless", home="/tmp/carol")["things"]
+        assert [t["owner"]["id"] for t in drills] == [carol_id], drills
+
     with subtest("STASHCTL_OUTPUT selects JSON, compact when not on a terminal"):
         out = server.succeed("STASHCTL_OUTPUT=json stashctl whoami")
         assert out.count("\n") == 1, out
