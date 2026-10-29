@@ -14,8 +14,8 @@ use clap::{Parser, Subcommand};
 use url::Url;
 
 use crate::commands::{
-    archives, cart, friends, images, links, lists, notifications, profile, search, shares, things,
-    users,
+    archives, cart, friends, images, links, lists, notifications, profile, properties, search,
+    shares, things, users,
 };
 use crate::output::{Format, Output};
 use crate::session::Session;
@@ -69,6 +69,9 @@ enum Command {
     /// Things in your inventory and shared with you
     #[command(subcommand)]
     Things(things::ThingsCommand),
+    /// Property names with known types and units, for --property
+    #[command(subcommand)]
+    Properties(properties::PropertiesCommand),
     /// Lists of things
     #[command(subcommand)]
     Lists(lists::ListsCommand),
@@ -127,6 +130,7 @@ async fn run(cli: Cli, output: &Output) -> anyhow::Result<()> {
         Command::Profile(command) => profile::run(command, &session()?, output).await,
         Command::Search(args) => search::run(args, &session()?, output).await,
         Command::Things(command) => things::run(command, &session()?, output).await,
+        Command::Properties(command) => properties::run(command, &session()?, output).await,
         Command::Lists(command) => lists::run(command, &session()?, output).await,
         Command::Cart(command) => cart::run(command, &session()?, output).await,
         Command::Images(command) => images::run(command, &session()?, output).await,

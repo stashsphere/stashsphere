@@ -8,6 +8,7 @@ pub mod links;
 pub mod lists;
 pub mod notifications;
 pub mod profile;
+pub mod properties;
 pub mod search;
 pub mod shares;
 pub mod things;

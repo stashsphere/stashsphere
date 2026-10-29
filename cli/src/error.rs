@@ -24,6 +24,12 @@ struct ErrorMessage {
 #[error("not logged in, run `stashctl login` first")]
 pub struct NotLoggedIn;
 
+/// Something looked up on the client side does not exist, e.g. a property
+/// name that no schema describes.
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
+pub struct NotFound(pub String);
+
 /// Converts the generated client's error into an [`anyhow::Error`] that
 /// carries an [`ApiFailure`] when the server responded.
 pub fn api_error<E: Debug + Send + Sync + 'static>(err: ApiOpError<E>) -> anyhow::Error {
@@ -46,6 +52,9 @@ pub fn api_error<E: Debug + Send + Sync + 'static>(err: ApiOpError<E>) -> anyhow
 pub fn exit_code(err: &anyhow::Error) -> ExitCode {
     if err.is::<NotLoggedIn>() {
         return ExitCode::from(3);
+    }
+    if err.is::<NotFound>() {
+        return ExitCode::from(5);
     }
     match err.downcast_ref::<ApiFailure>() {
         Some(ApiFailure { status: 401, .. }) => ExitCode::from(3),

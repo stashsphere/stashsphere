@@ -204,6 +204,31 @@ testers.nixosTest {
         for expected in ["Cordless drill", "Workshop", "bob", "weight:  1.5 kg", "bought 2024"]:
             assert expected in shown, f"{expected!r} missing in:\n{shown}"
 
+    with subtest("properties list and show the schemas"):
+        def field(out, label):
+            line = next(l for l in out.splitlines() if l.startswith(f"{label}:"))
+            return line.split(":", 1)[1].strip()
+
+        collection = stashctl_json("properties list")
+        assert "length" in collection["schemas"], collection
+        assert collection["aliases"]["len"] == "length", collection
+        table = server.succeed("stashctl properties list")
+        row = next(l for l in table.splitlines() if l.startswith("length "))
+        for expected in ["float", "mm, cm, m, km, in, ft", "l, len", "Length"]:
+            assert expected in row, row
+
+        # aliases and any case resolve to the property
+        out = server.succeed("stashctl properties show LEN")
+        assert field(out, "name") == "length" and field(out, "type") == "float", out
+        assert field(out, "aliases") == "l, len", out
+        assert stashctl_json("properties show len")["schema"]["title"] == "Length"
+        out = server.succeed("stashctl properties show colour")
+        assert field(out, "type") == "string" and "aliceblue" in field(out, "values"), out
+        assert field(server.succeed("stashctl properties show purchased_at"), "type") == "datetime"
+        assert field(server.succeed("stashctl properties show managed"), "type") == "boolean"
+        status, out = server.execute("stashctl --json properties show nope 2>&1")
+        assert status == 5 and "no property schema named nope" in out, f"exit code {status}: {out}"
+
     with subtest("missing objects exit with code 5"):
         status, out = server.execute("stashctl --json things show nope 2>&1")
         assert status == 5, f"exit code {status}: {out}"
