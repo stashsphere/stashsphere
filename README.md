@@ -17,6 +17,7 @@ StashSphere is free and open source software, built to protect your privacy and 
 This is the mono repository for StashSphere
 
 You can find the backend in `./backend`, the frontend in `./frontend`.
+The experimental `stashctl` cli can be found in `./cli`.
 
 More information on [stashsphere.com](https://stashsphere.com)
 
