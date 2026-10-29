@@ -261,6 +261,15 @@ testers.nixosTest {
         status, out = server.execute("STASHCTL_HOME=/tmp/bob stashctl --json notifications ack nope 2>&1")
         assert status != 0, f"exit code {status}: {out}"
 
+    with subtest("things summary counts own and shared things"):
+        summary = stashctl_json("things summary")
+        assert summary == {"totalCount": 1, "ownerIds": [alice_id]}, summary
+        # bob owns nothing, but sees the drill through its share
+        summary = stashctl_json("things summary", home="/tmp/bob")
+        assert summary == {"totalCount": 1, "ownerIds": [alice_id]}, summary
+        out = server.succeed("STASHCTL_HOME=/tmp/bob stashctl things summary")
+        assert out == f"1 thing owned by\n  alice ({alice_id})\n", out
+
     with subtest("things create"):
         saw = stashctl_json(
             "things create --name 'Hand saw' --quantity 1 --unit pcs "

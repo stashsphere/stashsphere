@@ -15,6 +15,8 @@ use crate::text::{self, Table};
 pub enum ThingsCommand {
     /// List your things and the things shared with you
     List(ListArgs),
+    /// Count the things you can see and name their owners
+    Summary,
     /// Show a thing with its properties, lists and shares
     Show {
         /// ID of the thing
@@ -155,6 +157,39 @@ pub async fn run(command: ThingsCommand, session: &Session, output: &Output) -> 
                     ("thing", "things"),
                 );
                 format!("{}\n{footer}", table.render("No things found."))
+            })
+        }
+        ThingsCommand::Summary => {
+            let summary = session
+                .fetch(async |api| api.get_things_summary().await)
+                .await?;
+            // the summary only has IDs, look up the names for humans
+            let users = if output.is_text() {
+                session.fetch(async |api| api.list_users().await).await?
+            } else {
+                Vec::new()
+            };
+            output.print(&summary, |summary| {
+                let mut owners: Vec<String> = summary
+                    .owner_ids
+                    .iter()
+                    .flatten()
+                    .map(|id| match users.iter().find(|user| &user.id == id) {
+                        Some(user) => format!("{} ({id})", user.name),
+                        None => id.clone(),
+                    })
+                    .collect();
+                owners.sort();
+                let things = if summary.total_count == 1 {
+                    "thing"
+                } else {
+                    "things"
+                };
+                let mut out = format!("{} {things}", summary.total_count);
+                if !owners.is_empty() {
+                    out.push_str(&format!(" owned by\n  {}", owners.join("\n  ")));
+                }
+                out
             })
         }
         ThingsCommand::Show { id } => {
