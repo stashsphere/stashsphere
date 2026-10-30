@@ -139,8 +139,8 @@ func (lh *ListHandler) ListHandlerIndex(c echo.Context) error {
 		params.PerPage = 50
 	}
 	paginate := true
-	if params.Paginate != nil && *params.Paginate == true {
-		paginate = true
+	if params.Paginate != nil && *params.Paginate == false {
+		paginate = false
 	}
 
 	order, err := ParamsOrderToListServiceOrder(params.Orders)

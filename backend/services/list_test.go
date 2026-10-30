@@ -1072,6 +1072,7 @@ func TestGetListsForUserOrderByAccessReason(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, result.Lists, 4, "bob should see 4 lists")
+	assert.Equal(t, uint64(1), result.TotalPages, "unpaginated results are one page")
 
 	// Verify ordering: owner -> direct -> friend -> friend-of-friend
 	assert.Equal(t, bobOwnedList.ID, result.Lists[0].ID, "first should be owned list")

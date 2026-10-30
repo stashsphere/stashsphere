@@ -804,6 +804,7 @@ func TestGetThingsForUserOrderByAccessReason(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, result.Things, 4, "bob should see 4 things")
+	assert.Equal(t, uint64(1), result.TotalPages, "unpaginated results are one page")
 
 	// Verify ordering: owner -> direct -> friend -> friend-of-friend
 	assert.Equal(t, bobOwnedThing.ID, result.Things[0].ID, "first should be owned thing")

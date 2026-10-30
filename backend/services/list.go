@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
@@ -486,7 +485,7 @@ func (ls *ListService) GetListsForUser(ctx context.Context, params GetListsForUs
 		}
 	}
 
-	totalPages := uint64(math.Ceil(float64(listCount) / float64(perPage)))
+	totalPages := totalPageCount(uint64(listCount), perPage, paginate)
 
 	return &GetListsForUserResult{
 		TotalCount:     uint64(listCount),

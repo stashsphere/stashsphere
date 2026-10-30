@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
@@ -566,7 +565,7 @@ func (ts *ThingService) GetThingsForUser(ctx context.Context, params GetThingsFo
 		}
 	}
 
-	totalPages := uint64(math.Ceil(float64(thingCount) / float64(perPage)))
+	totalPages := totalPageCount(uint64(thingCount), perPage, paginate)
 
 	return &GetThingsForUserResult{
 		TotalCount:     uint64(thingCount),
